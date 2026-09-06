@@ -4,7 +4,50 @@
 
 ---
 
-## 2026-09-06 会话 2：P1「7 天微习惯计划 + 温和回归提示」实施 + 分支首次上传远端
+## 2026-09-06 会话 3：P1 修正单执行（契约冻结 + P0×2 + P1×3 + 6 组新测试 + CI）
+
+实施人：小虾米（WorkBuddy/GLM）。依据 Codex《workbuddy-p1-correction-plan.md》逐条执行；从基线 `06e0c44`（= `origin/codex/p0-habit-experience`）新建分支 `codex/p1-correction-review`，小步提交，未 force 任何现有分支。
+
+> **语义勘误（以下节为准，覆盖下方会话 2 的旧描述）**：状态枚举以 `not_started | active | completed | expired` 为准（会话 2 写的 `idle` 已废弃）；`dismiss` 仅限 `not_started` 状态可用（active 时 dismiss 返回 409，并不存在"写 lastDismissedOn 回 idle"路径）；回归 gapKey 由服务端用 `previousLastSeenAt`（覆盖前的 lastSeenAt）生成，不是"孩子 id+日期"；确认幂等由 pendingGapKey 机制保证（见下）。权威契约：`docs/ONBOARDING_CONTRACT.md`。
+
+### 提交链
+
+- `ff8283e` 回归弹层在饿晕时 3.5s 自动淡出（不遮复活 CTA）
+- `06719ce` 契约文档 `docs/ONBOARDING_CONTRACT.md`：状态机/枚举/409 语义/分数红线/pending ack 三重校验/保存顺序铁律/schema v6
+- `7591a77` **P0 保存顺序**：全部路由改为「业务变更 → childMe() → store.save() → 返回」；P1 端点用 `saveNow()`（`save()` 是 150ms 防抖，响应后立即重启会丢数据）
+- `453ac4e` **P0 pendingGapKey（schema v6）**：服务端决定展示回归提示时持久化 `pendingGapKey = previousLastSeenAt`；ack 三重校验（`key === pendingGapKey && lastShownForGap !== key && gapDays >= 3`）；成功后 `lastShownForGap = key`、`pendingGapKey = null`；新 gap 自动替换旧 pending（旧 key 永不吞新提示）；migration 补 `pendingGapKey` + 显式 `idle → not_started` 映射
+- `8127983` **P1 local.js 本地投影**：`updateFromState` 缓存 `childStates[childId]` 的 onboarding/returnNudge 云端视图 + `S.lastState` 完整视图；`bootChild` 无 family 快照时回退 `lastState`（离线不丢计划卡）；补 `onboardingLocalView`/`obDayDiff`（server `onboardingView` 的本地复刻，惰性滚转只做视图级镜像、不落库，滚转永远由云端权威完成）
+- `2fc83cd` **P1 测试可复现**：`scripts/run-tests.js` 启动器（临时数据目录 `HABITPET_DATA_DIR` + 主服务/worker 双随机端口 + 等 ready + 无论成败清理）；`.github/workflows/ci.yml`（push/PR 矩阵 Node 18/20，无 secrets）；`scripts/accept-360.js`（360px 浏览器验收三段式 setup/fixture/browser，手动运行不进 CI）
+- `ffac216` 修正单要求的 6 组新测试（落点见下）
+
+### 6 组新测试 → 落点
+
+1. **端点调用后立刻重启持久化** → worker `persist` 相位：每个 P1 端点响应后立即 `fs.readFileSync(DB_FILE)` 断言磁盘内容（start 的 active+startedOn、complete 的 completedOn、ack 的 lastShownForGap+清 pending、回归展示即持久化 pending）
+2. **旧/重复/跨设备延迟 key 全拒** → worker `oldkey` 相位（新 gap 替换旧 pending 后，延迟到达的旧 key ack 409、当前 key 200）+ 原有 staleAck409/badKey409/ack-幂等断言
+3. **pending 重启后仍可确认** → worker `pendgap` → `pendack` 跨进程（进程边界 = 服务重启）：pending 落盘退出后，新进程对同一 key ack 成功且 ack 粘滞
+4. **本地缓存含 onboarding/returnNudge、离线重启不丢计划卡** → `test_local_cache.js`（LSDB stub + 真 species/engine 模块 + fetch 全抛 = 永远离线）：updateFromState 缓存视图、lastState 落盘、无 family 快照回退 lastState、缓存视图优先于 raw 投影；另有浏览器级验收（在线建立计划 → 断网刷新/重启浏览器计划卡保留 → 恢复网络与服务端对齐，全部通过）
+5. **migration 兼容 + idle 映射** → 冒烟第 16 节：注入 `status:'idle'` + 缺 `pendingGapKey` 的遗留数据 → migrate → 断言映射为 `not_started` 且 `pendingGapKey === null`
+6. **红线回归** → 原 day7 断言 + `persist` 相位全流程（start/complete/dismiss/me/ack）后 intimacy/XP/feedStreak/ledger 零变化
+
+### 测试基础设施修复（执行中发现的真问题）
+
+- `HABITPET_NO_TIMER=1`（启动器注入，server.js 测试模式关闭 60s 定时器）：主服务定时器会整库 saveNow **内存旧状态**，与共享数据文件的 worker 子进程互相覆盖；且两进程并发写 `DB_TMP` 在 Windows 上 rename EPERM → 定时器回调未捕获异常崩掉主服务。生产单进程不受影响，默认行为不变。
+- `test_smoke.js` 的 `api()` 网络错误重试 3 次：P1 worker 段约 60s 无主服务流量后，undici 复用被服务端 keepalive 超时关闭的 socket 会 ECONNRESET；重试走新连接。
+- 环境陷阱备忘：本机 git loose refs 会被吞 → 提交走 write-tree/commit-tree/packed-refs 管道；packed-refs 行必须带 `refs/heads/` 全前缀且文件以换行结尾。
+
+### 验证
+
+- `npm test` 干净环境连续两遍：**218 通过 / 0 失败**，无残留进程、无临时目录残留
+- 浏览器冒烟（360px 视口，与 scripts/accept-360.js 同款断言）：过期温和重开 9/9、饿晕+回归共存 5/5
+- 离线缓存验收：onlineCard / offlineCardKept / offlineStateOk / offlineNoFakeSuccess / backOnlineAligned 全 true
+- CI：推送后以 GitHub Actions（Node 18/20）结果为准
+
+### 遗留
+
+- `webview-apk/assets/www/lib/local.js` 为打包副本，下次出包时随 public/ 同步
+- CI 首跑结果待推送后在 Actions 页确认
+
+---
 
 实施人：小虾米（WorkBuddy/GLM）。接手自 Codex 的 P0 交接（4f947b3 → f086ef6，验收通过：168 冒烟全绿，v10.3 的 targetSdk=33 修复未丢失）。
 
