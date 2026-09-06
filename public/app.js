@@ -156,6 +156,29 @@ async function getJSON(path) {
   const BASE = window.LocalRT ? LocalRT.API_BASE : '';
   try { const r = await fetch(BASE + path); return await r.json(); } catch (e) { return { error: '网络异常' }; }
 }
+// 证据图片必须通过 Authorization 请求取得；绝不把会话令牌放进图片 URL、
+// DOM 属性、历史记录或第三方图片请求的 Referer 中。
+async function loadEvidencePhoto(img) {
+  const id = img && img.dataset.photoId;
+  if (!id) return;
+  const BASE = window.LocalRT ? LocalRT.API_BASE : '';
+  try {
+    const res = await fetch(`${BASE}/api/photo?id=${encodeURIComponent(id)}`, {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!res.ok) throw new Error('photo unavailable');
+    const objectUrl = URL.createObjectURL(await res.blob());
+    img.src = objectUrl;
+    img.dataset.objectUrl = objectUrl;
+    img.addEventListener('load', () => URL.revokeObjectURL(objectUrl), { once: true });
+  } catch (_) {
+    img.alt = '照片暂不可读取';
+    img.classList.add('photo-unavailable');
+  }
+}
+function hydrateEvidencePhotos() {
+  document.querySelectorAll('img[data-photo-id]').forEach(loadEvidencePhoto);
+}
 let toastTimer = null;
 function toast(msg, isErr, long) {
   const t = $('#toast'); t.textContent = msg;
@@ -992,6 +1015,7 @@ function renderParent() {
   else if (pTab === 'rewards') b.innerHTML = parentRewards();
   else if (pTab === 'ledger') b.innerHTML = parentLedger();
   else b.innerHTML = parentSettings();
+  if (pTab === 'inbox') hydrateEvidencePhotos();
 }
 function totalPending() { return fam.children.reduce((s, c) => s + c.pending.filter(e => e.status === 'pending').length, 0); }
 async function refreshFam() { const r = await api('/api/family'); if (r.id) fam = r; }
@@ -1114,7 +1138,7 @@ function parentInbox() {
     return `<div class="card">
       <h3>${esc(c.name)} · ${esc(e.label)} <span class="badge a">+${e.points}</span></h3>
       <div class="lead">${esc(e.note || '（无说明）')} · ${fmt(e.ts)}</div>
-      ${e.hasPhoto ? `<img class="photo-thumb" src="/api/photo?id=${e.id}&token=${token}" onclick="window.open(this.src)">` : '<div class="muted-line">无照片佐证</div>'}
+      ${e.hasPhoto ? `<img class="photo-thumb" data-photo-id="${esc(e.id)}" alt="正在加载照片证据">` : '<div class="muted-line">无照片佐证</div>'}
       <div class="row mt8">
         <button class="btn sm ok" data-review-id="${e.id}" onclick="approve('${e.id}','approve')">✅ 通过 +${e.points}</button>
         <button class="btn sm bad" data-review-id="${e.id}" onclick="approve('${e.id}','reject')">❌ 驳回</button>

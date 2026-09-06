@@ -89,10 +89,15 @@ async function api(path, body, token) {
   ok('驳回', rej.ok);
   const photoUnauth = await fetch(B + '/api/photo?id=' + sub.eventId);
   ok('照片无权限不可看', photoUnauth.status === 401);
-  const photoAuth = await fetch(B + '/api/photo?id=' + sub.eventId + '&token=' + PT);
-  ok('家长token可看照片', photoAuth.status === 200);
+  const photoWithQueryToken = await fetch(B + '/api/photo?id=' + sub.eventId + '&token=' + PT);
+  ok('照片不接受 URL token', photoWithQueryToken.status === 401);
+  const photoAuth = await fetch(B + '/api/photo?id=' + sub.eventId, { headers: { Authorization: 'Bearer ' + PT } });
+  ok('家长 Bearer token 可看照片', photoAuth.status === 200);
+  const other = await api('/api/register', { username: 'photoother' + RND, password: 'pass123', familyName: '照片隔离家' });
+  const photoOtherFamily = await fetch(B + '/api/photo?id=' + sub.eventId, { headers: { Authorization: 'Bearer ' + other.token } });
+  ok('其他家庭不可读取照片', photoOtherFamily.status === 404);
   const otherFamily = await api('/api/register', { username: 'otherboss' + RND, password: 'pass123', familyName: '其他测试家', securityQ: '我的小学叫什么', securityA: '新华小学' });
-  const foreignPhoto = await fetch(B + '/api/photo?id=' + sub.eventId + '&token=' + otherFamily.token);
+  const foreignPhoto = await fetch(B + '/api/photo?id=' + sub.eventId, { headers: { Authorization: 'Bearer ' + otherFamily.token } });
   ok('其他家庭不能读取猜中的照片 ID', foreignPhoto.status === 404, foreignPhoto.status);
 
   console.log('== 4 手动/投诉（不限次 + 取消/删除/编辑都调分） ==');

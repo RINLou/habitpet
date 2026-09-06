@@ -815,8 +815,7 @@ const server = http.createServer(async (req, res) => {
       return json(res, 200, { ok: true, species: SPECIES.map(s => ({ ...s, elementName: ELEMENT_NAMES[s.element] })), chart: CHART, elementNames: ELEMENT_NAMES });
     }
     if (req.method === 'GET' && pathname === '/api/photo') {
-      let sess = auth(req);
-      if (!sess) { const t = url.searchParams.get('token'); if (t) sess = store.getSession(t); }
+      const sess = auth(req);
       if (!sess || sess.role !== 'parent') return json(res, 401, { error: 'unauthorized' });
       const id = String(url.searchParams.get('id') || '').replace(/[^a-z0-9]/gi, '');
       const family = store.familyById(sess.familyId);
