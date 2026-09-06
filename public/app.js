@@ -653,7 +653,8 @@ function maybeShowReturnNudge() {
   const n = me && me.returnNudge;
   if (!n || !n.show || !n.gapKey || n.gapKey === lastReturnNudgeKey) return;
   lastReturnNudgeKey = n.gapKey;
-  showFx({ title: '🌿 好久不见', sub: '好久不见，回来就很好。今天只做一小步也算开始。', btn: '看看今天能做什么' });
+  // 饿晕时复活卡不能被遮太久：3.5s 自动淡出（按钮仍在，可立刻关）
+  showFx({ title: '🌿 好久不见', sub: '好久不见，回来就很好。今天只做一小步也算开始。', btn: '看看今天能做什么', auto: (me && me.fainted) ? 3500 : 0 });
   const b = document.querySelector('#fx .fx-btn');
   if (b) b.onclick = function () {
     closeFx();
