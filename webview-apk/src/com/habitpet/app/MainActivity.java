@@ -5,12 +5,14 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageInfo;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.graphics.Rect;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.view.Display;
 import android.view.Window;
 import android.view.WindowManager;
+import android.view.WindowMetrics;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
@@ -99,6 +101,20 @@ public class MainActivity extends Activity {
                 o.put("realDensityDpi", real.densityDpi);
                 o.put("realScreenWpx", real.widthPixels);
                 o.put("realScreenHpx", real.heightPixels);
+                // v10.2c-diag: 窗口真实边界（判断是不是被塞进小窗再放大）
+                if (Build.VERSION.SDK_INT >= 24) {
+                    o.put("multiWindow", act.isInMultiWindowMode());
+                }
+                if (Build.VERSION.SDK_INT >= 30) {
+                    WindowMetrics cwm = act.getWindowManager().getCurrentWindowMetrics();
+                    Rect cb = cwm.getBounds();
+                    o.put("curWinW", cb.width());
+                    o.put("curWinH", cb.height());
+                    Rect mb = act.getWindowManager().getMaximumWindowMetrics().getBounds();
+                    o.put("maxWinW", mb.width());
+                    o.put("maxWinH", mb.height());
+                    o.put("windowWdp", Math.round((float) cb.width() / real.density));
+                }
                 return o.toString();
             } catch (Throwable t) {
                 return "{\"err\":\"" + String.valueOf(t) + "\"}";
