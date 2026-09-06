@@ -262,7 +262,7 @@ const routes = {
     const f = store.familyById(sess.familyId); const c = ensureChild(f, sess.childId);
     if (!c) return { code: 404, body: { error: '孩子不存在' } };
     const body = childMe(f, c);
-    store.save();   // childMe 已写 lastSeenAt / 可能惰性滚转 onboarding，显式落盘
+    store.saveNow();   // childMe 已写 lastSeenAt / 可能惰性滚转 onboarding，显式落盘
     return { code: 200, body };
   },
   // P1：开始 7 天微习惯计划（not_started/expired/completed 可开始；active 拒绝）
@@ -271,14 +271,16 @@ const routes = {
     if (!c) return { code: 404, body: { error: '孩子不存在' } };
     const today = engine.dateKey();
     rollOnboardingIfDue(c, today);
-    if (!ONBOARDING_PLANS.includes(p.planId)) return { code: 400, body: { error: '请选择一个有效的小目标', state: childMe(f, c) } };
+    if (!ONBOARDING_PLANS.includes(p.planId)) { const __st14 = childMe(f, c); store.saveNow(); return { code: 400, body: { error: '请选择一个有效的小目标', state: __st14 } }; }
     const ob = c.onboarding;
-    if (ob.status === 'active') return { code: 409, body: { error: '已有进行中的小目标', state: childMe(f, c) } };
+    if (ob.status === 'active') { const __st15 = childMe(f, c); store.saveNow();
+    return { code: 409, body: { error: '已有进行中的小目标', state: __st15 } }; }
     if (ob.status === 'expired' || ob.status === 'completed') archiveCycleOnce(ob, ob.status);   // 上一周期先归档
     ob.status = 'active'; ob.planId = p.planId; ob.startedOn = today;
     ob.completedOn = []; ob.completedAt = null; ob.finishedOn = null;
-    store.save();
-    return { code: 200, body: { ok: true, state: childMe(f, c) } };
+    const __st1 = childMe(f, c);
+    store.saveNow();
+    return { code: 200, body: { ok: true, state: __st1 } };
   },
   // P1：完成今天这一小步（幂等：当天重复请求返回 200 + 当前 state，不追加记录）
   async onboardingComplete(sess) {
@@ -287,16 +289,18 @@ const routes = {
     const today = engine.dateKey();
     rollOnboardingIfDue(c, today);
     const ob = c.onboarding;
-    if (ob.status !== 'active' || !ob.startedOn) return { code: 409, body: { error: '当前没有进行中的小目标', state: childMe(f, c) } };
+    if (ob.status !== 'active' || !ob.startedOn) { const __st16 = childMe(f, c); store.saveNow();
+    return { code: 409, body: { error: '当前没有进行中的小目标', state: __st16 } }; }
     const off = dayDiff(ob.startedOn, today);
-    if (off < 0 || off > 6) return { code: 409, body: { error: '今天不在这期计划内', state: childMe(f, c) } };
+    if (off < 0 || off > 6) { const __st17 = childMe(f, c); store.saveNow();
+    return { code: 409, body: { error: '今天不在这期计划内', state: __st17 } }; }
     if (ob.completedOn.indexOf(today) < 0) {
       ob.completedOn.push(today); ob.completedOn.sort();
       if (off === 6) {   // 第 7 自然日完成（漏过的日子不补，走完即整期完成）
         ob.status = 'completed'; ob.completedAt = new Date().toISOString(); ob.finishedOn = today;
         archiveCycleOnce(ob, 'completed');
       }
-      store.save();
+      store.saveNow();
     }
     return { code: 200, body: { ok: true, state: childMe(f, c) } };
   },
@@ -307,10 +311,12 @@ const routes = {
     const today = engine.dateKey();
     rollOnboardingIfDue(c, today);
     const ob = c.onboarding;
-    if (ob.status !== 'not_started') return { code: 409, body: { error: '当前状态无需稍后再说', state: childMe(f, c) } };
+    if (ob.status !== 'not_started') { const __st18 = childMe(f, c); store.saveNow();
+    return { code: 409, body: { error: '当前状态无需稍后再说', state: __st18 } }; }
     ob.lastDismissedOn = today;
-    store.save();
-    return { code: 200, body: { ok: true, state: childMe(f, c) } };
+    const __st2 = childMe(f, c);
+    store.saveNow();
+    return { code: 200, body: { ok: true, state: __st2 } };
   },
   // P1：回归提示确认（gapKey 必须是当前未确认的那次间隔，防旧客户端吞新提示）
   async returnNudgeAck(sess, p) {
@@ -322,10 +328,12 @@ const routes = {
     const gd = new Date(g);
     const gapDays = isNaN(gd.getTime()) ? -1 : dayDiff(engine.dateKey(gd), engine.dateKey(now));
     const valid = gapDays >= 3 && c.returnNudge.lastShownForGap !== g && g !== c.lastSeenAt;
-    if (!valid) return { code: 409, body: { error: '回归提示已确认或已过期', state: childMe(f, c) } };
+    if (!valid) { const __st19 = childMe(f, c); store.saveNow();
+    return { code: 409, body: { error: '回归提示已确认或已过期', state: __st19 } }; }
     c.returnNudge.lastShownForGap = g;
-    store.save();
-    return { code: 200, body: { ok: true, state: childMe(f, c) } };
+    const __st3 = childMe(f, c);
+    store.saveNow();
+    return { code: 200, body: { ok: true, state: __st3 } };
   },
   async feed(sess) {
     const f = store.familyById(sess.familyId); const c = ensureChild(f, sess.childId);
@@ -348,8 +356,9 @@ const routes = {
       ledger(f, c, bonus, `连续打卡 ${c.feedStreak} 天奖励`, 'auto');
     }
     const feedEvent = engine.rollFeedEvent(f, c);   // v5: 随机灵汐奇遇（心光雨等）
+    const __st4 = childMe(f, c);
     store.save();
-    return { code: 200, body: { ok: true, intimacy: c.intimacy, streakBonus: bonus, feedEvent, state: childMe(f, c) } };
+    return { code: 200, body: { ok: true, intimacy: c.intimacy, streakBonus: bonus, feedEvent, state: __st4 } };
   },
   async submit(sess, p) {
     const f = store.familyById(sess.familyId); const c = ensureChild(f, sess.childId);
@@ -374,8 +383,9 @@ const routes = {
     }
     c.pending.push(ev);
     if (p.type === 'pride' || p.type === 'holiday') c.prideWeekKey = engine.weekKey();
+    const __st5 = childMe(f, c);
     store.save();
-    return { code: 200, body: { ok: true, eventId: ev.id, state: childMe(f, c) } };
+    return { code: 200, body: { ok: true, eventId: ev.id, state: __st5 } };
   },
   async redeem(sess, p) {
     const f = store.familyById(sess.familyId); const c = ensureChild(f, sess.childId);
@@ -392,8 +402,9 @@ const routes = {
     c.intimacy -= r.cost;
     c.redemptions.unshift({ id: 'rd' + Date.now() + Math.floor(Math.random() * 100), name: r.name, cost: r.cost, type: r.type, ts: new Date().toISOString(), status, requestedAt: null, fulfilled: status === 'fulfilled' });
     ledger(f, c, -r.cost, `兑换奖励：${r.name}${r.type === 'cash' ? '（锁定下月零花钱加成 ' + r.cost + ' 元）' : ''}`, 'child');
+    const __st6 = childMe(f, c);
     store.save();
-    return { code: 200, body: { ok: true, state: childMe(f, c) } };
+    return { code: 200, body: { ok: true, state: __st6 } };
   },
   // 孩子申请核销：held → requested
   async redeemRequest(sess, p) {
@@ -403,7 +414,9 @@ const routes = {
     if (rd.status === 'fulfilled') return { code: 400, body: { error: '该奖励已核销' } };
     if (rd.status === 'requested') return { code: 400, body: { error: '已申请过核销，等待家长处理' } };
     rd.status = 'requested'; rd.requestedAt = new Date().toISOString();
-    store.save(); return { code: 200, body: { ok: true, state: childMe(f, c) } };
+    const __st7 = childMe(f, c);
+    store.save();
+    return { code: 200, body: { ok: true, state: __st7 } };
   },
   async selectPet(sess, p) {
     const f = store.familyById(sess.familyId); const c = ensureChild(f, sess.childId);
@@ -416,14 +429,17 @@ const routes = {
       if (sp.tier === 'SS' && !el.ss) return { code: 403, body: { error: 'SS 级隐藏宠物需连续两个学期觉醒（Lv20）' } };
     }
     c.pet = { speciesId: sp.id, nickname: sp.name, stats: { ...sp.base }, freePoints: 0, skills: sp.skills.slice(), maxHpBonus: 0 };
+    const __st8 = childMe(f, c);
     store.save();
-    return { code: 200, body: { ok: true, state: childMe(f, c) } };
+    return { code: 200, body: { ok: true, state: __st8 } };
   },
   async nickname(sess, p) {
     const f = store.familyById(sess.familyId); const c = ensureChild(f, sess.childId);
     if (!c.pet) return { code: 400, body: { error: '还没有宠物' } };
     c.pet.nickname = String(p.nickname || '').slice(0, 10) || speciesById(c.pet.speciesId).name;
-    store.save(); return { code: 200, body: { ok: true, state: childMe(f, c) } };
+    const __st9 = childMe(f, c);
+    store.save();
+    return { code: 200, body: { ok: true, state: __st9 } };
   },
   async allocate(sess, p) {
     const f = store.familyById(sess.familyId); const c = ensureChild(f, sess.childId);
@@ -432,7 +448,9 @@ const routes = {
     if (!['atk', 'def', 'hp', 'spd', 'wis'].includes(stat)) return { code: 400, body: { error: '无效属性' } };
     if (pts <= 0 || pts > (c.pet.freePoints || 0)) return { code: 400, body: { error: '点数不足' } };
     c.pet.stats[stat] += pts; c.pet.freePoints -= pts;
-    store.save(); return { code: 200, body: { ok: true, state: childMe(f, c) } };
+    const __st10 = childMe(f, c);
+    store.save();
+    return { code: 200, body: { ok: true, state: __st10 } };
   },
   async battleStart(sess, p) {
     const f = store.familyById(sess.familyId); const me = ensureChild(f, sess.childId);
@@ -490,7 +508,9 @@ const routes = {
   async battleInviteDecline(sess, p) {
     const inv = store.getInvite(p.inviteId);
     if (inv && inv.toChildId === sess.childId) store.delInvite(inv.id);
-    return { code: 200, body: { ok: true, state: (() => { const f = store.familyById(sess.familyId); const c = ensureChild(f, sess.childId); return c ? childMe(f, c) : null; })() } };
+    const __stInvite = (() => { const f = store.familyById(sess.familyId); const c = ensureChild(f, sess.childId); return c ? childMe(f, c) : null; })();
+    store.save();
+    return { code: 200, body: { ok: true, state: __stInvite } };
   },
   // 好友：加好友 / 删好友 / 我的对战码
   async friendAdd(sess, p) {
@@ -527,8 +547,9 @@ const routes = {
     if (!c.pet) return { code: 400, body: { error: '还没有宠物' } };
     const r = engine.revivePet(f, c, p.mode === 'intimacy' ? 'intimacy' : 'level');
     if (r.error) return { code: 400, body: r };
+    const __st11 = childMe(f, c);
     store.save();
-    return { code: 200, body: { ok: true, state: childMe(f, c) } };
+    return { code: 200, body: { ok: true, state: __st11 } };
   },
   async battleMove(sess, p) {
     const f = store.familyById(sess.familyId); const me = ensureChild(f, sess.childId);
@@ -551,7 +572,9 @@ const routes = {
     if (c.milestone.used) return { code: 400, body: { error: '本学期申请权已使用' } };
     if (c.milestone.applications.some(a => a.status === 'pending')) return { code: 400, body: { error: '已有待审核的申请' } };
     c.milestone.applications.push({ note: String(p.note || '').slice(0, 200), ts: new Date().toISOString(), status: 'pending' });
-    store.save(); return { code: 200, body: { ok: true, state: childMe(f, c) } };
+    const __st12 = childMe(f, c);
+    store.save();
+    return { code: 200, body: { ok: true, state: __st12 } };
   },
   // —— v10: 本地优先同步 ——————————————————————————————
   // 全量快照（脱敏）：本地优先客户端登录后拉取，本地跑游戏逻辑，云端保持权威副本
@@ -597,8 +620,9 @@ const routes = {
         by: 'system'
       });
     }
+    const __st13 = childMe(f, c);
     store.save();
-    return { code: 200, body: { ok: true, xp: actual, capped, state: childMe(f, c) } };
+    return { code: 200, body: { ok: true, xp: actual, capped, state: __st13 } };
   },
 
   // 家长端
@@ -625,7 +649,9 @@ const routes = {
     const f = store.familyById(sess.familyId);
     if (Object.keys(f.children).length >= 6) return { code: 400, body: { error: '最多 6 个孩子' } };
     const c = store.addChild(f, p.name, p.grade);
-    return { code: 200, body: { ok: true, childId: c.id, family: familyView(f) } };
+    const __fvAdd = familyView(f);
+    store.save();
+    return { code: 200, body: { ok: true, childId: c.id, family: __fvAdd } };
   },
   // v4: 修改孩子信息（名字/年级）
   async childEdit(sess, p) {
@@ -633,7 +659,7 @@ const routes = {
     if (!c) return { code: 400, body: { error: '孩子不存在' } };
     if (p.name !== undefined) c.name = String(p.name).trim().slice(0, 12) || c.name;
     if (p.grade !== undefined) c.grade = String(p.grade).trim().slice(0, 12);
-    store.save(); return { code: 200, body: { ok: true, family: familyView(f) } };
+    const __fv1 = familyView(f); store.save(); return { code: 200, body: { ok: true, family: __fv1 } };
   },
   // v4: 删除孩子（敏感操作需 PIN；历史账本保留留痕，会话吊销、好友引用清理）
   async childDelete(sess, p) {
@@ -647,7 +673,7 @@ const routes = {
     store.revokeChildSessions(f.id, p.childId);
     store.removeFriendRefs(f.id, p.childId);
     ledger(f, null, 0, `删除孩子「${name}」（历史账本保留）`, 'parent');
-    store.save(); return { code: 200, body: { ok: true, family: familyView(f) } };
+    const __fv2 = familyView(f); store.save(); return { code: 200, body: { ok: true, family: __fv2 } };
   },
   // v4: 设置密保问题（自助找回密码/PIN 用；答案只存哈希）
   async securitySet(sess, p) {
@@ -657,7 +683,7 @@ const routes = {
     if (!q || !a) return { code: 400, body: { error: '问题和答案都要填' } };
     const { salt, hash } = store.hashPassword(store.normAnswer(a));
     f.parent.securityQ = q; f.parent.securityASalt = salt; f.parent.securityAH = hash;
-    store.save(); return { code: 200, body: { ok: true, family: familyView(f) } };
+    const __fv3 = familyView(f); store.save(); return { code: 200, body: { ok: true, family: __fv3 } };
   },
   async bindcode(sess, p) {
     const f = store.familyById(sess.familyId);
@@ -681,8 +707,9 @@ const routes = {
         if (ev.type === 'pride' || ev.type === 'holiday') c.prideWeekKey = ''; // 驳回可本周重提
         ledger(f, c, 0, `驳回${ev.label}${ev.reason ? '：' + ev.reason : ''}`, 'parent');
       }
+      const __fv1 = familyView(f);
       store.save();
-      return { code: 200, body: { ok: true, family: familyView(f) } };
+      return { code: 200, body: { ok: true,       family: __fv1 } };
     }
     return { code: 404, body: { error: '事件不存在' } };
   },
@@ -705,7 +732,7 @@ const routes = {
     if (d < 0 && c.pausedAt) return { code: 400, body: { error: '暂停计期间不扣分' } };
     engine.addIntimacy(c, d);
     ledger(f, c, d, `家长手动：${String(p.reason || '无说明').slice(0, 100)}`, 'parent', d > 0 ? d : 0);
-    store.save(); return { code: 200, body: { ok: true, family: familyView(f) } };
+    const __fv4 = familyView(f); store.save(); return { code: 200, body: { ok: true, family: __fv4 } };
   },
   // —— 投诉记录（v3：数组化，可增删改查，次数不限；v4：支持"其他"来源+自定义扣分）——
   async complaint(sess, p) {
@@ -724,7 +751,7 @@ const routes = {
     c.complaints.push(rec);
     engine.addIntimacy(c, -delta);
     ledger(f, c, -delta, `${srcName}投诉${reason ? '：' + reason : ''}`, 'parent');
-    store.save(); return { code: 200, body: { ok: true, complaintId: rec.id, family: familyView(f) } };
+    const __fv5 = familyView(f); store.save(); return { code: 200, body: { ok: true, complaintId: rec.id, family: __fv5 } };
   },
   async complaintEdit(sess, p) {
     const f = store.familyById(sess.familyId); const c = ensureChild(f, p.childId);
@@ -741,7 +768,7 @@ const routes = {
       engine.addIntimacy(c, diff);
       ledger(f, c, diff, `调整${complaintSrcName(rec)}投诉扣分（${oldDelta}→${rec.delta}）`, 'parent');
     }
-    store.save(); return { code: 200, body: { ok: true, family: familyView(f) } };
+    const __fv6 = familyView(f); store.save(); return { code: 200, body: { ok: true, family: __fv6 } };
   },
   // 取消：留痕 + 退分（记录标 cancelled，仍可查）
   async complaintCancel(sess, p) {
@@ -753,7 +780,7 @@ const routes = {
     rec.status = 'cancelled'; rec.cancelledAt = new Date().toISOString();
     engine.addIntimacy(c, rec.delta);
     ledger(f, c, rec.delta, `取消${complaintSrcName(rec)}投诉，退回扣分${rec.reason ? '：' + rec.reason : ''}`, 'parent');
-    store.save(); return { code: 200, body: { ok: true, family: familyView(f) } };
+    const __fv7 = familyView(f); store.save(); return { code: 200, body: { ok: true, family: __fv7 } };
   },
   // 删除：彻底抹掉 + 退分（敏感操作，需 PIN）
   async complaintDelete(sess, p) {
@@ -769,7 +796,7 @@ const routes = {
       engine.addIntimacy(c, rec.delta);
       ledger(f, c, rec.delta, `删除${complaintSrcName(rec)}投诉记录，退回扣分`, 'parent');
     }
-    store.save(); return { code: 200, body: { ok: true, family: familyView(f) } };
+    const __fv8 = familyView(f); store.save(); return { code: 200, body: { ok: true, family: __fv8 } };
   },
   // v4: 分值规则下沉到每个孩子（childId 传了就改该孩子的；不传改家庭默认模板，新建孩子时继承）
   async rules(sess, p) {
@@ -795,7 +822,7 @@ const routes = {
       if (target) target.customRules = customs.filter(r => r.id !== p.customDel);
       else f.customRules = customs.filter(r => r.id !== p.customDel);
     }
-    store.save(); return { code: 200, body: { ok: true, family: familyView(f) } };
+    const __fv9 = familyView(f); store.save(); return { code: 200, body: { ok: true, family: __fv9 } };
   },
   async config(sess, p) {
     const f = store.familyById(sess.familyId);
@@ -810,7 +837,7 @@ const routes = {
     if (p.feedWindow) f.config.feedWindow = { startHour: Math.max(0, Math.min(23, Math.round(Number(p.feedWindow.startHour) || 0))), endHour: Math.max(1, Math.min(24, Math.round(Number(p.feedWindow.endHour) || 24))) };
     if (p.semesterStartDate !== undefined) { f.config.semester.startDate = p.semesterStartDate || null; f.config.semester.autoDone = false; }
     if (p.semesterName !== undefined) f.config.semester.name = String(p.semesterName).slice(0, 30);
-    store.save(); return { code: 200, body: { ok: true, family: familyView(f) } };
+    const __fv10 = familyView(f); store.save(); return { code: 200, body: { ok: true, family: __fv10 } };
   },
   async reward(sess, p) {
     const f = store.familyById(sess.familyId);
@@ -822,7 +849,7 @@ const routes = {
     } else {
       f.rewards.push({ id: 'r' + Date.now(), name: String(p.name || '新奖励').slice(0, 30), cost: Math.max(1, Math.round(Number(p.cost) || 10)), type: ['cash', 'ticket', 'thing'].includes(p.type) ? p.type : 'ticket', desc: String(p.desc || '').slice(0, 60) });
     }
-    store.save(); return { code: 200, body: { ok: true, family: familyView(f) } };
+    const __fv11 = familyView(f); store.save(); return { code: 200, body: { ok: true, family: __fv11 } };
   },
   async fulfill(sess, p) {
     const f = store.familyById(sess.familyId);
@@ -832,7 +859,7 @@ const routes = {
         if (rd.status === 'fulfilled') return { code: 400, body: { error: '该奖励已核销' } };
         rd.status = 'fulfilled'; rd.fulfilled = true; rd.fulfilledAt = new Date().toISOString();
         ledger(f, c, 0, `核销奖励：${rd.name}`, 'parent');
-        store.save(); return { code: 200, body: { ok: true, family: familyView(f) } };
+        const __fv12 = familyView(f); store.save(); return { code: 200, body: { ok: true, family: __fv12 } };
       }
     }
     return { code: 404, body: { error: '兑换记录不存在' } };
@@ -853,7 +880,7 @@ const routes = {
     if (e.xp) engine.subXP(c, e.xp);   // 经验可回退；五维成长点不回收（UI 已注明）
     e.reversed = true;
     ledger(f, c, -e.delta, `撤销：${e.reason}`, 'parent');
-    store.save(); return { code: 200, body: { ok: true, family: familyView(f) } };
+    const __fv13 = familyView(f); store.save(); return { code: 200, body: { ok: true, family: __fv13 } };
   },
   // 解绑设备：吊销该孩子全部登录（换手机/丢手机）
   async unbind(sess, p) {
@@ -867,19 +894,19 @@ const routes = {
     const f = store.familyById(sess.familyId); const c = ensureChild(f, p.childId);
     if (!c) return { code: 400, body: { error: '孩子不存在' } };
     if (p.on) c.pausedAt = Date.now(); else c.pausedAt = null;
-    store.save(); return { code: 200, body: { ok: true, family: familyView(f) } };
+    const __fv14 = familyView(f); store.save(); return { code: 200, body: { ok: true, family: __fv14 } };
   },
   async settleMonth(sess, p) {
     const f = store.familyById(sess.familyId);
     const bad = requirePin(f, p); if (bad) return bad;
     for (const c of Object.values(f.children)) { c.monthKey = null; engine.ensureMonth(f, c); }
-    store.save(); return { code: 200, body: { ok: true, family: familyView(f) } };
+    const __fv15 = familyView(f); store.save(); return { code: 200, body: { ok: true, family: __fv15 } };
   },
   async settleSemester(sess, p) {
     const f = store.familyById(sess.familyId);
     const bad = requirePin(f, p); if (bad) return bad;
     const entries = engine.settleSemester(f);
-    store.save(); return { code: 200, body: { ok: true, entries: entries.length, family: familyView(f) } };
+    const __fv16 = familyView(f); store.save(); return { code: 200, body: { ok: true, entries: entries.length, family: __fv16 } };
   },
   async report(sess) {
     const f = store.familyById(sess.familyId);
@@ -906,7 +933,7 @@ const routes = {
     if (!app) return { code: 400, body: { error: '没有待审申请' } };
     if (p.decision === 'approve') { app.status = 'approved'; app.decidedAt = new Date().toISOString(); c.milestone.used = true; ledger(f, c, 0, '学期大奖申请通过', 'parent'); }
     else { app.status = 'rejected'; app.reason = String(p.reason || '').slice(0, 100); }
-    store.save(); return { code: 200, body: { ok: true, family: familyView(f) } };
+    const __fv17 = familyView(f); store.save(); return { code: 200, body: { ok: true, family: __fv17 } };
   }
 };
 
