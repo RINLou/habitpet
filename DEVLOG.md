@@ -40,12 +40,11 @@
 - `npm test` 干净环境连续两遍：**218 通过 / 0 失败**，无残留进程、无临时目录残留
 - 浏览器冒烟（360px 视口，与 scripts/accept-360.js 同款断言）：过期温和重开 9/9、饿晕+回归共存 5/5
 - 离线缓存验收：onlineCard / offlineCardKept / offlineStateOk / offlineNoFakeSuccess / backOnlineAligned 全 true
-- CI：推送后以 GitHub Actions（Node 18/20）结果为准
+- CI：GitHub Actions 首跑已确认（commit `989a366`，push 与 pull_request 两条 run、Node 18/20 矩阵全部 **success**）
 
 ### 遗留
 
 - `webview-apk/assets/www/lib/local.js` 为打包副本，下次出包时随 public/ 同步
-- CI 首跑结果待推送后在 Actions 页确认
 
 ---
 
