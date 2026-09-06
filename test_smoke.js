@@ -458,10 +458,17 @@ async function api(path, body, token) {
   const snap1 = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
   execFileSync(process.execPath, ['-e', MIGRATE], { cwd: __dirname });
   const snap2 = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
-  ok('schema v4', snap1.schemaVersion === 4 && snap2.schemaVersion === 4);
+  ok('schema v5', snap1.schemaVersion === 5 && snap2.schemaVersion === 5);
   ok('投诉记录数不变', countCp(snap1) === countCp(snap2), { m1: countCp(snap1), m2: countCp(snap2) });
   ok('账本 id 集不变', ledgerIds(snap1) === ledgerIds(snap2));
   ok('兑换状态集不变', redStatus(snap1) === redStatus(snap2));
+  const v5fields = d => Object.values(d.families || {}).flatMap(f => Object.values(f.children || {}));
+  ok('迁移补齐 onboarding/returnNudge', v5fields(snap2).every(c =>
+    c.onboarding && ['not_started', 'active', 'completed', 'expired'].includes(c.onboarding.status)
+    && Array.isArray(c.onboarding.completedOn) && Array.isArray(c.onboarding.history)
+    && c.returnNudge && (c.returnNudge.lastShownForGap === null || typeof c.returnNudge.lastShownForGap === 'string')));
+  ok('迁移保留 rules/pending/feedStreak', v5fields(snap2).every(c =>
+    !!c.rules && Array.isArray(c.pending) && typeof c.feedStreak === 'number'));
 
   console.log('== 17 随机灵汐事件（心光雨；服务端以 HABITPET_NO_RANDOM=1 启动 → RNG 固定 0.99，chance=1 必触发） ==');
   {
@@ -506,6 +513,53 @@ async function api(path, body, token) {
     const badLv = await api('/api/battle/finish', { battleId: 'y', mode: 'boss', oppLevel: 9999, win: true }, TX);
     // 9999 钳到 80 → 名义 86，但每日经验上限 30，首场已发 16 → 实发 14
     ok('异常等级被钳制 + 每日经验上限生效', badLv.ok && badLv.xp === 14 && badLv.capped, badLv.xp);
+  }
+
+  console.log('== 18 P1 微习惯计划 + 温和回归（子进程时间旅行，规格验收） ==');
+  {
+    const run = (phase, offset, args) => {
+      let out = '';
+      try {
+        out = execFileSync(process.execPath, ['test_p1_worker.js', phase, ...(args || [])], {
+          cwd: __dirname, encoding: 'utf8', timeout: 90000,
+          env: { ...process.env, P1_PORT: '3998', P1_OFFSET: String(offset) }
+        });
+      } catch (e) {
+        out = (e.stdout || '') + '\nP1CRASH ' + String(e.message).slice(0, 200);
+      }
+      const line = out.split('\n').find(l => l.startsWith('P1RESULT '));
+      return line ? JSON.parse(line.slice(9)) : { crash: out.slice(0, 200) };
+    };
+    const a = run('day1', 0);
+    ok('迁移:新孩子 onboarding/returnNudge 就位', a.migrated === true, a.crash);
+    ok('非法模板被拒', a.badPlanRejected === true);
+    ok('稍后再说生效(当日不再打扰)', a.dismissOk === true);
+    ok('开始计划(第1天)', a.started === true);
+    ok('active 重复 start 409', a.dupStart409 === true);
+    ok('active 时 dismiss 409', a.dismissWhileActive409 === true);
+    ok('当天完成小步', a.day1Complete === true);
+    ok('重复完成幂等(不追加)', a.completeIdempotent === true);
+    ok('家长 token 调孩子端点 401', a.parentToken401 === true);
+    ok('状态归属本人', a.stateSelf === true);
+    const b = run('day7', 6, [a.username, String(a.childId)]);
+    ok('重启服务器后计划仍在(持久化)', b.persistedActive === true, b.crash);
+    ok('第7自然日完成→completed', b.day7Completed === true);
+    ok('亲密度/XP/feedStreak 全不变(红线)', b.noScoreChange === true);
+    ok('账本零改动(红线)', b.ledgerUntouched === true);
+    ok('周期摘要归档(history)', b.historyArchived === true);
+    const c = run('expired', 0);
+    ok('第8日读取惰性滚转 expired', c.rolledExpired === true, c.crash);
+    ok('expired 后 complete 409', c.completeAfterExpiry409 === true);
+    ok('重新开始(旧周期已归档)', c.restartOk === true);
+    ok('再次漏完→expired,history≤3', c.expiredAgain === true && c.historyCapped === true);
+    const d = run('missed', 0);
+    ok('漏日不可补填,当日可完成', d.missedNotBackfilled === true, d.crash);
+    const e = run('nudge', 0);
+    ok('≥3个自然日未访问→回归提示', e.nudgeShown === true, e.crash);
+    ok('ack 后同 gap 不再提示', e.noRepeatAfterAck === true);
+    ok('旧 gapKey ack 409', e.staleAck409 === true);
+    ok('坏 gapKey ack 409', e.badKey409 === true);
+    ok('少于3天不提示', e.lessThan3DaysNoNudge === true);
   }
 
   console.log(`\n========== 结果：${pass} 通过 / ${fail} 失败 ==========`);

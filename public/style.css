@@ -105,6 +105,17 @@ label { font-size: 13px; color: var(--muted); display: block; margin-top: 10px; 
 .today-cta { min-height: 48px; }
 .today-pending { margin-top: 10px; padding: 8px 10px; border-radius: 10px; background: var(--gold-soft); color: #ffe3a1; font-size: 12px; }
 .today-pending.calm { background: rgba(52,211,153,.09); color: #a7f3d0; }
+/* P1：7 天微习惯计划（次级卡，不抢主 CTA） */
+.onboarding-card { margin-top: 10px; padding: 10px 12px; border-radius: 12px; border: 1px dashed var(--line); background: rgba(124,140,255,.06); }
+.onboarding-card .lead { margin-top: 2px; }
+.onboarding-card .row { flex-wrap: wrap; }
+.onboarding-title { font-size: 13px; font-weight: 700; color: var(--ink); }
+.onboarding-days { display: flex; gap: 6px; margin-top: 8px; }
+.onboarding-day { width: 26px; height: 26px; flex: 0 0 26px; display: flex; align-items: center; justify-content: center; border-radius: 8px; border: 1px solid var(--line); font-size: 12px; color: var(--muted); background: rgba(255,255,255,.03); }
+.onboarding-day.done { background: rgba(52,211,153,.16); border-color: rgba(52,211,153,.4); color: #a7f3d0; font-weight: 700; }
+.onboarding-day.today { border-color: var(--brand); color: var(--ink); box-shadow: 0 0 0 1px rgba(124,140,255,.35); }
+.ob-plans { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.ob-plan.picked { border-color: var(--brand); box-shadow: 0 0 0 1px rgba(124,140,255,.45); color: var(--ink); }
 .feed-state { margin: 9px 0 2px; color: var(--muted); font-size: 12px; }
 .pet-hero .name { font-size: 18px; font-weight: 800; margin-top: 8px; }
 .pet-hero .stage { font-size: 12px; color: var(--gold); font-weight: 700; }

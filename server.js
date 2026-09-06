@@ -109,11 +109,68 @@ function pendingInvitesFor(child) {
 function complaintSrcName(rec) {
   return rec.src === 'teacher' ? '老师' : rec.src === 'grandparent' ? '爷爷奶奶' : (rec.srcName || '其他');
 }
+// —— P1：7天微习惯计划 + 温和回归（纯辅助函数，日期一律用本地 YYYY-MM-DD，不用 24h 时间差）——
+const ONBOARDING_PLANS = ['homework', 'reading', 'prepare'];
+function dayDiff(a, b) {   // 两个 YYYY-MM-DD 的自然日差（b - a）
+  const pa = a.split('-').map(Number), pb = b.split('-').map(Number);
+  return Math.round((new Date(pb[0], pb[1] - 1, pb[2]) - new Date(pa[0], pa[1] - 1, pa[2])) / 86400000);
+}
+function archiveCycleOnce(ob, status) {   // 归档当前周期摘要（滚转与 start 都可能触发，去重防双份）
+  const last = ob.history[ob.history.length - 1];
+  if (last && last.startedOn === ob.startedOn && last.status === status) return;
+  ob.history.push({ planId: ob.planId, startedOn: ob.startedOn, completedOn: ob.completedOn.slice(), status, finishedOn: ob.finishedOn || null });
+  if (ob.history.length > 3) ob.history = ob.history.slice(-3);
+}
+function rollOnboardingIfDue(child, today) {   // active 且今天已过第7自然日 → expired（读 me 时惰性滚转，无 cron）
+  const ob = child.onboarding;
+  if (!ob || ob.status !== 'active' || !ob.startedOn) return false;
+  if (dayDiff(ob.startedOn, today) > 6) {
+    ob.status = 'expired'; ob.finishedOn = today;
+    archiveCycleOnce(ob, 'expired');
+    return true;
+  }
+  return false;
+}
+function onboardingView(child, today) {
+  const ob = child.onboarding;
+  const active = ob.status === 'active' && !!ob.startedOn;
+  const off = active ? dayDiff(ob.startedOn, today) : -1;
+  const todayComplete = active && ob.completedOn.indexOf(today) >= 0;
+  return {
+    status: ob.status, planId: ob.planId, startedOn: ob.startedOn, finishedOn: ob.finishedOn || null,
+    dayIndex: active ? Math.min(7, Math.max(1, off + 1)) : null,
+    completedOn: ob.completedOn.slice(),
+    todayComplete,
+    canCompleteToday: active && off >= 0 && off <= 6 && !todayComplete,
+    canStart: ['not_started', 'expired', 'completed'].indexOf(ob.status) >= 0,
+    showStartPrompt: ob.status === 'not_started' && ob.lastDismissedOn !== today,
+    canRestart: ob.status === 'expired' || ob.status === 'completed',
+    historySummary: ob.history.slice(-3).map(h => ({ planId: h.planId, startedOn: h.startedOn, completedCount: (h.completedOn || []).length, status: h.status, finishedOn: h.finishedOn }))
+  };
+}
+function returnNudgeView(child, previousLastSeenAt, now) {   // 间隔必须用覆盖 lastSeenAt 之前的值
+  if (!previousLastSeenAt) return { show: false, gapDays: 0, gapKey: null };
+  const prevDate = new Date(previousLastSeenAt);
+  if (isNaN(prevDate.getTime())) return { show: false, gapDays: 0, gapKey: null };
+  const gapDays = dayDiff(engine.dateKey(prevDate), engine.dateKey(now));
+  if (gapDays < 3) return { show: false, gapDays, gapKey: null };
+  const show = child.returnNudge.lastShownForGap !== previousLastSeenAt;
+  return { show, gapDays, gapKey: show ? previousLastSeenAt : null };
+}
+
 function childMe(family, child) {
   const now = new Date();
   engine.ensureSemester(family);
   engine.ensureMonth(family, child, now);
+  // 兜底：运行时 addChild 新建的孩子不经过 migrate（familyView 也会读 childMe），字段就地补齐
+  if (!child.onboarding || typeof child.onboarding !== 'object') {
+    child.onboarding = { status: 'not_started', planId: null, startedOn: null, completedOn: [], completedAt: null, finishedOn: null, lastDismissedOn: null, history: [] };
+  }
+  if (!child.returnNudge || typeof child.returnNudge !== 'object') child.returnNudge = { lastShownForGap: null };
+  const today = engine.dateKey(now);
+  const previousLastSeenAt = child.lastSeenAt;   // 先存旧值再覆盖，回归间隔才算得对
   child.lastSeenAt = now.toISOString();          // 对战大厅"最近活跃"
+  rollOnboardingIfDue(child, today);
   const pausedDays = child.pausedAt ? Math.floor((Date.now() - child.pausedAt) / 86400000) : 0;
   return {
     id: child.id, name: child.name, grade: child.grade,
@@ -141,6 +198,8 @@ function childMe(family, child) {
     friendCode: store.ensureFriendCode(child),
     friends: friendViews(child),
     invites: pendingInvitesFor(child),
+    onboarding: onboardingView(child, today),
+    returnNudge: returnNudgeView(child, previousLastSeenAt, now),
     siblings: Object.values(family.children).map(c => ({ id: c.id, name: c.name, intimacy: c.intimacy, level: c.level, petEmoji: c.pet ? (speciesById(c.pet.speciesId) || {}).emoji : '⚪' }))
   };
 }
@@ -202,7 +261,71 @@ const routes = {
   async me(sess) {
     const f = store.familyById(sess.familyId); const c = ensureChild(f, sess.childId);
     if (!c) return { code: 404, body: { error: '孩子不存在' } };
-    return { code: 200, body: childMe(f, c) };
+    const body = childMe(f, c);
+    store.save();   // childMe 已写 lastSeenAt / 可能惰性滚转 onboarding，显式落盘
+    return { code: 200, body };
+  },
+  // P1：开始 7 天微习惯计划（not_started/expired/completed 可开始；active 拒绝）
+  async onboardingStart(sess, p) {
+    const f = store.familyById(sess.familyId); const c = ensureChild(f, sess.childId);
+    if (!c) return { code: 404, body: { error: '孩子不存在' } };
+    const today = engine.dateKey();
+    rollOnboardingIfDue(c, today);
+    if (!ONBOARDING_PLANS.includes(p.planId)) return { code: 400, body: { error: '请选择一个有效的小目标', state: childMe(f, c) } };
+    const ob = c.onboarding;
+    if (ob.status === 'active') return { code: 409, body: { error: '已有进行中的小目标', state: childMe(f, c) } };
+    if (ob.status === 'expired' || ob.status === 'completed') archiveCycleOnce(ob, ob.status);   // 上一周期先归档
+    ob.status = 'active'; ob.planId = p.planId; ob.startedOn = today;
+    ob.completedOn = []; ob.completedAt = null; ob.finishedOn = null;
+    store.save();
+    return { code: 200, body: { ok: true, state: childMe(f, c) } };
+  },
+  // P1：完成今天这一小步（幂等：当天重复请求返回 200 + 当前 state，不追加记录）
+  async onboardingComplete(sess) {
+    const f = store.familyById(sess.familyId); const c = ensureChild(f, sess.childId);
+    if (!c) return { code: 404, body: { error: '孩子不存在' } };
+    const today = engine.dateKey();
+    rollOnboardingIfDue(c, today);
+    const ob = c.onboarding;
+    if (ob.status !== 'active' || !ob.startedOn) return { code: 409, body: { error: '当前没有进行中的小目标', state: childMe(f, c) } };
+    const off = dayDiff(ob.startedOn, today);
+    if (off < 0 || off > 6) return { code: 409, body: { error: '今天不在这期计划内', state: childMe(f, c) } };
+    if (ob.completedOn.indexOf(today) < 0) {
+      ob.completedOn.push(today); ob.completedOn.sort();
+      if (off === 6) {   // 第 7 自然日完成（漏过的日子不补，走完即整期完成）
+        ob.status = 'completed'; ob.completedAt = new Date().toISOString(); ob.finishedOn = today;
+        archiveCycleOnce(ob, 'completed');
+      }
+      store.save();
+    }
+    return { code: 200, body: { ok: true, state: childMe(f, c) } };
+  },
+  // P1：稍后再说（仅 not_started；记当天日期，当日不再打扰）
+  async onboardingDismiss(sess) {
+    const f = store.familyById(sess.familyId); const c = ensureChild(f, sess.childId);
+    if (!c) return { code: 404, body: { error: '孩子不存在' } };
+    const today = engine.dateKey();
+    rollOnboardingIfDue(c, today);
+    const ob = c.onboarding;
+    if (ob.status !== 'not_started') return { code: 409, body: { error: '当前状态无需稍后再说', state: childMe(f, c) } };
+    ob.lastDismissedOn = today;
+    store.save();
+    return { code: 200, body: { ok: true, state: childMe(f, c) } };
+  },
+  // P1：回归提示确认（gapKey 必须是当前未确认的那次间隔，防旧客户端吞新提示）
+  async returnNudgeAck(sess, p) {
+    const f = store.familyById(sess.familyId); const c = ensureChild(f, sess.childId);
+    if (!c) return { code: 404, body: { error: '孩子不存在' } };
+    const now = new Date();
+    rollOnboardingIfDue(c, engine.dateKey(now));
+    const g = typeof p.gapKey === 'string' ? p.gapKey : '';
+    const gd = new Date(g);
+    const gapDays = isNaN(gd.getTime()) ? -1 : dayDiff(engine.dateKey(gd), engine.dateKey(now));
+    const valid = gapDays >= 3 && c.returnNudge.lastShownForGap !== g && g !== c.lastSeenAt;
+    if (!valid) return { code: 409, body: { error: '回归提示已确认或已过期', state: childMe(f, c) } };
+    c.returnNudge.lastShownForGap = g;
+    store.save();
+    return { code: 200, body: { ok: true, state: childMe(f, c) } };
   },
   async feed(sess) {
     const f = store.familyById(sess.familyId); const c = ensureChild(f, sess.childId);
@@ -804,7 +927,7 @@ function familyView(f) {
 
 // —— 路由表 & 鉴权 ————————————————————————————
 const PUBLIC = { '/api/register': 'register', '/api/login': 'login', '/api/bind': 'bind', '/api/species': null, '/api/forgot/question': 'forgotQuestion', '/api/forgot/reset': 'forgotReset' };
-const CHILD = { '/api/me': 'me', '/api/feed': 'feed', '/api/submit': 'submit', '/api/redeem': 'redeem', '/api/redeem/request': 'redeemRequest', '/api/pet/select': 'selectPet', '/api/pet/nickname': 'nickname', '/api/pet/allocate': 'allocate', '/api/pet/revive': 'petRevive', '/api/battle/start': 'battleStart', '/api/battle/move': 'battleMove', '/api/battle/state': 'battleState', '/api/battle/finish': 'battleFinish', '/api/battle/invite': 'battleInvite', '/api/battle/invite/accept': 'battleInviteAccept', '/api/battle/invite/decline': 'battleInviteDecline', '/api/friend/code': 'friendCode', '/api/friend/add': 'friendAdd', '/api/friend/del': 'friendDel', '/api/milestone/apply': 'milestoneApply', '/api/sync/full': 'syncFull' };
+const CHILD = { '/api/me': 'me', '/api/feed': 'feed', '/api/submit': 'submit', '/api/redeem': 'redeem', '/api/redeem/request': 'redeemRequest', '/api/pet/select': 'selectPet', '/api/pet/nickname': 'nickname', '/api/pet/allocate': 'allocate', '/api/pet/revive': 'petRevive', '/api/battle/start': 'battleStart', '/api/battle/move': 'battleMove', '/api/battle/state': 'battleState', '/api/battle/finish': 'battleFinish', '/api/battle/invite': 'battleInvite', '/api/battle/invite/accept': 'battleInviteAccept', '/api/battle/invite/decline': 'battleInviteDecline', '/api/friend/code': 'friendCode', '/api/friend/add': 'friendAdd', '/api/friend/del': 'friendDel', '/api/milestone/apply': 'milestoneApply', '/api/sync/full': 'syncFull', '/api/onboarding/start': 'onboardingStart', '/api/onboarding/complete': 'onboardingComplete', '/api/onboarding/dismiss': 'onboardingDismiss', '/api/return-nudge/ack': 'returnNudgeAck' };
 const PARENT = { '/api/family': 'family', '/api/sync/full': 'syncFull', '/api/pin/verify': 'pinVerify', '/api/pin/change': 'pinChange', '/api/security': 'securitySet', '/api/child': 'addChild', '/api/child/edit': 'childEdit', '/api/child/delete': 'childDelete', '/api/child/bindcode': 'bindcode', '/api/child/unbind': 'unbind', '/api/approve': 'approve', '/api/manual': 'manual', '/api/complaint': 'complaint', '/api/complaint/edit': 'complaintEdit', '/api/complaint/cancel': 'complaintCancel', '/api/complaint/delete': 'complaintDelete', '/api/ledger/undo': 'ledgerUndo', '/api/rules': 'rules', '/api/config': 'config', '/api/reward': 'reward', '/api/fulfill': 'fulfill', '/api/pause': 'pause', '/api/settle/month': 'settleMonth', '/api/settle/semester': 'settleSemester', '/api/report': 'report', '/api/milestone/approve': 'milestoneApprove' };
 
 const server = http.createServer(async (req, res) => {

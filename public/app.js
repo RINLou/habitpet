@@ -301,7 +301,7 @@ async function boot() {
     let cached = null;
     if (window.LocalRT) { cached = await LocalRT.bootChild(token); if (cached) { me = cached; renderChild(); } }
     const r = await api('/api/me');
-    if (r.id) { me = r; if (window.LocalRT) { LocalRT.setCurrentChild(r.id); LocalRT.updateFromState(r); } renderChild(); }
+    if (r.id) { me = r; if (window.LocalRT) { LocalRT.setCurrentChild(r.id); LocalRT.updateFromState(r); } renderChild(); maybeShowReturnNudge(); }
     else if (!cached) renderAuth();
   } else if (role === 'parent') {
     // v10.1：家长端先渲 IndexedDB 缓存的 family 快照秒开，再云端刷新
@@ -422,6 +422,7 @@ async function refreshMe() {
   if (r.id) {
     celebratePet(me?.pet, r.pet); me = r;
     if (window.LocalRT) { LocalRT.setCurrentChild(r.id); LocalRT.updateFromState(r); }
+    maybeShowReturnNudge();
   }
 }
 // v5: 升级/进化/觉醒/毕业 全事件演出（插画+音乐+台词）
@@ -545,6 +546,123 @@ async function pickSpecies(id) {
 }
 
 // —— 宠物 Tab ————————————————————————————————
+// ============================================================
+// P1：7 天微习惯计划（引导层：不发分、不加经验、不替代投喂）+ 温和回归
+// ============================================================
+const ONBOARDING_PLANS = {
+  homework: { emoji: '📚', title: '写完作业后整理书桌 2 分钟' },
+  reading:  { emoji: '📖', title: '读 5 分钟' },
+  prepare:  { emoji: '🎒', title: '明天要用的东西放进书包' }
+};
+function obDayDiff(a, b) {   // YYYY-MM-DD 自然日差（b - a），只用于展示进度格
+  const pa = String(a).split('-').map(Number), pb = String(b).split('-').map(Number);
+  return Math.round((new Date(pb[0], pb[1] - 1, pb[2]) - new Date(pa[0], pa[1] - 1, pa[2])) / 86400000);
+}
+function onboardingCard() {
+  const ob = me && me.onboarding;
+  if (!ob) return '';   // 旧缓存没有该字段：不渲染、不报错
+  if (ob.status === 'not_started') {
+    if (!ob.showStartPrompt) return '';   // 今天已"稍后再说"，不再打扰
+    return `<div class="onboarding-card" role="region" aria-label="七天小目标">
+      <div class="onboarding-title">🌱 用 30 秒选一个 7 天小目标</div>
+      <div class="lead">每天一小步，不加分也不扣分，只是帮自己开个头。</div>
+      <div class="row mt8">
+        <button class="btn sm ghost" onclick="openOnboardingPicker()">选一个 7 天小目标</button>
+        <button class="btn sm ghost" onclick="dismissOnboarding()">稍后再说</button>
+      </div>
+    </div>`;
+  }
+  if (ob.status === 'active') {
+    const plan = ONBOARDING_PLANS[ob.planId];
+    if (!plan || !ob.startedOn) return '';
+    const doneDays = new Set((ob.completedOn || []).map(d => Math.max(1, Math.min(7, obDayDiff(ob.startedOn, d) + 1))));
+    const cells = [];
+    for (let n = 1; n <= 7; n++) {
+      const done = doneDays.has(n);
+      cells.push(`<span class="onboarding-day ${done ? 'done' : (ob.dayIndex === n ? 'today' : '')}" aria-hidden="true">${done ? '✓' : ''}</span>`);
+    }
+    const action = ob.todayComplete
+      ? '<div class="lead">今天已经记下啦，明天见 👋</div>'
+      : ob.canCompleteToday
+        ? '<div class="row mt8"><button class="btn sm ghost" onclick="completeOnboarding()">完成这一小步</button></div>'
+        : `<div class="lead">今天不在计划窗口内${ob.dayIndex ? '' : ''}，明天再来。</div>`;
+    return `<div class="onboarding-card" role="region" aria-label="七天小目标">
+      <div class="onboarding-title">${plan.emoji} ${plan.title} · 第 ${ob.dayIndex || '?'}/7 天</div>
+      <div class="onboarding-days" role="img" aria-label="这期已完成 ${doneDays.size} 天">${cells.join('')}</div>
+      ${action}
+    </div>`;
+  }
+  if (ob.status === 'completed') {
+    return `<div class="onboarding-card" role="region" aria-label="七天小目标">
+      <div class="onboarding-title">🎉 你完成了 7 天小目标！</div>
+      <div class="lead">想继续，就从今天再选一个。</div>
+      <div class="row mt8"><button class="btn sm ghost" onclick="openOnboardingPicker()">从今天重新开始</button></div>
+    </div>`;
+  }
+  if (ob.status === 'expired') {
+    return `<div class="onboarding-card" role="region" aria-label="七天小目标">
+      <div class="onboarding-title">🌱 7 天小目标</div>
+      <div class="lead">这周已经走过，不用补；想从今天重新开始吗？</div>
+      <div class="row mt8"><button class="btn sm ghost" onclick="openOnboardingPicker()">从今天重新开始</button></div>
+    </div>`;
+  }
+  return '';
+}
+let obPickPlanId = null;
+function openOnboardingPicker() {
+  obPickPlanId = null;
+  const items = Object.keys(ONBOARDING_PLANS).map(id =>
+    `<button class="btn sm ghost ob-plan" id="ob_${id}" onclick="obPick('${id}')">${ONBOARDING_PLANS[id].emoji} ${ONBOARDING_PLANS[id].title}</button>`).join('');
+  openModal(`<div class="card">
+    <h3>🌱 选一个 7 天小目标</h3>
+    <div class="lead">每天一小步，不加分不扣分，只帮你把事情做起来。</div>
+    <div class="ob-plans">${items}</div>
+    <div class="row mt8">
+      <button class="btn" id="ob_start" disabled onclick="startOnboarding()">开始这 7 天</button>
+      <button class="btn ghost" onclick="closeModal()">先不选</button>
+    </div>
+  </div>`);
+}
+function obPick(id) {
+  obPickPlanId = id;
+  document.querySelectorAll('.ob-plan').forEach(b => b.classList.remove('picked'));
+  const el = document.getElementById('ob_' + id);
+  if (el) el.classList.add('picked');
+  const s = document.getElementById('ob_start');
+  if (s) s.disabled = false;
+}
+async function startOnboarding() {
+  if (!obPickPlanId) return;
+  const r = await api('/api/onboarding/start', { planId: obPickPlanId });
+  if (r.ok) { me = r.state; closeModal(); renderChild(); }
+  else toast(r.error || '没开始成功，再试一次', true);
+}
+async function completeOnboarding() {
+  const r = await api('/api/onboarding/complete', {});
+  if (r.ok) { me = r.state; renderChild(); toast('今天已经记下啦 ✓'); }
+  else { if (r.state) { me = r.state; renderChild(); } toast(r.error || '稍后再试', true); }
+}
+async function dismissOnboarding() {
+  const r = await api('/api/onboarding/dismiss', {});
+  if (r.ok) { me = r.state; renderChild(); }
+  else toast(r.error || '稍后再试', true);
+}
+// 温和回归：服务端判定 show 才弹；session 内同 gapKey 只弹一次；ack 不阻塞 UI
+let lastReturnNudgeKey = null;
+function maybeShowReturnNudge() {
+  const n = me && me.returnNudge;
+  if (!n || !n.show || !n.gapKey || n.gapKey === lastReturnNudgeKey) return;
+  lastReturnNudgeKey = n.gapKey;
+  showFx({ title: '🌿 好久不见', sub: '好久不见，回来就很好。今天只做一小步也算开始。', btn: '看看今天能做什么' });
+  const b = document.querySelector('#fx .fx-btn');
+  if (b) b.onclick = function () {
+    closeFx();
+    const t = document.querySelector('.today-adventure');
+    if (t && t.scrollIntoView) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+  api('/api/return-nudge/ack', { gapKey: n.gapKey });
+}
+
 function childPetTab() {
   const p = me.pet;
   const xpPct = Math.min(100, Math.round((p.xp - p.xpCur) / Math.max(1, p.xpNext - p.xpCur) * 100));
@@ -588,6 +706,7 @@ function childPetTab() {
       <h2 id="today-adventure-title">${nextAction}</h2>
       <div class="lead">${nextHint}</div>
       <button class="btn today-cta" ${nextDisabled ? 'disabled' : ''} onclick="openTodayAdventure()">${!fed && !nextDisabled ? '🍖 完成作业，投喂 +' + me.rules.feed : fed ? '📝 去记录今天的成就' : me.fainted ? '💤 先在下方复活伙伴' : '🌙 今天先休息'}</button>
+      ${onboardingCard()}
       ${pending.length ? `<div class="today-pending" role="status">⏳ 有 ${pending.length} 个成就正在等家长查看：${pending.slice(0, 2).map(e => esc(e.label)).join('、')}${pending.length > 2 ? '…' : ''}</div>` : '<div class="today-pending calm">✨ 今天没有待审核的事，按自己的节奏来。</div>'}
     </section>
     <div class="card pet-hero">
