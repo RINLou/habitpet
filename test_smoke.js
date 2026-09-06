@@ -458,7 +458,7 @@ async function api(path, body, token) {
   const snap1 = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
   execFileSync(process.execPath, ['-e', MIGRATE], { cwd: __dirname });
   const snap2 = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
-  ok('schema v5', snap1.schemaVersion === 5 && snap2.schemaVersion === 5);
+  ok('schema v6', snap1.schemaVersion === 6 && snap2.schemaVersion === 6);
   ok('投诉记录数不变', countCp(snap1) === countCp(snap2), { m1: countCp(snap1), m2: countCp(snap2) });
   ok('账本 id 集不变', ledgerIds(snap1) === ledgerIds(snap2));
   ok('兑换状态集不变', redStatus(snap1) === redStatus(snap2));

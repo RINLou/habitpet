@@ -154,8 +154,10 @@ function returnNudgeView(child, previousLastSeenAt, now) {   // 间隔必须用�
   if (isNaN(prevDate.getTime())) return { show: false, gapDays: 0, gapKey: null };
   const gapDays = dayDiff(engine.dateKey(prevDate), engine.dateKey(now));
   if (gapDays < 3) return { show: false, gapDays, gapKey: null };
-  const show = child.returnNudge.lastShownForGap !== previousLastSeenAt;
-  return { show, gapDays, gapKey: show ? previousLastSeenAt : null };
+  const rn = child.returnNudge;
+  if (rn.lastShownForGap === previousLastSeenAt) return { show: false, gapDays, gapKey: null };   // 已确认过
+  rn.pendingGapKey = previousLastSeenAt;   // v6: 服务端决定展示时持久化当前 pending（新 gap 会替换旧 pending）
+  return { show: true, gapDays, gapKey: previousLastSeenAt };
 }
 
 function childMe(family, child) {
@@ -166,7 +168,8 @@ function childMe(family, child) {
   if (!child.onboarding || typeof child.onboarding !== 'object') {
     child.onboarding = { status: 'not_started', planId: null, startedOn: null, completedOn: [], completedAt: null, finishedOn: null, lastDismissedOn: null, history: [] };
   }
-  if (!child.returnNudge || typeof child.returnNudge !== 'object') child.returnNudge = { lastShownForGap: null };
+  if (!child.returnNudge || typeof child.returnNudge !== 'object') child.returnNudge = { lastShownForGap: null, pendingGapKey: null };
+  if (child.returnNudge.pendingGapKey === undefined) child.returnNudge.pendingGapKey = null;
   const today = engine.dateKey(now);
   const previousLastSeenAt = child.lastSeenAt;   // 先存旧值再覆盖，回归间隔才算得对
   child.lastSeenAt = now.toISOString();          // 对战大厅"最近活跃"
@@ -327,10 +330,12 @@ const routes = {
     const g = typeof p.gapKey === 'string' ? p.gapKey : '';
     const gd = new Date(g);
     const gapDays = isNaN(gd.getTime()) ? -1 : dayDiff(engine.dateKey(gd), engine.dateKey(now));
-    const valid = gapDays >= 3 && c.returnNudge.lastShownForGap !== g && g !== c.lastSeenAt;
+    // v6: 三重校验——key 必须等于当前 pending（新 gap 已替换旧 key）；未被确认；日期差合法
+    const valid = gapDays >= 3 && c.returnNudge.pendingGapKey === g && c.returnNudge.lastShownForGap !== g;
     if (!valid) { const __st19 = childMe(f, c); store.saveNow();
     return { code: 409, body: { error: '回归提示已确认或已过期', state: __st19 } }; }
     c.returnNudge.lastShownForGap = g;
+    c.returnNudge.pendingGapKey = null;
     const __st3 = childMe(f, c);
     store.saveNow();
     return { code: 200, body: { ok: true, state: __st3 } };
