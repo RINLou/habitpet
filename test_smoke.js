@@ -25,8 +25,8 @@ async function api(path, body, token) {
   const bad = await api('/api/login', { username: 'testboss' + RND, password: 'wrong' });
   ok('错密码被拒', !!bad.error);
 
-  const add1 = await api('/api/child', { name: '大宝', grade: '初二' }, PT);
-  const add2 = await api('/api/child', { name: '二宝', grade: '五年级' }, PT);
+  const add1 = await api('/api/child', { name: '测试娃A', grade: 'G1' }, PT);
+  const add2 = await api('/api/child', { name: '测试娃B', grade: 'G2' }, PT);
   ok('添加两个孩子', add1.ok && add2.ok);
   const C1 = add1.childId, C2 = add2.childId;
 
@@ -40,7 +40,7 @@ async function api(path, body, token) {
   ok('绑定码一次性', !!bd2.error);
   const bc2 = await api('/api/child/bindcode', { childId: C2 }, PT);
   const T2 = (await api('/api/bind', { code: bc2.code })).token;
-  ok('二宝绑定', !!T2);
+  ok('娃B绑定', !!T2);
   const noAuth = await api('/api/family', {});
   ok('无token访问被拒', !!noAuth.error);
   const childAsParent = await api('/api/family', {}, T1);
@@ -52,9 +52,9 @@ async function api(path, body, token) {
   const feedNoPet = await api('/api/feed', {}, T1);
   ok('没宠物不能投喂', !!feedNoPet.error);
   const sel = await api('/api/pet/select', { speciesId: 'firam' }, T1);
-  ok('大宝选焰狼', sel.ok && sel.state.pet.speciesName.includes('焰狼'));
+  ok('娃A选焰狼', sel.ok && sel.state.pet.speciesName.includes('焰狼'));
   const sel2 = await api('/api/pet/select', { speciesId: 'luna' }, T2);
-  ok('二宝选灵狐', sel2.ok);
+  ok('娃B选灵狐', sel2.ok);
   const selDup = await api('/api/pet/select', { speciesId: 'volt' }, T1);
   ok('学期中不能换宠', !!selDup.error);
 
@@ -131,23 +131,23 @@ async function api(path, body, token) {
     if (mv.error) { last = mv; break; }
     if (mv.finished) { last = mv.battle; break; }
   }
-  ok('1v1 打完分出胜负(仅大宝出招)', last && last.status === 'finished');
+  ok('1v1 打完分出胜负(仅娃A出招)', last && last.status === 'finished');
   const meB = await api('/api/me', {}, T1);
   const xpGain = meB.pet.xp - xp0;
   ok('动态对战经验(胜6+对方Lv/负2+对方Lv÷2)', xpGain === 6 + oppLv || xpGain === 2 + Math.floor(oppLv / 2), { xpGain, oppLv });
   ok('对战不碰亲密度', meB.intimacy === 261, meB.intimacy);
 
   const bSib2 = await api('/api/battle/start', { mode: 'sibling', opponentId: C1 }, T2);
-  ok('二宝自己开一场(打大宝AI分身)', bSib2.ok && bSib2.battle.fighters[1].isAI === true);
+  ok('娃B自己开一场(打娃A AI分身)', bSib2.ok && bSib2.battle.fighters[1].isAI === true);
   let bid1b = bSib2.battleId, r1b = 0, last1b;
   while (r1b++ < 80) {
     const mv = await api('/api/battle/move', { battleId: bid1b, skillIndex: 0 }, T2);
     if (mv.error) { last1b = mv; break; }
     if (mv.finished) { last1b = mv.battle; break; }
   }
-  ok('二宝1v1结算', last1b && last1b.status === 'finished');
+  ok('娃B 1v1结算', last1b && last1b.status === 'finished');
   const meB2 = await api('/api/me', {}, T2);
-  ok('二宝经验到账(动态)', meB2.pet.xp >= 2, { xp: meB2.pet.xp });
+  ok('娃B经验到账(动态)', meB2.pet.xp >= 2, { xp: meB2.pet.xp });
 
   const bBoss = await api('/api/battle/start', { mode: 'boss' }, T1);
   ok('单人Boss开战', bBoss.ok && bBoss.battle.fighters.length === 2);
@@ -160,14 +160,14 @@ async function api(path, body, token) {
   ok('Boss战结算', last2 && (last2.status === 'finished' || last2.error));
 
   const bCoop = await api('/api/battle/start', { mode: 'coop', opponentId: C2 }, T1);
-  ok('联手Boss开战(二宝以AI分身参战)', bCoop.ok && bCoop.battle.fighters.length === 3 && bCoop.battle.fighters[1].isAI === true);
+  ok('联手Boss开战(娃B以AI分身参战)', bCoop.ok && bCoop.battle.fighters.length === 3 && bCoop.battle.fighters[1].isAI === true);
   let bid3 = bCoop.battleId, r3 = 0, last3;
   while (r3++ < 100) {
     const mv = await api('/api/battle/move', { battleId: bid3, skillIndex: 0 }, T1);
     if (mv.error) { last3 = mv; break; }
     if (mv.finished) { last3 = mv.battle; break; }
   }
-  ok('联手Boss结算(仅大宝出招)', last3 && (last3.status === 'finished' || last3.error));
+  ok('联手Boss结算(仅娃A出招)', last3 && (last3.status === 'finished' || last3.error));
 
   const lim = await api('/api/config', { battleDailyLimit: 3 }, PT);
   const bLimit = await api('/api/battle/start', { mode: 'boss' }, T1);
@@ -193,9 +193,9 @@ async function api(path, body, token) {
   ok('家长核销 requested→fulfilled', ful.ok);
   const fulRe = await api('/api/fulfill', { redemptionId: rd2.state.redemptions[0].id }, PT);
   ok('已核销再核销被拒', !!fulRe.error);
-  const rdPoor = await api('/api/redeem', { rewardId: 'r4' }, T2); // 二宝亲密度不足
+  const rdPoor = await api('/api/redeem', { rewardId: 'r4' }, T2); // 娃B亲密度不足
   ok('亲密度不足拦截', !!rdPoor.error);
-  // 爷爷奶奶投诉把大宝打到 0（下限验证），保留 active 供结算测无投诉奖
+  // 投诉把娃A打到 0（下限验证），保留 active 供结算测无投诉奖
   const compG = await api('/api/complaint', { childId: C1, source: 'grandparent' }, PT);
   ok('爷爷奶奶投诉-50 触底（下限0）', compG.ok && compG.family.children.find(c=>c.id===C1).intimacy === 0);
 
@@ -204,8 +204,8 @@ async function api(path, body, token) {
   const atkBefore = meForAlloc.pet.stats.atk;
   const al = await api('/api/pet/allocate', { stat: 'atk', points: 2 }, T1);
   ok('自由加点', al.ok && al.state.pet.stats.atk === atkBefore + 2, al.state.pet.stats.atk);
-  const nm = await api('/api/pet/nickname', { nickname: '旺财' }, T1);
-  ok('宠物改名', nm.ok && nm.state.pet.nickname === '旺财');
+  const nm = await api('/api/pet/nickname', { nickname: '小星星' }, T1);
+  ok('宠物改名', nm.ok && nm.state.pet.nickname === '小星星');
 
   console.log('== 8 规则修改（每孩子独立+需 PIN）+ 自定义规则 ==');
   const rlNoPin = await api('/api/rules', { childId: C1, exam: 60 }, PT);
@@ -215,12 +215,12 @@ async function api(path, body, token) {
   const rl = await api('/api/rules', { childId: C1, exam: 60, pin: '1234' }, PT);
   const c1AfterRl = rl.family.children.find(c => c.id === C1);
   const c2AfterRl = rl.family.children.find(c => c.id === C2);
-  ok('改大宝考试分值60', rl.ok && c1AfterRl.rules.exam === 60);
-  ok('二宝规则独立不受影响(仍50)', c2AfterRl.rules.exam === 50, c2AfterRl.rules.exam);
-  const cr = await api('/api/rules', { childId: C1, customAdd: { name: '帮忙倒垃圾', delta: 5 }, pin: '1234' }, PT);
+  ok('改娃A考试分值60', rl.ok && c1AfterRl.rules.exam === 60);
+  ok('娃B规则独立不受影响(仍50)', c2AfterRl.rules.exam === 50, c2AfterRl.rules.exam);
+  const cr = await api('/api/rules', { childId: C1, customAdd: { name: '帮忙整理书架', delta: 5 }, pin: '1234' }, PT);
   const c1Custom = cr.family.children.find(c => c.id === C1).customRules || [];
-  ok('新增大宝自定义快捷项', cr.ok && c1Custom.some(r => r.name === '帮忙倒垃圾'));
-  const crRule = c1Custom.find(r => r.name === '帮忙倒垃圾');
+  ok('新增娃A自定义快捷项', cr.ok && c1Custom.some(r => r.name === '帮忙整理书架'));
+  const crRule = c1Custom.find(r => r.name === '帮忙整理书架');
   const subE2 = await api('/api/submit', { type: 'exam', note: '物理 92' }, T1);
   const ap2 = await api('/api/approve', { eventId: subE2.eventId, decision: 'approve' }, PT);
   ok('按新分值+60 → 60（此前已触底）', ap2.ok && ap2.family.children.find(c=>c.id===C1).intimacy === 60);
@@ -262,9 +262,9 @@ async function api(path, body, token) {
   ok('月度结算无 PIN 被拒', !!smNoPin.error);
   const sm = await api('/api/settle/month', { pin: '1234' }, PT);
   ok('月度结算完成', sm.ok);
-  // 大宝当月有 active 投诉（爷爷奶奶那条）→ 无投诉奖不发 → 100；二宝无投诉 → 100+100=200
+  // 娃A当月有 active 投诉（爷爷奶奶那条）→ 无投诉奖不发 → 100；娃B无投诉 → 100+100=200
   const c1v = sm.family.children.find(c => c.id === C1), c2v = sm.family.children.find(c => c.id === C2);
-  ok('有投诉者不加 / 无投诉者+100', c1v.intimacy === 100 && c2v.intimacy === 200, { 大宝: c1v.intimacy, 二宝: c2v.intimacy });
+  ok('有投诉者不加 / 无投诉者+100', c1v.intimacy === 100 && c2v.intimacy === 200, { 娃A: c1v.intimacy, 娃B: c2v.intimacy });
   const ssNoPin = await api('/api/settle/semester', {}, PT);
   ok('学期结算无 PIN 被拒', !!ssNoPin.error);
   const ss = await api('/api/settle/semester', { pin: '1234' }, PT);
@@ -298,9 +298,9 @@ async function api(path, body, token) {
   ok('敏感操作可用新 PIN', rlNew.ok);
 
   console.log('== 14.5 孩子编辑 ==');
-  const ce1 = await api('/api/child/edit', { childId: C2, name: '二宝改', grade: '五年级改' }, PT);
-  ok('编辑孩子信息', ce1.ok && ce1.family.children.find(c=>c.id===C2).name === '二宝改');
-  const ceBack = await api('/api/child/edit', { childId: C2, name: '二宝', grade: '五年级' }, PT);
+  const ce1 = await api('/api/child/edit', { childId: C2, name: '测试娃B改', grade: 'G2改' }, PT);
+  ok('编辑孩子信息', ce1.ok && ce1.family.children.find(c=>c.id===C2).name === '测试娃B改');
+  const ceBack = await api('/api/child/edit', { childId: C2, name: '测试娃B', grade: 'G2' }, PT);
   ok('改回名字', ceBack.ok);
 
   console.log('== 14.6 密保找回密码/PIN ==');
@@ -375,11 +375,11 @@ async function api(path, body, token) {
   const devC1 = famDev.children.find(c => c.id === C1);
   ok('设备数可见', typeof devC1.devices === 'number' && devC1.devices >= 1, devC1.devices);
   const ub = await api('/api/child/unbind', { childId: C1 }, PT);
-  ok('解绑大宝设备', ub.ok && ub.revoked >= 1, ub.revoked);
+  ok('解绑娃A设备', ub.ok && ub.revoked >= 1, ub.revoked);
   const meGone = await api('/api/me', {}, T1);
   ok('被解绑的 token 立即失效', !!meGone.error);
   const meT2 = await api('/api/me', {}, T2);
-  ok('二宝登录不受影响', meT2.id === C2);
+  ok('娃B登录不受影响', meT2.id === C2);
 
   console.log('== 15.5 孩子删除（含最后一个孩子守卫） ==');
   const addT = await api('/api/child', { name: '三宝', grade: '一年级' }, PT);
@@ -393,7 +393,7 @@ async function api(path, body, token) {
   const meT3 = await api('/api/me', {}, T3);
   ok('被删孩子的会话已吊销', !!meT3.error);
   const cdC2 = await api('/api/child/delete', { childId: C2, pin: '5678' }, PT);
-  ok('删除二宝（还剩大宝一个）', cdC2.ok);
+  ok('删除娃B（还剩娃A一个）', cdC2.ok);
   const cdLast = await api('/api/child/delete', { childId: C1, pin: '5678' }, PT);
   ok('最后一个孩子不可删', !!cdLast.error, cdLast.error);
 
