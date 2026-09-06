@@ -8,3 +8,7 @@ node_modules/
 Thumbs.db
 processed_image_*.png
 *.tmp
+
+# 浏览器验收（scripts/accept-360.js）临时产物
+.accept-360-state.json
+.accept-360-*.png

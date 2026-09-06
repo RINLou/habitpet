@@ -449,7 +449,7 @@ async function api(path, body, token) {
   }
 
   console.log('== 16 迁移幂等（重复 migrate 不改数据） ==');
-  const DB_FILE = path.join(__dirname, 'data', 'habitpet.json');
+  const DB_FILE = path.join(process.env.HABITPET_DATA_DIR || path.join(__dirname, 'data'), 'habitpet.json');
   const countCp = d => Object.values(d.families || {}).flatMap(f => Object.values(f.children || {})).reduce((n, c) => n + (Array.isArray(c.complaints) ? c.complaints.length : 0), 0);
   const ledgerIds = d => Object.values(d.families || {}).flatMap(f => (f.ledger || []).map(l => l.id)).sort().join(',');
   const redStatus = d => Object.values(d.families || {}).flatMap(f => Object.values(f.children || {})).flatMap(c => (c.redemptions || []).map(r => r.id + ':' + r.status)).sort().join(',');
@@ -522,7 +522,7 @@ async function api(path, body, token) {
       try {
         out = execFileSync(process.execPath, ['test_p1_worker.js', phase, ...(args || [])], {
           cwd: __dirname, encoding: 'utf8', timeout: 90000,
-          env: { ...process.env, P1_PORT: '3998', P1_OFFSET: String(offset) }
+          env: { ...process.env, P1_PORT: process.env.P1_PORT || '3998', P1_OFFSET: String(offset) }
         });
       } catch (e) {
         out = (e.stdout || '') + '\nP1CRASH ' + String(e.message).slice(0, 200);

@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node test_smoke.js",
+    "test": "node scripts/run-tests.js",
+    "accept:360": "node scripts/accept-360.js",
     "deploy": "bash deploy/deploy.sh"
   },
   "keywords": ["habit", "pet", "parenting", "pokemon-like", "kids"],
