@@ -2,16 +2,22 @@
 // 策略：/api/ 一律不拦（永远走网络）；页面入口 network-first；
 // 静态资源靠 ?v=N 版本号天然失效，缓存只是离线兜底。
 // ⚠️ 每次改版发布时：把 CACHE 和 ASSETS 里的 ?v= 同步升到 index.html 的新版本号！
-const CACHE = 'hp-v9';
+const CACHE = 'hp-v10';
 const ASSETS = [
   '/',
   '/index.html',
-  '/app.js?v=9',
-  '/audio.js?v=9',
-  '/style.css?v=9',
+  '/app.js?v=10',
+  '/audio.js?v=10',
+  '/style.css?v=10',
   '/manifest.json',
+  '/lib/species.umd.js?v=10',
+  '/lib/localstore.js?v=10',
+  '/lib/engine.umd.js?v=10',
+  '/lib/battle.umd.js?v=10',
+  '/lib/local.js?v=10',
   '/img/icon-192.png',
-  '/img/icon-512.png'
+  '/img/icon-512.png',
+  '/img/wishball.webp'
 ];
 
 self.addEventListener('install', (e) => {

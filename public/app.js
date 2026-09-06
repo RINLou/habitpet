@@ -48,14 +48,14 @@ function openIosGuide() {                         // iOS：系统不允许自动
 // ============================================================
 // v5 灵汐大陆：立绘 / 事件演出 / 随机彩蛋（配 audio.js 使用）
 // ============================================================
-const ART_BY_SPECIES = { firam:'firam.png', volt:'volt.png', tidal:'tidal.png', night:'night.png', luna:'luna.png', mount:'mount.png', thorn:'thorn.png', rime:'rime.png', kirin:'kirin.png', dragon:'dragon.png' };
-const ART_BY_EMOJI = { '🐺':'firam.png', '🦅':'volt.png', '🐢':'tidal.png', '🐆':'night.png', '🦊':'luna.png', '🐻':'mount.png', '🦎':'thorn.png', '🐧':'rime.png', '🦌':'kirin.png', '🐉':'dragon.png' };
+const ART_BY_SPECIES = { firam:'firam.webp', volt:'volt.webp', tidal:'tidal.webp', night:'night.webp', luna:'luna.webp', mount:'mount.webp', thorn:'thorn.webp', rime:'rime.webp', kirin:'kirin.webp', dragon:'dragon.webp' };
+const ART_BY_EMOJI = { '🐺':'firam.webp', '🦅':'volt.webp', '🐢':'tidal.webp', '🐆':'night.webp', '🦊':'luna.webp', '🐻':'mount.webp', '🦎':'thorn.webp', '🐧':'rime.webp', '🦌':'kirin.webp', '🐉':'dragon.webp' };
 const STAGE_POS = { juvenile: 0, adult: 1, awaken: 2 };   // 三段进化图：左幼体/中成体/右觉醒
 // stageKey='orb' 用愿望球；有 stageKey 裁对应 1/3；没有则展示完整单图
 function petArtById(sid, stageKey, cls, idle) {
   const file = ART_BY_SPECIES[sid];
   if (!file) return `<div class="pet-art ${cls || ''}"><div class="p-art-fallback">❔</div></div>`;
-  if (stageKey === 'orb') return `<div class="pet-art ${cls || ''}"><img class="pos-single" src="img/wishball.png" alt=""></div>`;
+  if (stageKey === 'orb') return `<div class="pet-art ${cls || ''}"><img class="pos-single" src="img/wishball.webp" alt=""></div>`;
   const pos = STAGE_POS[stageKey];
   if (pos === undefined) return `<div class="pet-art ${cls || ''}"><img class="pos-single" src="img/${file}" alt=""></div>`;
   return `<div class="pet-art ${cls || ''}${idle ? ' idle' : ''}"><img class="pos-${pos}" src="img/${file}" alt=""${idle ? ` style="animation-delay:-${(Math.random() * 3).toFixed(1)}s"` : ''}></div>`;
@@ -67,7 +67,7 @@ function petArt(emoji, stageKey, cls, idle) {
 }
 // 战斗立绘：Boss 用荒野挑战者图，真人/AI 分身按种族+形态裁切
 function battleArt(f) {
-  if (f.side === 'boss') return `<div class="pet-art"><img class="pos-single" src="img/boss.png" alt=""></div>`;
+  if (f.side === 'boss') return `<div class="pet-art"><img class="pos-single" src="img/boss.webp" alt=""></div>`;
   return petArt(f.emoji, f.stageKey, '', true);
 }
 
@@ -128,18 +128,24 @@ function setLoading(on) {
   el.classList.toggle('hidden', loadingCount <= 0);
 }
 async function api(path, body) {
+  // v10 本地优先：孩子端单人操作（投喂/宠物/兑换/单机对战）由本地引擎即时执行，oplog 异步同步云端
+  const local = (window.LocalRT && LocalRT.API_BASE !== undefined) ? LocalRT.dispatch(path, body || {}) : null;
+  if (local) return local;
+  const BASE = window.LocalRT ? LocalRT.API_BASE : '';
   setLoading(true);
   try {
     // token 同时放头和请求体：部分反向代理会剥离 Authorization 头
-    const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ ...(body || {}), token }) });
+    const res = await fetch(BASE + path, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ ...(body || {}), token }) });
     const d = await res.json().catch(() => ({}));
     if (res.status === 401 && !['/api/login', '/api/register', '/api/bind'].includes(path)) doLogout();
+    if (window.LocalRT && d && d.state) LocalRT.updateFromState(d.state);
     return d;
   } catch (e) { return { error: '网络异常，请重试' }; }
   finally { setLoading(false); }
 }
 async function getJSON(path) {
-  try { const r = await fetch(path); return await r.json(); } catch (e) { return { error: '网络异常' }; }
+  const BASE = window.LocalRT ? LocalRT.API_BASE : '';
+  try { const r = await fetch(BASE + path); return await r.json(); } catch (e) { return { error: '网络异常' }; }
 }
 let toastTimer = null;
 function toast(msg, isErr, long) {
@@ -154,6 +160,7 @@ function doLogout() {
   token = ''; role = ''; me = null; fam = null; curBattle = null; pinCache = '';
   if (battleTimer) { clearInterval(battleTimer); battleTimer = null; }
   localStorage.removeItem('hp_token'); localStorage.removeItem('hp_role');
+  if (window.LocalRT) LocalRT.reset();
   renderAuth();
 }
 function fmt(ts) { return new Date(ts).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }); }
@@ -257,8 +264,12 @@ async function pinApi(path, body) {
 async function boot() {
   if (!token) return renderAuth();
   if (role === 'child') {
+    // v10 本地优先：先用本地快照秒开，再云端校验会话并刷新
+    let cached = null;
+    if (window.LocalRT) { cached = await LocalRT.bootChild(token); if (cached) { me = cached; renderChild(); } }
     const r = await api('/api/me');
-    if (r.id) { me = r; renderChild(); } else renderAuth();
+    if (r.id) { me = r; if (window.LocalRT) { LocalRT.setCurrentChild(r.id); LocalRT.updateFromState(r); } renderChild(); }
+    else if (!cached) renderAuth();
   } else if (role === 'parent') {
     const r = await api('/api/family');
     if (r.id) { fam = r; renderParent(); } else renderAuth();
@@ -343,6 +354,7 @@ async function doLogin() {
   if (r.error) return toast(r.error, true);
   token = r.token; role = 'parent'; fam = r.family;
   localStorage.setItem('hp_token', token); localStorage.setItem('hp_role', role);
+  if (window.LocalRT) LocalRT.onAuth(token, 'parent');
   renderParent();
 }
 async function doRegister() {
@@ -350,6 +362,7 @@ async function doRegister() {
   if (r.error) return toast(r.error, true);
   token = r.token; role = 'parent'; fam = r.family;
   localStorage.setItem('hp_token', token); localStorage.setItem('hp_role', role);
+  if (window.LocalRT) LocalRT.onAuth(token, 'parent');
   toast('家庭创建成功！先添加孩子吧');
   renderParent();
 }
@@ -358,18 +371,25 @@ async function doBind() {
   if (r.error) return toast(r.error, true);
   token = r.token; role = 'child';
   localStorage.setItem('hp_token', token); localStorage.setItem('hp_role', role);
+  if (window.LocalRT) await LocalRT.onAuth(token, 'child');
   await refreshMe(); renderChild();
 }
 
 // ============================================================
 // 孩子端
 // ============================================================
-async function refreshMe() { const r = await api('/api/me'); if (r.id) { celebratePet(me?.pet, r.pet); me = r; } }
+async function refreshMe() {
+  const r = await api('/api/me');
+  if (r.id) {
+    celebratePet(me?.pet, r.pet); me = r;
+    if (window.LocalRT) { LocalRT.setCurrentChild(r.id); LocalRT.updateFromState(r); }
+  }
+}
 // v5: 升级/进化/觉醒/毕业 全事件演出（插画+音乐+台词）
 function celebratePet(oldPet, newPet) {
   if (!oldPet || !newPet) {
     if (oldPet && !newPet) showFx({
-      img: 'img/graduate.png', title: '🎓 毕业巡礼',
+      img: 'img/graduate.webp', title: '🎓 毕业巡礼',
       sub: `${esc(oldPet.nickname)} 化作流星回归星海。别难过——它的形态已刻进图鉴，永不磨灭。下学期，再结一段新的缘分吧！`,
       btn: '再见了，伙伴', sound: 'heal', speak: '毕业巡礼，灵伴回归星海'
     });
@@ -378,9 +398,9 @@ function celebratePet(oldPet, newPet) {
   if (newPet.level <= oldPet.level) return;
   const stageChanged = oldPet.stageKey !== newPet.stageKey;
   if (stageChanged && newPet.stageKey === 'awaken') {
-    showFx({ img: 'img/awaken.png', title: '✦ 觉醒时刻 ✦', sub: `${esc(newPet.nickname)} 突破凡躯，觉醒为 <b>${esc(newPet.stage)}</b>！亲密度获取 +3%，并解锁「学期大奖」申请权！`, btn: '吾王降临', sound: 'evolve', speak: `${newPet.nickname}，觉醒！` });
+    showFx({ img: 'img/awaken.webp', title: '✦ 觉醒时刻 ✦', sub: `${esc(newPet.nickname)} 突破凡躯，觉醒为 <b>${esc(newPet.stage)}</b>！亲密度获取 +3%，并解锁「学期大奖」申请权！`, btn: '吾王降临', sound: 'evolve', speak: `${newPet.nickname}，觉醒！` });
   } else if (stageChanged) {
-    showFx({ img: 'img/evo.png', title: '⚡ 进化！', sub: `${esc(oldPet.stage)} → <b>${esc(newPet.stage)}</b>！星辰之力涌入了 ${esc(newPet.nickname)} 的身体`, btn: '华丽蜕变！', sound: 'evolve', speak: `哇，${newPet.nickname} 进化成 ${newPet.stage} 了！` });
+    showFx({ img: 'img/evo.webp', title: '⚡ 进化！', sub: `${esc(oldPet.stage)} → <b>${esc(newPet.stage)}</b>！星辰之力涌入了 ${esc(newPet.nickname)} 的身体`, btn: '华丽蜕变！', sound: 'evolve', speak: `哇，${newPet.nickname} 进化成 ${newPet.stage} 了！` });
   } else {
     lvlBurst(`⬆️ Lv${newPet.level}！`);
     Sfx.levelup();
@@ -444,7 +464,7 @@ async function renderSpeciesPicker() {
   $('#app').innerHTML = `
     <div class="topbar"><div class="title">挑选你的伙伴！</div><div class="who"><a href="#" onclick="doLogout();return false">退出</a></div></div>
     <div class="card">
-      <div class="pet-art idle" style="width:92px;height:92px;margin-bottom:8px"><img class="pos-single" src="img/wishball.png" alt=""></div>
+      <div class="pet-art idle" style="width:92px;height:92px;margin-bottom:8px"><img class="pos-single" src="img/wishball.webp" alt=""></div>
       <div class="lead">伙伴从「愿望球」里诞生，完成好习惯它会一路进化——学期结束毕业进图鉴，下学期再挑新的～</div>
       <div class="species-grid mt8">
         ${normal.map(s => `
@@ -475,7 +495,7 @@ async function pickSpecies(id) {
   me = r.state; curTab = 'pet';
   Sfx.evolve(); Sfx.speak('愿望球打开了，新伙伴加入！');
   renderChild();
-  showFx({ img: 'img/wishball.png', title: '✦ 愿望球开启 ✦', sub: `<b>${esc(me.pet.nickname)}</b> 加入了你的冒险！完成作业投喂它，它会一路进化`, btn: '一起加油！', sound: 'levelup', speak: '愿望球打开了，新伙伴加入！' });
+  showFx({ img: 'img/wishball.webp', title: '✦ 愿望球开启 ✦', sub: `<b>${esc(me.pet.nickname)}</b> 加入了你的冒险！完成作业投喂它，它会一路进化`, btn: '一起加油！', sound: 'levelup', speak: '愿望球打开了，新伙伴加入！' });
 }
 
 // —— 宠物 Tab ————————————————————————————————
@@ -559,7 +579,7 @@ async function doFeed() {
     // 随机灵汐奇遇：专属插画 + 金币音 + 台词
     const ev = r.feedEvent;
     const gain = [ev.xp ? '+' + ev.xp + ' 经验' : '', ev.intimacy ? '+' + ev.intimacy + ' 亲密度' : ''].filter(Boolean).join('，');
-    showFx({ img: 'img/reward.png', title: `${ev.icon} 灵汐奇遇 · ${ev.name}`, sub: `${esc(ev.desc)}${gain ? '（' + gain + '）' : ''}`, btn: '运气爆棚！', auto: 4500, sound: 'coin', speak: '灵汐奇遇，' + ev.name + '！' });
+    showFx({ img: 'img/reward.webp', title: `${ev.icon} 灵汐奇遇 · ${ev.name}`, sub: `${esc(ev.desc)}${gain ? '（' + gain + '）' : ''}`, btn: '运气爆棚！', auto: 4500, sound: 'coin', speak: '灵汐奇遇，' + ev.name + '！' });
   } else {
     toast(r.streakBonus ? `投喂成功 +${me.rules.feed}，连续 ${me.feedStreak} 天额外 +${r.streakBonus}！` : `投喂成功！亲密度 +${me.rules.feed}`);
   }

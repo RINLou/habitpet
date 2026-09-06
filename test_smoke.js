@@ -469,6 +469,35 @@ async function api(path, body, token) {
     ok('概率归零可关闭', !(await api('/api/config', { randomEventChance: 0 }, PT)).error);
   }
 
+  console.log('== 18 本地优先同步（v10：/api/sync/full + /api/battle/finish） ==');
+  {
+    // 自包含独立家庭，不依赖前序 section 的状态
+    const regX = await api('/api/register', { username: 'syncboss' + RND, password: 'pass123', familyName: '同步测试家' });
+    const PX = regX.token;
+    const addX = await api('/api/child', { name: '同步娃', grade: 'G3' }, PX);
+    const bcX = await api('/api/child/bindcode', { childId: addX.childId }, PX);
+    const TX = (await api('/api/bind', { code: bcX.code })).token;
+    await api('/api/pet/select', { speciesId: 'firam' }, TX);
+
+    const sfP = await api('/api/sync/full', {}, PX);
+    ok('家长拉全量快照', sfP.ok && sfP.family && sfP.family.id);
+    ok('快照已脱敏（无密码/PIN 哈希）', !sfP.family.parent.salt && !sfP.family.parent.hash && !sfP.family.parent.pinHash && !sfP.family.parent.securityASalt);
+    const sfC = await api('/api/sync/full', {}, TX);
+    ok('孩子拉全量快照（含宠物）', sfC.ok && sfC.family.children[addX.childId] && !!sfC.family.children[addX.childId].pet);
+    const sfNo = await api('/api/sync/full', {});
+    ok('未登录拉快照被拒', !!sfNo.error);
+    // 对战结算：服务端重算经验（胜 6+对方等级），新家庭无历史消耗 → 实发 16
+    const fin = await api('/api/battle/finish', { battleId: 'bt_local_test', mode: 'boss', oppLevel: 10, win: true }, TX);
+    ok('本地对战云端结算（胜 6+10）', fin.ok && fin.xp === 16, fin.xp);
+    const famLed = (await api('/api/family', {}, PX)).ledger;
+    ok('结算写入账本', famLed.some(l => l.reason.includes('Boss挑战')));
+    const badMode = await api('/api/battle/finish', { battleId: 'x', mode: 'friend', oppLevel: 5, win: true }, TX);
+    ok('好友对战不走本地结算通道', !!badMode.error);
+    const badLv = await api('/api/battle/finish', { battleId: 'y', mode: 'boss', oppLevel: 9999, win: true }, TX);
+    // 9999 钳到 80 → 名义 86，但每日经验上限 30，首场已发 16 → 实发 14
+    ok('异常等级被钳制 + 每日经验上限生效', badLv.ok && badLv.xp === 14 && badLv.capped, badLv.xp);
+  }
+
   console.log(`\n========== 结果：${pass} 通过 / ${fail} 失败 ==========`);
   process.exit(fail ? 1 : 0);
 })().catch(e => { console.error('测试崩溃:', e); process.exit(1); });

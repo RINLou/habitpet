@@ -425,6 +425,53 @@ const routes = {
     c.milestone.applications.push({ note: String(p.note || '').slice(0, 200), ts: new Date().toISOString(), status: 'pending' });
     store.save(); return { code: 200, body: { ok: true, state: childMe(f, c) } };
   },
+  // —— v10: 本地优先同步 ——————————————————————————————
+  // 全量快照（脱敏）：本地优先客户端登录后拉取，本地跑游戏逻辑，云端保持权威副本
+  async syncFull(sess) {
+    const f = store.familyById(sess.familyId);
+    engine.ensureSemester(f);
+    for (const c of Object.values(f.children)) engine.ensureMonth(f, c, new Date());
+    const copy = JSON.parse(JSON.stringify(f));
+    const p = copy.parent || {};
+    delete p.salt; delete p.hash; delete p.pinSalt; delete p.pinHash; delete p.securityASalt; delete p.securityAH;
+    delete copy.sessions;
+    return { code: 200, body: { ok: true, family: copy, ts: Date.now() } };
+  },
+  // 本地对战结束后的云端结算：服务端按同一公式重算经验（每日上限钳制），不可被客户端刷分
+  async battleFinish(sess, p) {
+    const f = store.familyById(sess.familyId); const c = ensureChild(f, sess.childId);
+    if (!c.pet) return { code: 400, body: { error: '还没有宠物' } };
+    const mode = ['sibling', 'boss', 'coop'].includes(p.mode) ? p.mode : null;
+    if (!mode) return { code: 400, body: { error: '未知对战模式' } };
+    const oppLevel = Math.max(1, Math.min(80, Math.floor(Number(p.oppLevel) || 1)));
+    const win = !!p.win;
+    if (!c.pausedAt) battle.noteBattle(c);
+    let actual = 0, capped = false;
+    if (c.pausedAt) {
+      // 暂停期对战不发经验，但仍记录场次与流水
+      f.ledger.unshift({ id: store.newId('l'), ts: new Date().toISOString(), childId: c.id, childName: c.name, delta: 0, xp: 0, reason: `对战（暂停计分期间，未发经验）`, by: 'system' });
+    } else if (!battle.canBattleToday(c, f.config.battleDailyLimit)) {
+      capped = true;   // 场次超限（多设备漂移）：只记数不发经验
+    } else {
+      const xp = win ? 6 + oppLevel : 2 + Math.floor(oppLevel / 2);
+      const cap = (f.config && f.config.battleXpDailyCap !== undefined) ? f.config.battleXpDailyCap : 30;
+      const today = engine.dateKey();
+      if (!c.battleXp || c.battleXp.date !== today) c.battleXp = { date: today, amount: 0 };
+      const remaining = Math.max(0, cap - (c.battleXp.amount || 0));
+      actual = Math.min(xp, remaining);
+      c.battleXp.amount = (c.battleXp.amount || 0) + actual;
+      capped = actual < xp;
+      if (actual > 0) engine.addXP(c, actual);
+      f.ledger.unshift({
+        id: store.newId('l'), ts: new Date().toISOString(),
+        childId: c.id, childName: c.name, delta: 0, xp: actual,
+        reason: `对战${win ? '胜利' : '失败'}（${mode === 'sibling' ? '兄妹切磋' : 'Boss挑战'} vs Lv${oppLevel}，+${xp} 经验${capped ? `，今日对战经验已达上限 ${cap}，实发 ${actual}` : ''}）`,
+        by: 'system'
+      });
+    }
+    store.save();
+    return { code: 200, body: { ok: true, xp: actual, capped, state: childMe(f, c) } };
+  },
 
   // 家长端
   async family(sess) {
@@ -752,8 +799,8 @@ function familyView(f) {
 
 // —— 路由表 & 鉴权 ————————————————————————————
 const PUBLIC = { '/api/register': 'register', '/api/login': 'login', '/api/bind': 'bind', '/api/species': null, '/api/forgot/question': 'forgotQuestion', '/api/forgot/reset': 'forgotReset' };
-const CHILD = { '/api/me': 'me', '/api/feed': 'feed', '/api/submit': 'submit', '/api/redeem': 'redeem', '/api/redeem/request': 'redeemRequest', '/api/pet/select': 'selectPet', '/api/pet/nickname': 'nickname', '/api/pet/allocate': 'allocate', '/api/pet/revive': 'petRevive', '/api/battle/start': 'battleStart', '/api/battle/move': 'battleMove', '/api/battle/state': 'battleState', '/api/battle/invite': 'battleInvite', '/api/battle/invite/accept': 'battleInviteAccept', '/api/battle/invite/decline': 'battleInviteDecline', '/api/friend/code': 'friendCode', '/api/friend/add': 'friendAdd', '/api/friend/del': 'friendDel', '/api/milestone/apply': 'milestoneApply' };
-const PARENT = { '/api/family': 'family', '/api/pin/verify': 'pinVerify', '/api/pin/change': 'pinChange', '/api/security': 'securitySet', '/api/child': 'addChild', '/api/child/edit': 'childEdit', '/api/child/delete': 'childDelete', '/api/child/bindcode': 'bindcode', '/api/child/unbind': 'unbind', '/api/approve': 'approve', '/api/manual': 'manual', '/api/complaint': 'complaint', '/api/complaint/edit': 'complaintEdit', '/api/complaint/cancel': 'complaintCancel', '/api/complaint/delete': 'complaintDelete', '/api/ledger/undo': 'ledgerUndo', '/api/rules': 'rules', '/api/config': 'config', '/api/reward': 'reward', '/api/fulfill': 'fulfill', '/api/pause': 'pause', '/api/settle/month': 'settleMonth', '/api/settle/semester': 'settleSemester', '/api/report': 'report', '/api/milestone/approve': 'milestoneApprove' };
+const CHILD = { '/api/me': 'me', '/api/feed': 'feed', '/api/submit': 'submit', '/api/redeem': 'redeem', '/api/redeem/request': 'redeemRequest', '/api/pet/select': 'selectPet', '/api/pet/nickname': 'nickname', '/api/pet/allocate': 'allocate', '/api/pet/revive': 'petRevive', '/api/battle/start': 'battleStart', '/api/battle/move': 'battleMove', '/api/battle/state': 'battleState', '/api/battle/finish': 'battleFinish', '/api/battle/invite': 'battleInvite', '/api/battle/invite/accept': 'battleInviteAccept', '/api/battle/invite/decline': 'battleInviteDecline', '/api/friend/code': 'friendCode', '/api/friend/add': 'friendAdd', '/api/friend/del': 'friendDel', '/api/milestone/apply': 'milestoneApply', '/api/sync/full': 'syncFull' };
+const PARENT = { '/api/family': 'family', '/api/sync/full': 'syncFull', '/api/pin/verify': 'pinVerify', '/api/pin/change': 'pinChange', '/api/security': 'securitySet', '/api/child': 'addChild', '/api/child/edit': 'childEdit', '/api/child/delete': 'childDelete', '/api/child/bindcode': 'bindcode', '/api/child/unbind': 'unbind', '/api/approve': 'approve', '/api/manual': 'manual', '/api/complaint': 'complaint', '/api/complaint/edit': 'complaintEdit', '/api/complaint/cancel': 'complaintCancel', '/api/complaint/delete': 'complaintDelete', '/api/ledger/undo': 'ledgerUndo', '/api/rules': 'rules', '/api/config': 'config', '/api/reward': 'reward', '/api/fulfill': 'fulfill', '/api/pause': 'pause', '/api/settle/month': 'settleMonth', '/api/settle/semester': 'settleSemester', '/api/report': 'report', '/api/milestone/approve': 'milestoneApprove' };
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
@@ -780,7 +827,8 @@ const server = http.createServer(async (req, res) => {
       if (req.method !== 'POST') return json(res, 405, { error: 'method' });
       let p; try { p = await readBody(req); } catch (e) { return json(res, 413, { error: '请求体过大（照片请压缩后上传）' }); }
       const sess = authFlex(req, p, url);
-      const role = PUBLIC[pathname] !== undefined ? 'public' : CHILD[pathname] !== undefined ? 'child' : PARENT[pathname] !== undefined ? 'parent' : null;
+      let role = PUBLIC[pathname] !== undefined ? 'public' : CHILD[pathname] !== undefined ? 'child' : PARENT[pathname] !== undefined ? 'parent' : null;
+      if (pathname === '/api/sync/full' && sess) role = sess.role;   // 双端共享：按会话角色分派
       if (!role) return json(res, 404, { error: 'not found' });
       if (role === 'child' && (!sess || sess.role !== 'child')) return json(res, 401, { error: 'unauthorized' });
       if (role === 'parent' && (!sess || sess.role !== 'parent')) return json(res, 401, { error: 'unauthorized' });
