@@ -11,8 +11,19 @@ function ok(name, cond, extra) {
   else { fail++; console.log('  ✗ FAIL:', name, extra !== undefined ? JSON.stringify(extra) : ''); }
 }
 async function api(path, body, token) {
-  const res = await fetch(B + path, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) }, body: JSON.stringify(body || {}) });
-  return await res.json();
+  // 网络层重试：长间隔（如 P1 worker 段 ~60s）后首个请求可能复用被服务端 keepalive 超时关闭的 socket → ECONNRESET；
+  // 重试会走新连接。仅重试网络错误，业务错误照常返回。
+  let lastErr;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const res = await fetch(B + path, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) }, body: JSON.stringify(body || {}) });
+      return await res.json();
+    } catch (e) {
+      lastErr = e;
+      await new Promise(r => setTimeout(r, 300));
+    }
+  }
+  throw lastErr;
 }
 
 (async () => {
@@ -470,6 +481,19 @@ async function api(path, body, token) {
   ok('迁移保留 rules/pending/feedStreak', v5fields(snap2).every(c =>
     !!c.rules && Array.isArray(c.pending) && typeof c.feedStreak === 'number'));
 
+  // 遗留数据兼容（修正单要求）：历史数据若出现 status:'idle'，迁移必须显式映射为契约枚举 not_started，并补 pendingGapKey
+  const legacyDb = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+  const lfam = Object.keys(legacyDb.families)[0];
+  const lchild = Object.keys(legacyDb.families[lfam].children)[0];
+  legacyDb.families[lfam].children[lchild].onboarding.status = 'idle';
+  delete legacyDb.families[lfam].children[lchild].returnNudge.pendingGapKey;
+  fs.writeFileSync(DB_FILE, JSON.stringify(legacyDb));
+  execFileSync(process.execPath, ['-e', MIGRATE], { cwd: __dirname });
+  const snap3 = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+  const legacyChild = snap3.families[lfam].children[lchild];
+  ok('遗留 idle 显式映射 not_started', legacyChild.onboarding.status === 'not_started');
+  ok('迁移补 pendingGapKey(schema v6)', legacyChild.returnNudge.pendingGapKey === null);
+
   console.log('== 17 随机灵汐事件（心光雨；服务端以 HABITPET_NO_RANDOM=1 启动 → RNG 固定 0.99，chance=1 必触发） ==');
   {
     const rcSet = await api('/api/config', { randomEventChance: 1 }, PT);
@@ -560,6 +584,60 @@ async function api(path, body, token) {
     ok('旧 gapKey ack 409', e.staleAck409 === true);
     ok('坏 gapKey ack 409', e.badKey409 === true);
     ok('少于3天不提示', e.lessThan3DaysNoNudge === true);
+    // —— 修正单新增测试组 ①⑥：端点响应即落盘（saveNow 先于响应）+ 全流程红线 ——
+    const f = run('persist', 0);
+    ok('端点响应即落盘:start(active+startedOn)', f.startPersisted === true, f.crash);
+    ok('端点响应即落盘:complete(completedOn)', f.completePersisted === true);
+    ok('active 时 dismiss 409(无写入)', f.dismissWhileActive409 === true);
+    ok('展示回归提示即持久化 pending', f.pendingPersisted === true);
+    ok('端点响应即落盘:ack(lastShownForGap+清pending)', f.ackPersisted === true);
+    ok('全流程红线:分数零变化', f.redLinePersist === true);
+    ok('全流程红线:账本零变化', f.ledgerUntouchedPersist === true);
+    // —— 修正单新增测试组 ②：跨设备延迟旧 key 被拒 ——
+    const g = run('oldkey', 0);
+    ok('新 gap 替换旧 pending', g.newPendingReplaces === true, g.crash);
+    ok('跨设备延迟旧 key ack 409', g.delayedOldKey409 === true);
+    ok('当前 pending key ack 200', g.currentKeyAccepted === true);
+    ok('ack 后不再重弹', g.ackStickyAgain === true);
+    // —— 修正单新增测试组 ③：pending 持久化跨进程（=服务重启）后仍可 ack ——
+    const h = run('pendgap', 0);
+    ok('pending 展示(待跨进程验证)', h.pendingShown === true && !!h.gapKey, h.crash);
+    const i = run('pendack', 4, [h.username, String(h.childId), h.gapKey]);
+    ok('服务重启后 pending 仍可 ack', i.pendingAckAfterRestart === true, i.crash);
+    ok('重启后 ack 粘滞', i.ackStickyAfterRestart === true);
+  }
+
+  console.log('== 19 本地缓存投影（node 层：updateFromState/bootChild/离线重启不丢计划卡） ==');
+  {
+    let PL = null, uname = '';
+    for (let att = 0; att < 3 && !PL; att++) {   // 用户名按尝试序号取唯一：即使上次请求实际已到账也能重注册
+      uname = 'cacheboss' + RND + 'x' + att;
+      const r = await api('/api/register', { username: uname, password: 'pass123', familyName: '缓存投影家', securityQ: 'Q', securityA: 'A' });
+      if (r.ok) PL = r.token;
+    }
+    ok('注册缓存投影家', !!PL);
+    const addL = await api('/api/child', { name: '缓存娃', grade: 'G2' }, PL);
+    const bcL = await api('/api/child/bindcode', { childId: addL.childId }, PL);
+    const TL = (await api('/api/bind', { code: bcL.code })).token;
+    await api('/api/pet/select', { speciesId: 'luna' }, TL);
+    const sfL = await api('/api/sync/full', {}, TL);
+    ok('取 raw family 快照', sfL.ok && sfL.family && !!sfL.family.children[addL.childId]);
+    const famFile = path.join(require('os').tmpdir(), 'habitpet-local-fam-' + RND + '.json');
+    fs.writeFileSync(famFile, JSON.stringify({ family: sfL.family, childId: addL.childId }));
+    let out = '';
+    try {
+      out = execFileSync(process.execPath, ['test_local_cache.js'], { cwd: __dirname, encoding: 'utf8', timeout: 60000, env: { ...process.env, LOCAL_FAMILY_FILE: famFile } });
+    } catch (e2) { out = (e2.stdout || '') + '\nLC_CRASH ' + String(e2.message).slice(0, 200); }
+    process.stdout.write(out.split('\n').filter(l => l.startsWith('  ')).join('\n') + '\n');
+    const line = out.split('\n').find(l => l.startsWith('LOCALCACHE '));
+    const lc = line ? JSON.parse(line.slice(11)) : { crash: out.slice(-200) };
+    // —— 修正单新增测试组 ④：本地缓存包含 onboarding/returnNudge；离线重启不丢计划卡 ——
+    ok('本地缓存:updateFromState 缓存 onboarding/returnNudge', lc.cachedViews === true, lc.crash);
+    ok('本地缓存:lastState 完整视图落盘', lc.lastStatePersisted === true);
+    ok('本地缓存:家长快照本地投影字段齐全', lc.projectedViewFields === true);
+    ok('本地缓存:离线重启(无family快照)回退 lastState 不丢计划卡', lc.offlineBootKeptCard === true);
+    ok('本地缓存:重启后缓存视图优先于 raw 投影', lc.offlineCachePriority === true);
+    try { fs.unlinkSync(famFile); } catch (e2) {}
   }
 
   console.log(`\n========== 结果：${pass} 通过 / ${fail} 失败 ==========`);

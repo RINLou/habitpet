@@ -155,6 +155,77 @@ async function makeFamily(tag) {   // 建家 → 娃 → 绑定 → 返回 {PT, 
     setOffset(2);
     const m3 = await api('/api/me', {}, TX2);      // 只隔 2 天
     R.lessThan3DaysNoNudge = m3.body.returnNudge.show === false;
+
+  } else if (phase === 'persist') {   // P0 保存顺序：每个 P1 端点响应后立即读盘断言（saveNow 先于响应）+ 全流程红线
+    const fs = require('fs');
+    const { DB_FILE } = require('./lib/store');
+    const childOnDisk = cid => {
+      const db = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+      for (const f of Object.values(db.families || {})) if (f.children && f.children[cid]) return f.children[cid];
+      return null;
+    };
+    const fam = await makeFamily('F');
+    const today0 = realDateKey(new Date());   // offset 0 时 fakeToday 为 null，断言用真日历
+    const before = await api('/api/me', {}, fam.TX);
+    const base = { intimacy: before.body.intimacy, xp: before.body.xp, streak: before.body.feedStreak };
+    const ledgerCount = (await api('/api/family', {}, fam.PT)).body.ledger.length;
+    const st = await api('/api/onboarding/start', { planId: 'homework' }, fam.TX);
+    let cd = childOnDisk(fam.childId);
+    R.startPersisted = !!st.body.ok && !!cd && cd.onboarding.status === 'active' && cd.onboarding.startedOn === st.body.state.onboarding.startedOn;
+    const cm = await api('/api/onboarding/complete', {}, fam.TX);
+    cd = childOnDisk(fam.childId);
+    R.completePersisted = !!cm.body.ok && cd.onboarding.completedOn.indexOf(today0) >= 0;
+    const dis = await api('/api/onboarding/dismiss', {}, fam.TX);
+    R.dismissWhileActive409 = dis.status === 409;
+    setOffset(4); await sleep(600);
+    const m4 = await api('/api/me', {}, fam.TX);
+    const gapKey = m4.body.returnNudge && m4.body.returnNudge.gapKey;
+    R.nudgeShownPersist = m4.body.returnNudge.show === true && typeof gapKey === 'string' && gapKey.length > 0;
+    cd = childOnDisk(fam.childId);
+    R.pendingPersisted = !!cd && cd.returnNudge.pendingGapKey === gapKey;   // v6：展示即持久化
+    const ack = await api('/api/return-nudge/ack', { gapKey }, fam.TX);
+    cd = childOnDisk(fam.childId);
+    R.ackPersisted = !!ack.body.ok && cd.returnNudge.lastShownForGap === gapKey && cd.returnNudge.pendingGapKey === null;
+    const mEnd = await api('/api/me', {}, fam.TX);
+    R.redLinePersist = mEnd.body.intimacy === base.intimacy && mEnd.body.xp === base.xp && mEnd.body.feedStreak === base.streak;
+    R.ledgerUntouchedPersist = (await api('/api/family', {}, fam.PT)).body.ledger.length === ledgerCount;
+
+  } else if (phase === 'oldkey') {   // 跨设备延迟旧 key：新 gap 替换旧 pending 后，旧 key 必须被拒
+    const fam = await makeFamily('G');
+    await api('/api/me', {}, fam.TX);   // offset 0：lastSeenAt=L0
+    setOffset(4); await sleep(600);
+    const m1 = await api('/api/me', {}, fam.TX);   // gap=4 → show key0=L0，pending=L0
+    const key0 = m1.body.returnNudge.gapKey;
+    R.firstPendingShown = m1.body.returnNudge.show === true && typeof key0 === 'string' && key0.length > 0;
+    setOffset(9); await sleep(700);
+    const m2 = await api('/api/me', {}, fam.TX);   // gap≈5 → show key1，pending=key1（替换 key0）
+    const key1 = m2.body.returnNudge.gapKey;
+    R.newPendingReplaces = m2.body.returnNudge.show === true && typeof key1 === 'string' && key1 !== key0;
+    const ackOld = await api('/api/return-nudge/ack', { gapKey: key0 }, fam.TX);
+    R.delayedOldKey409 = ackOld.status === 409;   // 延迟到达的旧 key 永不吞新提示
+    const ackNew = await api('/api/return-nudge/ack', { gapKey: key1 }, fam.TX);
+    R.currentKeyAccepted = !!ackNew.body.ok;
+    const m3 = await api('/api/me', {}, fam.TX);
+    R.ackStickyAgain = m3.body.returnNudge.show === false;
+
+  } else if (phase === 'pendgap') {   // 展示回归提示即退出（pending 已落盘），key 传给下一进程验证重启后可 ack
+    const fam = await makeFamily('H');
+    await api('/api/me', {}, fam.TX);
+    setOffset(4); await sleep(600);
+    const m = await api('/api/me', {}, fam.TX);
+    R.pendingShown = m.body.returnNudge.show === true;
+    R.gapKey = m.body.returnNudge.gapKey || null;
+    R.username = fam.username; R.childId = fam.childId;
+
+  } else if (phase === 'pendack') {   // 新进程（=服务重启）：持久化的 pending 仍可被同一 key ack
+    const username = process.argv[3], childId = process.argv[4], key0 = process.argv[5];
+    const lg = await api('/api/login', { username, password: 'pass123' });
+    const bc = await api('/api/child/bindcode', { childId }, lg.body.token);
+    const TX = (await api('/api/bind', { code: bc.body.code })).body.token;
+    const ack = await api('/api/return-nudge/ack', { gapKey: key0 }, TX);
+    R.pendingAckAfterRestart = !!ack.body.ok;
+    const m = await api('/api/me', {}, TX);
+    R.ackStickyAfterRestart = m.body.returnNudge.show === false;
   }
 
 })().catch(e => { R.crash = (e && e.message) || String(e); })

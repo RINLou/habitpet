@@ -1029,7 +1029,9 @@ const server = http.createServer(async (req, res) => {
 });
 
 // 60 秒定时器：落盘 + 过期清理（绑定码/战斗/邀请/会话）+ 饿死检查（3 天没投喂 -10 / 5 天昏迷）
-setInterval(() => {
+// 测试模式（HABITPET_NO_TIMER=1，测试启动器注入）下不启动：worker 子进程与主服务共享数据文件，
+// 定时器的整库 saveNow 会互相覆盖，且两进程并发写 DB_TMP 在 Windows 上会 EPERM 崩进程。
+if (!process.env.HABITPET_NO_TIMER) setInterval(() => {
   store.saveNow();
   store.pruneBinds(); store.pruneBattles(); store.pruneInvites(); store.pruneSessions();
   let hungerEvents = 0;

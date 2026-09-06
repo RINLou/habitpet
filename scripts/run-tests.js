@@ -46,7 +46,8 @@ async function waitReady(url, timeoutMs) {
     PORT: String(port),
     P1_PORT: String(workerPort),
     HABITPET_DATA_DIR: tmp,
-    HABITPET_NO_RANDOM: '1'
+    HABITPET_NO_RANDOM: '1',
+    HABITPET_NO_TIMER: '1'   // 关闭 60s 整库落盘定时器：避免与 worker 子进程互相覆盖数据文件 / 并发写 DB_TMP 崩溃
   });
   const server = spawn(process.execPath, ['server.js'], { cwd: ROOT, env, stdio: ['ignore', 'pipe', 'pipe'] });
   server.stdout.on('data', d => process.stdout.write('[server] ' + d));
