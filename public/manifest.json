@@ -1,0 +1,16 @@
+{
+  "name": "养成好习惯 · 宠物大冒险",
+  "short_name": "养成好习惯",
+  "description": "灵汐大陆：孩子的每一个好习惯，都会在另一个世界化作光",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b1026",
+  "theme_color": "#0b1026",
+  "icons": [
+    { "src": "/img/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/img/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/img/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

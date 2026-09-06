@@ -1,0 +1,269 @@
+/* style.css — 灵汐大陆主题（v5 星夜版 / 移动优先）
+   设计语言：深靛蓝星空底 · 心光金点缀 · 圆角柔光卡片 · 手绘立绘裁切
+   v10.1 性能版：全局 touch-action 消除 300ms 点按延迟；星空改静态（低端 WebView 动画掉帧源） */
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+:root {
+  --bg: #0b1026; --bg2: #10173a;
+  --card: #151d3f; --card2: #1b2450;
+  --ink: #e8ecff; --muted: #9aa6d0;
+  --brand: #7c8cff; --brand-ink: #ffffff;
+  --gold: #f5c86b; --gold-soft: rgba(245, 200, 107, .16);
+  --ok: #34d399; --bad: #f87171; --amber: #fbbf24;
+  --line: rgba(255, 255, 255, .09);
+  --shadow: 0 4px 18px rgba(3, 6, 20, .5);
+}
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+html, body { height: 100%; }
+body {
+  font-family: -apple-system, "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei", sans-serif;
+  background: radial-gradient(1200px 700px at 80% -10%, #1c2560 0%, transparent 55%),
+              radial-gradient(900px 600px at -10% 100%, #17205a 0%, transparent 50%),
+              linear-gradient(180deg, #0b1026 0%, #0d1330 100%);
+  background-attachment: fixed;
+  color: var(--ink); font-size: 15px; line-height: 1.5;
+}
+/* 星空：静态星点（v10.1 起不再做 twinkle 动画——低端机 GPU 持续重绘掉帧） */
+body::before, body::after {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image:
+    radial-gradient(1.4px 1.4px at 22px 34px, rgba(255,255,255,.85) 50%, transparent 51%),
+    radial-gradient(1px 1px at 130px 90px, rgba(255,255,255,.55) 50%, transparent 51%),
+    radial-gradient(1.2px 1.2px at 250px 160px, rgba(200,215,255,.7) 50%, transparent 51%),
+    radial-gradient(0.8px 0.8px at 70px 200px, rgba(255,255,255,.45) 50%, transparent 51%);
+  background-size: 300px 260px;
+  opacity: .45;
+}
+body::after { background-size: 420px 380px; opacity: .28; }
+
+#app { position: relative; z-index: 1; max-width: 480px; margin: 0 auto; padding: 12px 12px 90px; }
+.hidden { display: none !important; }
+
+.card {
+  background: linear-gradient(180deg, rgba(255,255,255,.03), transparent 40%), var(--card);
+  border: 1px solid var(--line);
+  border-radius: 18px; padding: 14px; margin-bottom: 12px;
+  box-shadow: var(--shadow);
+}
+.card h3 { font-size: 15px; margin-bottom: 8px; color: var(--ink); }
+.lead { font-size: 13px; color: var(--muted); }
+
+.topbar { display: flex; justify-content: space-between; align-items: center; padding: 6px 2px 12px; }
+.topbar .title { font-weight: 800; font-size: 18px; letter-spacing: .5px; text-shadow: 0 0 18px rgba(124,140,255,.45); }
+.topbar .who { font-size: 12px; color: var(--muted); text-align: right; }
+.topbar .who a { color: var(--gold); text-decoration: none; }
+
+.tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; position: sticky; top: 0; background: linear-gradient(180deg, var(--bg) 75%, transparent); z-index: 5; }
+.tab { flex: none; padding: 8px 14px; border-radius: 999px; background: var(--card2); border: 1px solid var(--line); font-size: 14px; cursor: pointer; color: var(--ink); }
+.tab.on { background: linear-gradient(135deg, #6d7bff, #9f6bff); color: #fff; border-color: transparent; box-shadow: 0 0 14px rgba(124,140,255,.45); }
+
+.btn {
+  display: block; width: 100%; padding: 12px; border: none; border-radius: 14px;
+  font-size: 15px; font-weight: 700;
+  background: linear-gradient(135deg, #6d7bff, #9f6bff); color: var(--brand-ink);
+  cursor: pointer; margin-top: 8px;
+  box-shadow: 0 3px 12px rgba(109,123,255,.35);
+  transition: transform .08s ease, filter .15s ease;
+}
+.btn:active { transform: scale(.97); filter: brightness(1.1); }
+.btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); box-shadow: none; }
+.btn.ok { background: linear-gradient(135deg, #10b981, #34d399); box-shadow: 0 3px 12px rgba(52,211,153,.3); }
+.btn.bad { background: linear-gradient(135deg, #ef4444, #f87171); box-shadow: 0 3px 12px rgba(248,113,113,.3); }
+.btn.warn { background: linear-gradient(135deg, #f59e0b, #fbbf24); color: #201503; box-shadow: 0 3px 12px rgba(251,191,36,.3); }
+.btn.sm { width: auto; display: inline-block; padding: 7px 13px; font-size: 13px; margin: 0; }
+.btn:disabled { opacity: .4; cursor: not-allowed; filter: grayscale(.4); }
+.row { display: flex; gap: 8px; align-items: center; }
+.row .btn { margin-top: 0; }
+
+input, select, textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; font-size: 15px; background: #0f1636; color: var(--ink); margin-top: 4px; }
+input::placeholder, textarea::placeholder { color: #5c6795; }
+label { font-size: 13px; color: var(--muted); display: block; margin-top: 10px; }
+
+.item { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.item:last-child { border-bottom: none; }
+.item .n { font-size: 14px; font-weight: 600; }
+.item .s { font-size: 12px; color: var(--muted); }
+.item .t { flex: 1; min-width: 0; }
+.badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; background: rgba(124,140,255,.18); color: #aab6ff; }
+.badge.g { background: rgba(52,211,153,.16); color: var(--ok); }
+.badge.r { background: rgba(248,113,113,.16); color: var(--bad); }
+.badge.a { background: var(--gold-soft); color: var(--gold); }
+
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.stat { background: var(--card2); border: 1px solid var(--line); border-radius: 12px; padding: 10px; text-align: center; }
+.stat .v { font-size: 20px; font-weight: 800; color: var(--gold); text-shadow: 0 0 12px rgba(245,200,107,.35); }
+.stat .k { font-size: 11px; color: var(--muted); }
+
+/* —— 宠物主页 —— */
+.pet-hero { text-align: center; padding: 14px 10px 10px; }
+.pet-hero .name { font-size: 18px; font-weight: 800; margin-top: 8px; }
+.pet-hero .stage { font-size: 12px; color: var(--gold); font-weight: 700; }
+.xpbar { height: 9px; background: #0f1636; border: 1px solid var(--line); border-radius: 99px; overflow: hidden; margin-top: 8px; }
+.xpbar i { display: block; height: 100%; background: linear-gradient(90deg, #f5c86b, #f59e0b, #ffd98a); border-radius: 99px; box-shadow: 0 0 10px rgba(245,200,107,.6); transition: width .6s ease; }
+
+/* —— 宠物立绘（三段进化图裁切）——
+   firam.png 等图为 1536x1024 横排三形态：左=幼体 中=成体 右=觉醒。
+   容器 overflow hidden；img 宽 300%，用 margin-left 取 1/3；
+   高 108% + margin-top -4% 裁掉图源底部水印。 */
+.pet-art {
+  position: relative; width: 128px; height: 128px; margin: 0 auto;
+  border-radius: 20px; overflow: hidden; background: #0d1430;
+  border: 1px solid rgba(245,200,107,.25);
+  box-shadow: 0 8px 26px rgba(0,0,0,.5), 0 0 22px rgba(124,140,255,.18);
+}
+.pet-art img { width: 300%; height: 108%; object-fit: cover; margin-top: -4%; max-width: none; }
+.pet-art img.pos-0 { margin-left: 0; }
+.pet-art img.pos-1 { margin-left: -100%; }
+.pet-art img.pos-2 { margin-left: -200%; }
+.pet-art img.pos-single { width: 108%; height: 108%; margin-left: -4%; }
+.pet-art.sm { width: 64px; height: 64px; border-radius: 14px; }
+.pet-art.xs { width: 40px; height: 40px; border-radius: 10px; margin: 0; flex: none; }
+.pet-art.fainted { filter: grayscale(.9) brightness(.7); }
+.pet-art.tri { width: 100%; height: auto; border: none; box-shadow: none; background: transparent; }
+.pet-art.tri img { width: 100%; height: auto; margin: 0; border-radius: 14px; }
+.pet-art.idle img { animation: petIdle 3.4s ease-in-out infinite; transform-origin: 50% 90%; }
+@keyframes petIdle { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-4px) scale(1.025); } }
+.p-art-fallback { font-size: 64px; line-height: 128px; }
+.pet-art.sm .p-art-fallback { font-size: 34px; line-height: 64px; }
+.pet-art.xs .p-art-fallback { font-size: 22px; line-height: 40px; }
+
+.radar { display: flex; justify-content: center; padding: 6px 0; }
+.radar svg text { fill: var(--muted); }
+.skills .item .n small { color: var(--muted); font-weight: 400; margin-left: 6px; }
+.skills .item { opacity: .7; }
+.skills .item.unlocked { opacity: 1; background: var(--gold-soft); border-radius: 10px; padding: 10px; margin: 0 -10px; }
+.skills .item.unlocked .n { color: var(--gold); }
+
+/* —— 灵斗竞技场 —— */
+.arena {
+  background:
+    radial-gradient(420px 200px at 50% 0%, rgba(124,140,255,.14), transparent 70%),
+    linear-gradient(180deg, #141b3d 0%, #0e1434 100%);
+  border: 1px solid rgba(124,140,255,.3);
+  border-radius: 18px; padding: 14px;
+  box-shadow: 0 0 30px rgba(124,140,255,.12), var(--shadow);
+}
+.fighter { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
+.fighter .emoji { flex: 0 0 76px; width: 76px; }
+.fighter .emoji .pet-art { width: 76px; height: 76px; margin: 0; border-radius: 14px; }
+.fighter .emoji .pet-art img.pos-single { width: 112%; height: 112%; margin-left: -6%; margin-top: -6%; }
+.fighter .emoji .p-art-fallback { font-size: 40px; line-height: 76px; }
+.fighter .info { flex: 1; }
+.fighter .fname { font-size: 14px; font-weight: 700; }
+.hpbar { height: 13px; background: #0f1636; border: 1px solid var(--line); border-radius: 99px; overflow: hidden; margin-top: 4px; }
+.hpbar i { display: block; height: 100%; background: linear-gradient(90deg, #10b981, #34d399); box-shadow: 0 0 8px rgba(52,211,153,.5); transition: width .5s ease; }
+.hpbar i.low { background: linear-gradient(90deg, #ef4444, #f87171); box-shadow: 0 0 8px rgba(248,113,113,.5); }
+.vs { text-align: center; font-weight: 900; color: var(--gold); font-size: 14px; padding: 2px 0; letter-spacing: 3px; text-shadow: 0 0 12px rgba(245,200,107,.5); }
+.blog { background: rgba(5, 8, 24, .55); border: 1px solid var(--line); border-radius: 12px; padding: 10px; max-height: 170px; overflow-y: auto; font-size: 12px; color: #c3cdf2; margin-top: 10px; }
+.blog p { padding: 3px 0; border-bottom: 1px dashed rgba(255,255,255,.07); }
+
+/* 对战动画（受击抖动 + 伤害飘字 + 暴击金光 + 闪避残影） */
+.fighter.hit-shake { animation: hitShake .45s ease; }
+@keyframes hitShake {
+  0% { transform: translateX(0); }
+  20% { transform: translateX(-7px); filter: brightness(1.35) saturate(1.4); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); filter: brightness(1.2); }
+  80% { transform: translateX(3px); }
+  100% { transform: translateX(0); }
+}
+.dmg-float {
+  position: absolute; top: 6px; right: 12px;
+  font-size: 24px; font-weight: 900; color: #f87171;
+  text-shadow: 0 2px 6px rgba(0,0,0,.45);
+  pointer-events: none; z-index: 5;
+  animation: dmgFloat .9s ease-out forwards;
+}
+.dmg-float.crit { color: var(--gold); font-size: 30px; text-shadow: 0 0 14px rgba(245,200,107,.8); }
+.dmg-float.miss { color: #9aa6d0; font-size: 18px; }
+@keyframes dmgFloat {
+  0% { opacity: 0; transform: translateY(8px) scale(.6); }
+  25% { opacity: 1; transform: translateY(-4px) scale(1.15); }
+  100% { opacity: 0; transform: translateY(-30px) scale(1); }
+}
+.arena .btn:active { transform: scale(.94); }
+.arena .btn { transition: transform .08s ease; }
+
+.modal { position: fixed; inset: 0; background: rgba(4, 7, 20, .68); display: flex; align-items: flex-end; justify-content: center; z-index: 50; backdrop-filter: blur(3px); }
+.sheet { background: var(--card); border: 1px solid var(--line); border-bottom: none; width: 100%; max-width: 480px; border-radius: 22px 22px 0 0; padding: 18px 16px 26px; max-height: 88vh; overflow-y: auto; }
+.sheet h3 { margin-bottom: 6px; }
+
+#loading { position: fixed; inset: 0; background: rgba(5, 8, 24, .6); display: flex; align-items: center; justify-content: center; z-index: 80; backdrop-filter: blur(2px); }
+#loading .spinner { width: 42px; height: 42px; border: 4px solid var(--line); border-top-color: var(--gold); border-radius: 50%; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+#toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: 96px; background: rgba(13, 19, 48, .95); border: 1px solid rgba(245,200,107,.35); color: var(--ink); padding: 10px 18px; border-radius: 999px; font-size: 13px; z-index: 99; max-width: 86vw; text-align: center; box-shadow: 0 6px 24px rgba(0,0,0,.5); }
+#toast.err { border-color: rgba(248,113,113,.5); color: #fecaca; }
+
+/* —— 选宠 —— */
+.species-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.species { background: var(--card2); border: 2px solid var(--line); border-radius: 16px; padding: 10px; text-align: center; cursor: pointer; transition: transform .12s ease, border-color .12s ease; }
+.species:hover { transform: translateY(-2px); }
+.species.on { border-color: var(--gold); background: var(--gold-soft); box-shadow: 0 0 16px rgba(245,200,107,.25); }
+.species .nm { font-size: 13px; font-weight: 700; margin-top: 6px; }
+.species .el { font-size: 11px; color: var(--muted); }
+.species.locked { opacity: .5; cursor: not-allowed; filter: grayscale(.7); }
+.species .lockmask { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 34px; }
+.species { position: relative; }
+
+/* —— 重大事件全屏插画覆盖层（进化/觉醒/毕业/奖励）—— */
+#fx { position: fixed; inset: 0; z-index: 90; display: flex; align-items: center; justify-content: center; background: rgba(4, 7, 20, .84); backdrop-filter: blur(4px); animation: fxFade .35s ease; padding: 16px; }
+@keyframes fxFade { from { opacity: 0; } to { opacity: 1; } }
+.fx-card {
+  width: min(94vw, 470px); border-radius: 24px; overflow: hidden;
+  background: linear-gradient(180deg, #1a2250, #121838);
+  border: 1px solid rgba(245,200,107,.45);
+  box-shadow: 0 0 70px rgba(124,140,255,.4), 0 20px 60px rgba(0,0,0,.6);
+  text-align: center;
+  animation: fxPop .55s cubic-bezier(.2, 1.4, .4, 1);
+}
+@keyframes fxPop { 0% { transform: scale(.55) translateY(30px); opacity: 0; } 100% { transform: scale(1) translateY(0); opacity: 1; } }
+.fx-card .fx-img { width: 100%; display: block; aspect-ratio: 3 / 2; object-fit: cover; }
+.fx-card .fx-title { font-size: 23px; font-weight: 900; color: var(--gold); margin: 16px 14px 4px; text-shadow: 0 0 20px rgba(245,200,107,.55); letter-spacing: 1px; }
+.fx-card .fx-sub { color: var(--ink); font-size: 14px; margin: 2px 18px 6px; }
+.fx-card .fx-btn { margin: 8px 18px 18px; }
+/* 升级小金光（不挡操作） */
+.lvl-burst {
+  position: fixed; left: 50%; top: 34%; transform: translateX(-50%);
+  z-index: 85; pointer-events: none;
+  font-size: 30px; font-weight: 900; color: var(--gold); white-space: nowrap;
+  text-shadow: 0 0 24px rgba(245,200,107,.9), 0 2px 8px rgba(0,0,0,.6);
+  animation: lvlPop 1.7s ease-out forwards;
+}
+@keyframes lvlPop {
+  0% { opacity: 0; transform: translateX(-50%) scale(.5); }
+  22% { opacity: 1; transform: translateX(-50%) scale(1.15); }
+  70% { opacity: 1; transform: translateX(-50%) scale(1); }
+  100% { opacity: 0; transform: translateX(-50%) scale(1) translateY(-26px); }
+}
+
+/* —— 随机彩蛋：流星划过 —— */
+.shooting-star {
+  position: fixed; top: 5vh; left: -12vw; width: 96px; height: 2px; z-index: 1;
+  background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.95));
+  border-radius: 99px; transform: rotate(16deg);
+  pointer-events: none;
+  animation: shoot 1.5s ease-out forwards;
+}
+@keyframes shoot { to { transform: translate(126vw, 34vh) rotate(16deg); opacity: 0; } }
+
+.photo-thumb { max-width: 100%; border-radius: 10px; margin-top: 6px; max-height: 240px; object-fit: cover; }
+.warnbox { background: rgba(248,113,113,.1); border: 1px solid rgba(248,113,113,.35); color: #fecaca; border-radius: 12px; padding: 10px 12px; font-size: 13px; margin-bottom: 10px; }
+.okbox { background: rgba(52,211,153,.09); border: 1px solid rgba(52,211,153,.32); color: #a7f3d0; border-radius: 12px; padding: 10px 12px; font-size: 13px; margin-bottom: 10px; }
+.muted-line { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.whisper { font-size: 12px; color: #8f9cd0; font-style: italic; margin-top: 8px; opacity: .9; }
+.right { text-align: right; }
+.mt8 { margin-top: 8px; }
+.kv { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; }
+
+/* —— 愿望球（CSS 备用形态；有立绘时优先立绘）—— */
+.wishball {
+  display: inline-block; width: 64px; height: 64px; border-radius: 50%;
+  background: radial-gradient(circle at 32% 28%, #bcd0ff 0%, #7c8cff 40%, #3b4bc8 100%);
+  border: 2px solid rgba(245,200,107,.5); position: relative;
+  box-shadow: 0 0 22px rgba(124,140,255,.55), inset -6px -8px 14px rgba(0,0,20,.35);
+  animation: orbPulse 2.4s ease-in-out infinite;
+}
+.wishball::after {
+  content: '✦'; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -52%);
+  color: var(--gold); font-size: 20px; text-shadow: 0 0 10px rgba(245,200,107,.9);
+}
+@keyframes orbPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.07); } }

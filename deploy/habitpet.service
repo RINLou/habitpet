@@ -1,0 +1,25 @@
+[Unit]
+Description=HabitPet 好习惯养成 App
+After=network.target
+
+[Service]
+Type=simple
+User=habitpet
+Group=habitpet
+WorkingDirectory=/opt/habitpet
+ExecStart=/usr/bin/node server.js
+Restart=on-failure
+RestartSec=5
+Environment="NODE_ENV=production"
+Environment="PORT=3000"
+Environment="DATA_DIR=/opt/habitpet/data"
+
+# 安全加固
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/habitpet/data
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

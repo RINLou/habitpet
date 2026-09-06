@@ -1,0 +1,18 @@
+{
+  "name": "habitpet",
+  "version": "1.0.0",
+  "description": "让孩子养成好习惯的宠物养成 App：好习惯换零花钱，学习让宠物变强。",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test_smoke.js",
+    "deploy": "bash deploy/deploy.sh"
+  },
+  "keywords": ["habit", "pet", "parenting", "pokemon-like", "kids"],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {}
+}
