@@ -1,0 +1,10 @@
+# 数据与隐私：绝不上传用户数据
+data/
+*.log
+
+# 系统与临时文件
+node_modules/
+.DS_Store
+Thumbs.db
+processed_image_*.png
+*.tmp
