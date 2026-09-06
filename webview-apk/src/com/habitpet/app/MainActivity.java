@@ -4,10 +4,13 @@ import android.app.Activity;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageInfo;
 import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
+import android.view.Display;
 import android.view.Window;
+import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
@@ -24,6 +27,10 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // v10.2-diag+: 必须先把资源密度与真实屏幕对齐，否则 WebView 会按错误的密度渲染，
+        // 把 359 CSS px 的页面塞进一个 ~91px 宽的画布里，再被系统拉伸铺满屏幕——
+        // 视觉上"所有元素变大 N 倍、右侧被切"，但 CSS 内部测量看着都正常（盲区）。
+        syncDensityToRealScreen();
         requestWindowFeature(Window.FEATURE_NO_TITLE);   // 去掉顶部灰色标题条
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT); // 锁定竖屏
         setContentView(R.layout.activity_main);
@@ -84,6 +91,14 @@ public class MainActivity extends Activity {
                     if (pi != null) pkg = pi.packageName + " " + pi.versionName;
                 }
                 o.put("webView", pkg);
+                // v10.2-diag+: 真实屏幕密度（绕过任何兼容性缩放），用来对照报告值
+                Display realDisp = act.getWindowManager().getDefaultDisplay();
+                DisplayMetrics real = new DisplayMetrics();
+                realDisp.getRealMetrics(real);
+                o.put("realDensity", real.density);
+                o.put("realDensityDpi", real.densityDpi);
+                o.put("realScreenWpx", real.widthPixels);
+                o.put("realScreenHpx", real.heightPixels);
                 return o.toString();
             } catch (Throwable t) {
                 return "{\"err\":\"" + String.valueOf(t) + "\"}";
@@ -97,6 +112,30 @@ public class MainActivity extends Activity {
             webView.goBack();
         } else {
             super.onBackPressed();
+        }
+    }
+
+    // v10.2-diag+: 把 Activity 资源密度校正为真实屏幕密度。
+    // 真机上 getResources().getDisplayMetrics() 被某种"兼容性密度缩放"改成 1，
+    // 导致 WebView 渲染比例完全错。强制对齐后 WebView 才会按真实像素铺。
+    @SuppressWarnings("deprecation")
+    private void syncDensityToRealScreen() {
+        try {
+            Display d = getWindowManager().getDefaultDisplay();
+            DisplayMetrics real = new DisplayMetrics();
+            d.getRealMetrics(real);
+            Resources res = getResources();
+            DisplayMetrics cur = res.getDisplayMetrics();
+            if (Math.abs(cur.density - real.density) > 0.01f
+                || cur.densityDpi != real.densityDpi) {
+                Configuration cfg = new Configuration(res.getConfiguration());
+                cfg.densityDpi = real.densityDpi;
+                cfg.fontScale = 1.0f; // 顺便清掉系统「字体大小」设置的影响
+                res.updateConfiguration(cfg, real);
+                cur.setTo(real); // 立刻同步当前 DisplayMetrics，避免 setContentView 期间读到旧值
+            }
+        } catch (Throwable t) {
+            // 不致命——老设备/罕见情况下 updateConfiguration 可能抛错，留给 WebView 自己处理
         }
     }
 }
