@@ -9,6 +9,8 @@
     family: null,      // /api/sync/full 拉回的脱敏 raw family（本地权威工作副本）
     friends: [],       // childMe.friends 云端缓存
     invites: [],       // childMe.invites 云端缓存
+    childStates: {},   // [childId] 云端 childMe 的 onboarding/returnNudge 视图缓存（离线展示用）
+    lastState: null,   // 最近一次云端完整 childMe 视图（无 family 快照时的离线兜底）
     token: '', role: '', currentChildId: '',
     oplog: [],         // [{path, body, ts}]
     pendingFinishes: [], // [{battleId, mode, oppLevel, win, ts}]
@@ -25,7 +27,7 @@
 
   // —— 持久化 ——
   function persist() {
-    DB.kvSet('state', { family: S.family, oplog: S.oplog, pendingFinishes: S.pendingFinishes, token: S.token, role: S.role, childId: S.currentChildId }).catch(function () {});
+    DB.kvSet('state', { family: S.family, oplog: S.oplog, pendingFinishes: S.pendingFinishes, token: S.token, role: S.role, childId: S.currentChildId, childStates: S.childStates, lastState: S.lastState }).catch(function () {});
   }
   function persistFamily() { persist(); }
 
@@ -43,6 +45,41 @@
       skills: skills, stage: st.name, stageKey: st.key,
       xp: child.xp, xpNext: EN.xpForLevel(child.level + 1), xpCur: EN.xpForLevel(child.level), level: child.level,
       tier: sp.tier || null, fainted: !!child.fainted
+    };
+  }
+  // P1 修正：server.js dayDiff 的本地复刻（两个 YYYY-MM-DD 的自然日差，b - a）
+  function obDayDiff(a, b) {
+    var pa = a.split('-').map(Number), pb = b.split('-').map(Number);
+    return Math.round((new Date(pb[0], pb[1] - 1, pb[2]) - new Date(pa[0], pa[1] - 1, pa[2])) / 86400000);
+  }
+  // P1 修正：server.js onboardingView 的本地复刻（无云端缓存视图时由 raw family 现算，离线不丢计划卡）。
+  // 与服务端的差异：惰性滚转只做视图级镜像（active 且已过第 7 自然日 → 按 expired 展示），
+  // 不改 raw 数据、不归档 history——滚转落库永远由云端权威完成，pull 对齐后自动一致。
+  function onboardingLocalView(child) {
+    var ob = child.onboarding;
+    if (!ob || typeof ob !== 'object') ob = {};
+    var today = EN.dateKey();
+    var status = ob.status || 'not_started';
+    var finishedOn = ob.finishedOn || null;
+    if (status === 'active' && ob.startedOn && obDayDiff(ob.startedOn, today) > 6) {
+      status = 'expired'; finishedOn = finishedOn || today;
+    }
+    var active = status === 'active' && !!ob.startedOn;
+    var off = active ? obDayDiff(ob.startedOn, today) : -1;
+    var todayComplete = active && (ob.completedOn || []).indexOf(today) >= 0;
+    var history = Array.isArray(ob.history) ? ob.history : [];
+    return {
+      status: status, planId: ob.planId || null, startedOn: ob.startedOn || null, finishedOn: finishedOn,
+      dayIndex: active ? Math.min(7, Math.max(1, off + 1)) : null,
+      completedOn: (ob.completedOn || []).slice(),
+      todayComplete: todayComplete,
+      canCompleteToday: active && off >= 0 && off <= 6 && !todayComplete,
+      canStart: ['not_started', 'expired', 'completed'].indexOf(status) >= 0,
+      showStartPrompt: status === 'not_started' && ob.lastDismissedOn !== today,
+      canRestart: status === 'expired' || status === 'completed',
+      historySummary: history.slice(-3).map(function (h) {
+        return { planId: h.planId, startedOn: h.startedOn, completedCount: (h.completedOn || []).length, status: h.status, finishedOn: h.finishedOn || null };
+      })
     };
   }
   function childMe(family, child) {
@@ -75,6 +112,17 @@
       eligibility: EN.hiddenPetEligibility(child),
       friendCode: localFriendCode(child),
       friends: S.friends, invites: S.invites,
+      // P1 修正：本地投影 onboarding/returnNudge——优先云端缓存视图，缺失时由 raw family 现算（离线不丢计划卡）
+      onboarding: (function () {
+        var cached = S.childStates[child.id];
+        if (cached && cached.onboarding) return cached.onboarding;
+        return onboardingLocalView(child);
+      })(),
+      returnNudge: (function () {
+        var cached = S.childStates[child.id];
+        if (cached && cached.returnNudge) return cached.returnNudge;
+        return { show: false, gapDays: 0, gapKey: null };   // 回归提示的展示/确认永远由服务端裁决
+      })(),
       siblings: Object.values(family.children).map(function (c) { return { id: c.id, name: c.name, intimacy: c.intimacy, level: c.level, petEmoji: c.pet ? (speciesById(c.pet.speciesId) || {}).emoji : '⚪' }; })
     };
   }
@@ -301,23 +349,29 @@
   function bootChild(token) {
     S.token = token; S.role = 'child';
     return DB.kvGet('state').then(function (st) {
-      if (!st || !st.family || st.token !== token) return null;
-      S.family = st.family; S.oplog = st.oplog || []; S.pendingFinishes = st.pendingFinishes || [];
+      if (!st || st.token !== token) return null;
+      S.family = st.family || null; S.oplog = st.oplog || []; S.pendingFinishes = st.pendingFinishes || [];
+      S.childStates = st.childStates || {}; S.lastState = st.lastState || null;
       S.currentChildId = st.childId || '';
-      var child = S.currentChildId && S.family.children[S.currentChildId];
-      if (!child && Object.keys(S.family.children).length === 1) child = Object.values(S.family.children)[0];
-      if (!child) return null;
+      var child = S.currentChildId && S.family && S.family.children[S.currentChildId];
+      if (!child && S.family && Object.keys(S.family.children).length === 1) child = Object.values(S.family.children)[0];
       if (S.oplog.length) flush();
       if (S.pendingFinishes.length) flushFinishes();
-      return childMe(S.family, child);
+      if (child) return childMe(S.family, child);
+      // 无 family 快照（从未触发 sync/full）：退回最近一次云端完整视图，离线也不丢计划卡
+      return S.lastState && S.lastState.id ? S.lastState : null;
     }).catch(function () { return null; });
   }
 
-  // 云端 childMe 响应回来时更新缓存（friends/invites 等云端数据）
+  // 云端 childMe 响应回来时更新缓存（friends/invites/onboarding/returnNudge/完整视图）
   function updateFromState(state) {
     if (!state || !state.id) return;
     if (state.friends) S.friends = state.friends;
     if (state.invites) S.invites = state.invites;
+    if (state.onboarding || state.returnNudge) {
+      S.childStates[state.id] = { onboarding: state.onboarding || null, returnNudge: state.returnNudge || null, ts: Date.now() };
+    }
+    S.lastState = state;
     if (!S.currentChildId) S.currentChildId = state.id;
     persist();
   }
@@ -349,7 +403,7 @@
 
   // 清空本地（登出/换账号）
   function reset() {
-    S.family = null; S.friends = []; S.invites = []; S.oplog = []; S.pendingFinishes = []; S.token = ''; S.role = ''; S.currentChildId = '';
+    S.family = null; S.friends = []; S.invites = []; S.childStates = {}; S.lastState = null; S.oplog = []; S.pendingFinishes = []; S.token = ''; S.role = ''; S.currentChildId = '';
     DB.kvDel('state').catch(function () {});
   }
 

@@ -71,6 +71,7 @@ body::after { background-size: 420px 380px; opacity: .28; }
 .btn.warn { background: linear-gradient(135deg, #f59e0b, #fbbf24); color: #201503; box-shadow: 0 3px 12px rgba(251,191,36,.3); }
 .btn.sm { width: auto; display: inline-block; padding: 7px 13px; font-size: 13px; margin: 0; }
 .btn:disabled { opacity: .4; cursor: not-allowed; filter: grayscale(.4); }
+.btn:focus-visible, .tab:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
 .row { display: flex; gap: 8px; align-items: center; }
 .row .btn { margin-top: 0; }
 
@@ -95,6 +96,27 @@ label { font-size: 13px; color: var(--muted); display: block; margin-top: 10px; 
 
 /* —— 宠物主页 —— */
 .pet-hero { text-align: center; padding: 14px 10px 10px; }
+.today-adventure {
+  border-color: rgba(245,200,107,.45);
+  background: radial-gradient(320px 150px at 92% 0%, rgba(245,200,107,.16), transparent 72%), var(--card);
+}
+.today-kicker { color: var(--gold); font-size: 12px; font-weight: 800; letter-spacing: .12em; }
+.today-adventure h2 { font-size: 21px; margin: 3px 0 4px; }
+.today-cta { min-height: 48px; }
+.today-pending { margin-top: 10px; padding: 8px 10px; border-radius: 10px; background: var(--gold-soft); color: #ffe3a1; font-size: 12px; }
+.today-pending.calm { background: rgba(52,211,153,.09); color: #a7f3d0; }
+/* P1：7 天微习惯计划（次级卡，不抢主 CTA） */
+.onboarding-card { margin-top: 10px; padding: 10px 12px; border-radius: 12px; border: 1px dashed var(--line); background: rgba(124,140,255,.06); }
+.onboarding-card .lead { margin-top: 2px; }
+.onboarding-card .row { flex-wrap: wrap; }
+.onboarding-title { font-size: 13px; font-weight: 700; color: var(--ink); }
+.onboarding-days { display: flex; gap: 6px; margin-top: 8px; }
+.onboarding-day { width: 26px; height: 26px; flex: 0 0 26px; display: flex; align-items: center; justify-content: center; border-radius: 8px; border: 1px solid var(--line); font-size: 12px; color: var(--muted); background: rgba(255,255,255,.03); }
+.onboarding-day.done { background: rgba(52,211,153,.16); border-color: rgba(52,211,153,.4); color: #a7f3d0; font-weight: 700; }
+.onboarding-day.today { border-color: var(--brand); color: var(--ink); box-shadow: 0 0 0 1px rgba(124,140,255,.35); }
+.ob-plans { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.ob-plan.picked { border-color: var(--brand); box-shadow: 0 0 0 1px rgba(124,140,255,.45); color: var(--ink); }
+.feed-state { margin: 9px 0 2px; color: var(--muted); font-size: 12px; }
 .pet-hero .name { font-size: 18px; font-weight: 800; margin-top: 8px; }
 .pet-hero .stage { font-size: 12px; color: var(--gold); font-weight: 700; }
 .xpbar { height: 9px; background: #0f1636; border: 1px solid var(--line); border-radius: 99px; overflow: hidden; margin-top: 8px; }
@@ -267,3 +289,7 @@ label { font-size: 13px; color: var(--muted); display: block; margin-top: 10px; 
   color: var(--gold); font-size: 20px; text-shadow: 0 0 10px rgba(245,200,107,.9);
 }
 @keyframes orbPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.07); } }
+
+/* Parent review: surface time-sensitive requests and make pending network actions legible. */
+.card:has([data-review-id]) { border-color: rgba(245, 200, 107, .32); }
+[data-review-id]:disabled { min-width: 108px; }

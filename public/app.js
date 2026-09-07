@@ -156,6 +156,29 @@ async function getJSON(path) {
   const BASE = window.LocalRT ? LocalRT.API_BASE : '';
   try { const r = await fetch(BASE + path); return await r.json(); } catch (e) { return { error: '网络异常' }; }
 }
+// 证据图片必须通过 Authorization 请求取得；绝不把会话令牌放进图片 URL、
+// DOM 属性、历史记录或第三方图片请求的 Referer 中。
+async function loadEvidencePhoto(img) {
+  const id = img && img.dataset.photoId;
+  if (!id) return;
+  const BASE = window.LocalRT ? LocalRT.API_BASE : '';
+  try {
+    const res = await fetch(`${BASE}/api/photo?id=${encodeURIComponent(id)}`, {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!res.ok) throw new Error('photo unavailable');
+    const objectUrl = URL.createObjectURL(await res.blob());
+    img.src = objectUrl;
+    img.dataset.objectUrl = objectUrl;
+    img.addEventListener('load', () => URL.revokeObjectURL(objectUrl), { once: true });
+  } catch (_) {
+    img.alt = '照片暂不可读取';
+    img.classList.add('photo-unavailable');
+  }
+}
+function hydrateEvidencePhotos() {
+  document.querySelectorAll('img[data-photo-id]').forEach(loadEvidencePhoto);
+}
 let toastTimer = null;
 function toast(msg, isErr, long) {
   const t = $('#toast'); t.textContent = msg;
@@ -278,7 +301,7 @@ async function boot() {
     let cached = null;
     if (window.LocalRT) { cached = await LocalRT.bootChild(token); if (cached) { me = cached; renderChild(); } }
     const r = await api('/api/me');
-    if (r.id) { me = r; if (window.LocalRT) { LocalRT.setCurrentChild(r.id); LocalRT.updateFromState(r); } renderChild(); }
+    if (r.id) { me = r; if (window.LocalRT) { LocalRT.setCurrentChild(r.id); LocalRT.updateFromState(r); } renderChild(); maybeShowReturnNudge(); }
     else if (!cached) renderAuth();
   } else if (role === 'parent') {
     // v10.1：家长端先渲 IndexedDB 缓存的 family 快照秒开，再云端刷新
@@ -399,6 +422,7 @@ async function refreshMe() {
   if (r.id) {
     celebratePet(me?.pet, r.pet); me = r;
     if (window.LocalRT) { LocalRT.setCurrentChild(r.id); LocalRT.updateFromState(r); }
+    maybeShowReturnNudge();
   }
 }
 // v5: 升级/进化/觉醒/毕业 全事件演出（插画+音乐+台词）
@@ -454,6 +478,13 @@ function renderChild() {
 function switchChildTab(k) {
   if (curTab === 'battle' && k !== 'battle') { stopPoll(); curBattle = null; }
   curTab = k; renderChild();
+}
+
+// Keep the child home screen focused on one clear next step.
+function openTodayAdventure() {
+  if (!me.fedToday && !me.paused && !me.fainted) return doFeed();
+  curTab = 'report';
+  renderChild();
 }
 
 // —— 新手说明（首次进入自动弹，之后点「📖 玩法」回看）——
@@ -515,6 +546,124 @@ async function pickSpecies(id) {
 }
 
 // —— 宠物 Tab ————————————————————————————————
+// ============================================================
+// P1：7 天微习惯计划（引导层：不发分、不加经验、不替代投喂）+ 温和回归
+// ============================================================
+const ONBOARDING_PLANS = {
+  homework: { emoji: '📚', title: '写完作业后整理书桌 2 分钟' },
+  reading:  { emoji: '📖', title: '读 5 分钟' },
+  prepare:  { emoji: '🎒', title: '明天要用的东西放进书包' }
+};
+function obDayDiff(a, b) {   // YYYY-MM-DD 自然日差（b - a），只用于展示进度格
+  const pa = String(a).split('-').map(Number), pb = String(b).split('-').map(Number);
+  return Math.round((new Date(pb[0], pb[1] - 1, pb[2]) - new Date(pa[0], pa[1] - 1, pa[2])) / 86400000);
+}
+function onboardingCard() {
+  const ob = me && me.onboarding;
+  if (!ob) return '';   // 旧缓存没有该字段：不渲染、不报错
+  if (ob.status === 'not_started') {
+    if (!ob.showStartPrompt) return '';   // 今天已"稍后再说"，不再打扰
+    return `<div class="onboarding-card" role="region" aria-label="七天小目标">
+      <div class="onboarding-title">🌱 用 30 秒选一个 7 天小目标</div>
+      <div class="lead">每天一小步，不加分也不扣分，只是帮自己开个头。</div>
+      <div class="row mt8">
+        <button class="btn sm ghost" onclick="openOnboardingPicker()">选一个 7 天小目标</button>
+        <button class="btn sm ghost" onclick="dismissOnboarding()">稍后再说</button>
+      </div>
+    </div>`;
+  }
+  if (ob.status === 'active') {
+    const plan = ONBOARDING_PLANS[ob.planId];
+    if (!plan || !ob.startedOn) return '';
+    const doneDays = new Set((ob.completedOn || []).map(d => Math.max(1, Math.min(7, obDayDiff(ob.startedOn, d) + 1))));
+    const cells = [];
+    for (let n = 1; n <= 7; n++) {
+      const done = doneDays.has(n);
+      cells.push(`<span class="onboarding-day ${done ? 'done' : (ob.dayIndex === n ? 'today' : '')}" aria-hidden="true">${done ? '✓' : ''}</span>`);
+    }
+    const action = ob.todayComplete
+      ? '<div class="lead">今天已经记下啦，明天见 👋</div>'
+      : ob.canCompleteToday
+        ? '<div class="row mt8"><button class="btn sm ghost" onclick="completeOnboarding()">完成这一小步</button></div>'
+        : `<div class="lead">今天不在计划窗口内${ob.dayIndex ? '' : ''}，明天再来。</div>`;
+    return `<div class="onboarding-card" role="region" aria-label="七天小目标">
+      <div class="onboarding-title">${plan.emoji} ${plan.title} · 第 ${ob.dayIndex || '?'}/7 天</div>
+      <div class="onboarding-days" role="img" aria-label="这期已完成 ${doneDays.size} 天">${cells.join('')}</div>
+      ${action}
+    </div>`;
+  }
+  if (ob.status === 'completed') {
+    return `<div class="onboarding-card" role="region" aria-label="七天小目标">
+      <div class="onboarding-title">🎉 你完成了 7 天小目标！</div>
+      <div class="lead">想继续，就从今天再选一个。</div>
+      <div class="row mt8"><button class="btn sm ghost" onclick="openOnboardingPicker()">从今天重新开始</button></div>
+    </div>`;
+  }
+  if (ob.status === 'expired') {
+    return `<div class="onboarding-card" role="region" aria-label="七天小目标">
+      <div class="onboarding-title">🌱 7 天小目标</div>
+      <div class="lead">这周已经走过，不用补；想从今天重新开始吗？</div>
+      <div class="row mt8"><button class="btn sm ghost" onclick="openOnboardingPicker()">从今天重新开始</button></div>
+    </div>`;
+  }
+  return '';
+}
+let obPickPlanId = null;
+function openOnboardingPicker() {
+  obPickPlanId = null;
+  const items = Object.keys(ONBOARDING_PLANS).map(id =>
+    `<button class="btn sm ghost ob-plan" id="ob_${id}" onclick="obPick('${id}')">${ONBOARDING_PLANS[id].emoji} ${ONBOARDING_PLANS[id].title}</button>`).join('');
+  openModal(`<div class="card">
+    <h3>🌱 选一个 7 天小目标</h3>
+    <div class="lead">每天一小步，不加分不扣分，只帮你把事情做起来。</div>
+    <div class="ob-plans">${items}</div>
+    <div class="row mt8">
+      <button class="btn" id="ob_start" disabled onclick="startOnboarding()">开始这 7 天</button>
+      <button class="btn ghost" onclick="closeModal()">先不选</button>
+    </div>
+  </div>`);
+}
+function obPick(id) {
+  obPickPlanId = id;
+  document.querySelectorAll('.ob-plan').forEach(b => b.classList.remove('picked'));
+  const el = document.getElementById('ob_' + id);
+  if (el) el.classList.add('picked');
+  const s = document.getElementById('ob_start');
+  if (s) s.disabled = false;
+}
+async function startOnboarding() {
+  if (!obPickPlanId) return;
+  const r = await api('/api/onboarding/start', { planId: obPickPlanId });
+  if (r.ok) { me = r.state; closeModal(); renderChild(); }
+  else toast(r.error || '没开始成功，再试一次', true);
+}
+async function completeOnboarding() {
+  const r = await api('/api/onboarding/complete', {});
+  if (r.ok) { me = r.state; renderChild(); toast('今天已经记下啦 ✓'); }
+  else { if (r.state) { me = r.state; renderChild(); } toast(r.error || '稍后再试', true); }
+}
+async function dismissOnboarding() {
+  const r = await api('/api/onboarding/dismiss', {});
+  if (r.ok) { me = r.state; renderChild(); }
+  else toast(r.error || '稍后再试', true);
+}
+// 温和回归：服务端判定 show 才弹；session 内同 gapKey 只弹一次；ack 不阻塞 UI
+let lastReturnNudgeKey = null;
+function maybeShowReturnNudge() {
+  const n = me && me.returnNudge;
+  if (!n || !n.show || !n.gapKey || n.gapKey === lastReturnNudgeKey) return;
+  lastReturnNudgeKey = n.gapKey;
+  // 饿晕时复活卡不能被遮太久：3.5s 自动淡出（按钮仍在，可立刻关）
+  showFx({ title: '🌿 好久不见', sub: '好久不见，回来就很好。今天只做一小步也算开始。', btn: '看看今天能做什么', auto: (me && me.fainted) ? 3500 : 0 });
+  const b = document.querySelector('#fx .fx-btn');
+  if (b) b.onclick = function () {
+    closeFx();
+    const t = document.querySelector('.today-adventure');
+    if (t && t.scrollIntoView) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+  api('/api/return-nudge/ack', { gapKey: n.gapKey });
+}
+
 function childPetTab() {
   const p = me.pet;
   const xpPct = Math.min(100, Math.round((p.xp - p.xpCur) / Math.max(1, p.xpNext - p.xpCur) * 100));
@@ -525,6 +674,10 @@ function childPetTab() {
       <b>欢迎来到宠物大冒险！</b><br>
       每天按时完成作业可以投喂一次，考试、默写考好了可以申报加分，宠物会升级进化。月底用亲密度换零花钱或奖励 💪
     </div>` : '';
+  const pending = (me.pending || []).filter(e => e.status === 'pending');
+  const nextAction = me.fainted ? '先让伙伴醒来' : me.paused ? '今天安心休息' : fed ? '记录今天的闪光点' : '完成作业，投喂伙伴';
+  const nextHint = me.fainted ? '恢复后就能继续冒险。慢一点也没关系，我们从现在开始。' : me.paused ? '暂停期间不会扣分，也不会打断你的连击。' : fed ? '投喂已经完成！有考试、默写或值得骄傲的事，再告诉家长吧。' : me.hungerDays >= 2 ? '伙伴有点想念你。完成一小步，就能一起回到冒险里。' : '把今天完成的作业变成一顿能量餐吧。';
+  const nextDisabled = me.fainted || me.paused;
   let milestoneHtml = '';
   if (p.stageKey === 'awaken' && !me.milestone.used) {
     const hasPending = me.milestone.applications.some(a => a.status === 'pending');
@@ -549,6 +702,14 @@ function childPetTab() {
     hungerHtml = `<div class="muted-line">⏰ 提醒：明天再不投喂，宠物就要饿肚子扣分啦</div>`;
   }
   return `${welcome}
+    <section class="card today-adventure" aria-labelledby="today-adventure-title">
+      <div class="today-kicker">今日冒险</div>
+      <h2 id="today-adventure-title">${nextAction}</h2>
+      <div class="lead">${nextHint}</div>
+      <button class="btn today-cta" ${nextDisabled ? 'disabled' : ''} onclick="openTodayAdventure()">${!fed && !nextDisabled ? '🍖 完成作业，投喂 +' + me.rules.feed : fed ? '📝 去记录今天的成就' : me.fainted ? '💤 先在下方复活伙伴' : '🌙 今天先休息'}</button>
+      ${onboardingCard()}
+      ${pending.length ? `<div class="today-pending" role="status">⏳ 有 ${pending.length} 个成就正在等家长查看：${pending.slice(0, 2).map(e => esc(e.label)).join('、')}${pending.length > 2 ? '…' : ''}</div>` : '<div class="today-pending calm">✨ 今天没有待审核的事，按自己的节奏来。</div>'}
+    </section>
     <div class="card pet-hero">
       ${me.fainted ? petArt(p.emoji, p.stageKey, 'fainted', false) : petArt(p.emoji, p.stageKey, '', true)}
       <div class="name">${esc(p.nickname)} <span class="stage">Lv${p.level} · ${p.stage}</span></div>
@@ -556,7 +717,7 @@ function childPetTab() {
       <div class="xpbar"><i style="width:${xpPct}%"></i></div>
       <div class="muted-line">经验 ${p.xp} / 下一级 ${p.xpNext}</div>
       <div class="whisper">🌙 ${pickDaily(WHISPERS, me.id)}</div>
-      <button class="btn" ${fed || me.paused || me.fainted ? 'disabled' : ''} onclick="doFeed()">${me.fainted ? '💀 昏迷中，先复活' : fed ? '今天已投喂 🍖' : '🍖 完成作业，投喂 +' + me.rules.feed}</button>
+      <div class="feed-state">${fed ? '✅ 今天已经投喂，伙伴吃得很开心！' : '今日投喂会在上方「今日冒险」完成'}</div>
       <div class="muted-line">连续打卡 ${me.feedStreak} 天（每满 7 天额外 +${me.rules.streak}）${me.weeklyCap > 0 ? ` · 本周已加 ${me.weekEarned}/${me.weeklyCap}` : ''}</div>
     </div>
     ${hungerHtml}
@@ -922,9 +1083,41 @@ function childBookTab() {
 // ============================================================
 // 家长端
 // ============================================================
-let pTab = 'overview';
+// Bring urgent parent work forward without overriding a tab they explicitly chose.
+let pTab = null;
+let parentDangerAction = null;
+const parentRiskAcknowledged = new Set();
+
+function parentDangerConfirm(title, impact, phrase, actionLabel, onConfirm) {
+  parentDangerAction = onConfirm;
+  openModal(`<h3>${title}</h3>
+    <div class="warnbox">${impact}</div>
+    <div class="lead">This action is destructive or changes a child's data. Type 「${phrase}」 to continue.</div>
+    <input id="parent_danger_phrase" autocomplete="off" placeholder="输入 ${phrase}">
+    <button class="btn bad" onclick="runParentDangerConfirm('${phrase}')">${actionLabel}</button>
+    <button class="btn ghost" onclick="parentDangerAction=null;closeModal()">取消</button>`);
+}
+async function runParentDangerConfirm(phrase) {
+  if (!$('#parent_danger_phrase') || $('#parent_danger_phrase').value.trim() !== phrase) return toast(`请输入「${phrase}」以确认`, true);
+  const action = parentDangerAction;
+  parentDangerAction = null;
+  closeModal();
+  if (action) await action();
+}
+function setReviewActionState(id, label) {
+  document.querySelectorAll(`[data-review-id="${id}"]`).forEach(btn => { btn.disabled = true; btn.textContent = label; });
+}
+function restoreReviewActionState(id) {
+  document.querySelectorAll(`[data-review-id="${id}"]`).forEach(btn => { btn.disabled = false; });
+}
+function requireParentPhrase(key, title, impact, phrase, actionLabel, retry) {
+  if (parentRiskAcknowledged.has(key)) { parentRiskAcknowledged.delete(key); return false; }
+  parentDangerConfirm(title, impact, phrase, actionLabel, () => { parentRiskAcknowledged.add(key); retry(); });
+  return true;
+}
 function renderParent() {
   if (!fam.pinChanged) return renderForcePin();   // v4: 首次登录强制修改 PIN
+  if (!pTab) pTab = totalPending() ? 'inbox' : 'overview';
   $('#app').innerHTML = `
     <div class="topbar">
       <div class="title">👨‍👩‍👧‍👦 ${esc(fam.name)}</div>
@@ -942,6 +1135,7 @@ function renderParent() {
   else if (pTab === 'rewards') b.innerHTML = parentRewards();
   else if (pTab === 'ledger') b.innerHTML = parentLedger();
   else b.innerHTML = parentSettings();
+  if (pTab === 'inbox') hydrateEvidencePhotos();
 }
 function totalPending() { return fam.children.reduce((s, c) => s + c.pending.filter(e => e.status === 'pending').length, 0); }
 async function refreshFam() { const r = await api('/api/family'); if (r.id) fam = r; }
@@ -1014,6 +1208,7 @@ async function doEditChild(childId) {
   fam = r.family; closeModal(); toast('已保存'); renderParent();
 }
 async function deleteChild(childId) {
+  if (requireParentPhrase(`delete-child:${childId}`, '🗑️ 永久删除孩子', '将清空宠物、积分、兑换与设备绑定；删除后无法恢复，历史账本仅保留留痕。', '删除', '继续删除', () => deleteChild(childId))) return;
   const c = fam.children.find(x => x.id === childId);
   if (!c) return;
   askConfirm(`⚠️ 彻底删除「${c.name}」？宠物/积分/兑换全部清空且不可恢复（历史账本保留留痕）。`, async () => {
@@ -1038,6 +1233,7 @@ async function genBind(childId) {
     <button class="btn" onclick="closeModal()">知道了</button>`);
 }
 async function unbindChild(childId) {
+  if (requireParentPhrase(`unbind:${childId}`, '📵 解绑全部设备', '孩子的所有已绑定设备将立即退出，下次打开需要重新输入绑定码。', '解绑', '继续解绑', () => unbindChild(childId))) return;
   askConfirm('解绑该孩子的全部登录设备？孩子手机下次打开需要重新输绑定码（换手机/丢手机时用）', async () => {
     const r = await api('/api/child/unbind', { childId });
     if (r.error) return toast(r.error, true);
@@ -1062,10 +1258,10 @@ function parentInbox() {
     return `<div class="card">
       <h3>${esc(c.name)} · ${esc(e.label)} <span class="badge a">+${e.points}</span></h3>
       <div class="lead">${esc(e.note || '（无说明）')} · ${fmt(e.ts)}</div>
-      ${e.hasPhoto ? `<img class="photo-thumb" src="/api/photo?id=${e.id}&token=${token}" onclick="window.open(this.src)">` : '<div class="muted-line">无照片佐证</div>'}
+      ${e.hasPhoto ? `<img class="photo-thumb" data-photo-id="${esc(e.id)}" alt="正在加载照片证据">` : '<div class="muted-line">无照片佐证</div>'}
       <div class="row mt8">
-        <button class="btn sm ok" onclick="approve('${e.id}','approve')">✅ 通过 +${e.points}</button>
-        <button class="btn sm bad" onclick="approve('${e.id}','reject')">❌ 驳回</button>
+        <button class="btn sm ok" data-review-id="${e.id}" onclick="approve('${e.id}','approve')">✅ 通过 +${e.points}</button>
+        <button class="btn sm bad" data-review-id="${e.id}" onclick="approve('${e.id}','reject')">❌ 驳回</button>
       </div>
     </div>`;
   }).join('')).join('');
@@ -1074,13 +1270,15 @@ function parentInbox() {
 async function approve(id, decision) {
   if (decision === 'reject') {
     askText('驳回申报', '驳回原因（孩子可见，可留空）', async reason => {
+      setReviewActionState(id, '正在驳回…');
       const r = await api('/api/approve', { eventId: id, decision, reason: reason || '' });
-      if (r.error) return toast(r.error, true);
+      if (r.error) { restoreReviewActionState(id); return toast(r.error, true); }
       fam = r.family; toast('已驳回'); renderParent();
     }, { tip: '驳回原因会展示给孩子' });
   } else {
+    setReviewActionState(id, '正在通过…');
     const r = await api('/api/approve', { eventId: id, decision });
-    if (r.error) return toast(r.error, true);
+    if (r.error) { restoreReviewActionState(id); return toast(r.error, true); }
     fam = r.family; toast('已通过，分数到账 ✅'); renderParent();
   }
 }
@@ -1206,6 +1404,7 @@ async function cancelComplaint(childId, recId) {
   }, '↩️ 取消投诉');
 }
 async function delComplaint(childId, recId) {
+  if (requireParentPhrase(`delete-complaint:${recId}`, '🗑️ 永久删除投诉', '将删除这条投诉记录并退回已扣分。删除后不可恢复，建议仅用于误录。', '删除', '继续删除', () => delComplaint(childId, recId))) return;
   askConfirm('彻底删除该投诉记录（退回扣分）？删除后不可恢复。', async () => {
     const r = await pinApi('/api/complaint/delete', { childId, recId });
     if (!r) return; if (r.error) return toast(r.error, true);
@@ -1256,6 +1455,7 @@ async function saveReward(id) {
   fam = r.family; closeModal(); renderParent();
 }
 async function delReward(id) {
+  if (requireParentPhrase(`delete-reward:${id}`, '🗑️ 删除奖励', '该奖励会从目录中永久移除；已兑换记录不会受影响。', '删除', '继续删除', () => delReward(id))) return;
   const r = await api('/api/reward', { delete: true, id });
   if (r.error) return toast(r.error, true);
   fam = r.family; closeModal(); renderParent();
@@ -1283,6 +1483,7 @@ function parentLedger() {
   </div>`;
 }
 async function undoLedger(id) {
+  if (requireParentPhrase(`undo-ledger:${id}`, '↩️ 撤销账目', '将反向调整亲密度和经验，并新增一条对冲记录；宠物成长点不会回收。', '撤销', '继续撤销', () => undoLedger(id))) return;
   askConfirm('撤销该笔账目？将反向调整亲密度/经验（宠物五维成长点不回收），并留下对冲记录。', async () => {
     const r = await pinApi('/api/ledger/undo', { ledgerId: id });
     if (!r) return; if (r.error) return toast(r.error, true);
@@ -1401,6 +1602,7 @@ async function toggleHoliday() {
   fam = r.family; toast(fam.config.holidayMode ? '假期模式已开启：投喂全天可领，申报切换为假期成就' : '已恢复日常模式'); renderParent();
 }
 async function settleMonth() {
+  if (requireParentPhrase('settle-month', '🗓️ 手动月度结算', '将立即发放无投诉奖并重置亲密度。通常应等待每月 1 日自动执行。', '结算', '继续结算', settleMonth)) return;
   askConfirm('确认手动触发月度结算？将发放无投诉奖并重置亲密度（通常无需手动）', async () => {
     const r = await pinApi('/api/settle/month', {});
     if (!r) return; if (r.error) return toast(r.error, true);
@@ -1408,6 +1610,7 @@ async function settleMonth() {
   }, '🗓️ 月度结算');
 }
 async function settleSemester() {
+  if (requireParentPhrase('settle-semester', '🎓 学期结算', '所有宠物将毕业进入图鉴，经验清零；新学期需要重新选择宠物。', '毕业', '继续结算', settleSemester)) return;
   askConfirm('学期结算：所有宠物毕业进图鉴、经验清零、新学期重挑宠物。确认？', async () => {
     const r = await pinApi('/api/settle/semester', {});
     if (!r) return; if (r.error) return toast(r.error, true);

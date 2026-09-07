@@ -43,16 +43,23 @@ public class MainActivity extends Activity {
         settings.setDomStorageEnabled(true);   // localStorage + IndexedDB（本地快照/oplog）
         settings.setDatabaseEnabled(true);
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
+        // The bundled UI needs asset reads, but it never needs content:// providers.
         settings.setAllowFileAccess(true);
+        settings.setAllowContentAccess(false);
         // 关键：file:// 内页的 viewport meta 需要这两项才被尊重，否则按默认宽度渲染导致横向拉伸
         settings.setUseWideViewPort(true);
         settings.setLoadWithOverviewMode(true);
         settings.setTextZoom(100);             // 不随系统字体缩放放大，保持布局稳定
         // file:// 页面访问 https 云端 API：本地优先壳必须放开跨域（仅用于自有内容）
         settings.setAllowUniversalAccessFromFileURLs(true);
-        settings.setAllowFileAccessFromFileURLs(true);
+        // App pages may call the HTTPS API, but must not read arbitrary local files.
+        settings.setAllowFileAccessFromFileURLs(false);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+            // The manifest also disallows cleartext. Keep the WebView policy aligned.
+            settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            settings.setSafeBrowsingEnabled(true);
         }
 
         webView.setWebViewClient(new WebViewClient());

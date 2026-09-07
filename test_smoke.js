@@ -3,7 +3,7 @@
 const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const B = 'http://127.0.0.1:3000';
+const B = process.env.BASE_URL || 'http://127.0.0.1:3000';
 const RND = Math.floor(Math.random()*1000000);
 let pass = 0, fail = 0;
 function ok(name, cond, extra) {
@@ -11,8 +11,19 @@ function ok(name, cond, extra) {
   else { fail++; console.log('  ✗ FAIL:', name, extra !== undefined ? JSON.stringify(extra) : ''); }
 }
 async function api(path, body, token) {
-  const res = await fetch(B + path, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) }, body: JSON.stringify(body || {}) });
-  return await res.json();
+  // 网络层重试：长间隔（如 P1 worker 段 ~60s）后首个请求可能复用被服务端 keepalive 超时关闭的 socket → ECONNRESET；
+  // 重试会走新连接。仅重试网络错误，业务错误照常返回。
+  let lastErr;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const res = await fetch(B + path, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) }, body: JSON.stringify(body || {}) });
+      return await res.json();
+    } catch (e) {
+      lastErr = e;
+      await new Promise(r => setTimeout(r, 300));
+    }
+  }
+  throw lastErr;
 }
 
 (async () => {
@@ -57,6 +68,8 @@ async function api(path, body, token) {
   ok('娃B选灵狐', sel2.ok);
   const selDup = await api('/api/pet/select', { speciesId: 'volt' }, T1);
   ok('学期中不能换宠', !!selDup.error);
+  const hour = new Date().getHours();
+  await api('/api/config', { feedWindow: { startHour: (hour + 1) % 24, endHour: (hour + 2) % 24 } }, PT);
 
   const feedWin = await api('/api/feed', {}, T1); // 凌晨测试 → 窗口外
   ok('投喂时段拦截(凌晨)', !!feedWin.error, feedWin.error);
@@ -87,8 +100,16 @@ async function api(path, body, token) {
   ok('驳回', rej.ok);
   const photoUnauth = await fetch(B + '/api/photo?id=' + sub.eventId);
   ok('照片无权限不可看', photoUnauth.status === 401);
-  const photoAuth = await fetch(B + '/api/photo?id=' + sub.eventId + '&token=' + PT);
-  ok('家长token可看照片', photoAuth.status === 200);
+  const photoWithQueryToken = await fetch(B + '/api/photo?id=' + sub.eventId + '&token=' + PT);
+  ok('照片不接受 URL token', photoWithQueryToken.status === 401);
+  const photoAuth = await fetch(B + '/api/photo?id=' + sub.eventId, { headers: { Authorization: 'Bearer ' + PT } });
+  ok('家长 Bearer token 可看照片', photoAuth.status === 200);
+  const other = await api('/api/register', { username: 'photoother' + RND, password: 'pass123', familyName: '照片隔离家' });
+  const photoOtherFamily = await fetch(B + '/api/photo?id=' + sub.eventId, { headers: { Authorization: 'Bearer ' + other.token } });
+  ok('其他家庭不可读取照片', photoOtherFamily.status === 404);
+  const otherFamily = await api('/api/register', { username: 'otherboss' + RND, password: 'pass123', familyName: '其他测试家', securityQ: '我的小学叫什么', securityA: '新华小学' });
+  const foreignPhoto = await fetch(B + '/api/photo?id=' + sub.eventId, { headers: { Authorization: 'Bearer ' + otherFamily.token } });
+  ok('其他家庭不能读取猜中的照片 ID', foreignPhoto.status === 404, foreignPhoto.status);
 
   console.log('== 4 手动/投诉（不限次 + 取消/删除/编辑都调分） ==');
   const man = await api('/api/manual', { childId: C1, delta: 100, reason: '主动学习' }, PT);
@@ -439,7 +460,7 @@ async function api(path, body, token) {
   }
 
   console.log('== 16 迁移幂等（重复 migrate 不改数据） ==');
-  const DB_FILE = path.join(__dirname, 'data', 'habitpet.json');
+  const DB_FILE = path.join(process.env.HABITPET_DATA_DIR || path.join(__dirname, 'data'), 'habitpet.json');
   const countCp = d => Object.values(d.families || {}).flatMap(f => Object.values(f.children || {})).reduce((n, c) => n + (Array.isArray(c.complaints) ? c.complaints.length : 0), 0);
   const ledgerIds = d => Object.values(d.families || {}).flatMap(f => (f.ledger || []).map(l => l.id)).sort().join(',');
   const redStatus = d => Object.values(d.families || {}).flatMap(f => Object.values(f.children || {})).flatMap(c => (c.redemptions || []).map(r => r.id + ':' + r.status)).sort().join(',');
@@ -448,10 +469,30 @@ async function api(path, body, token) {
   const snap1 = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
   execFileSync(process.execPath, ['-e', MIGRATE], { cwd: __dirname });
   const snap2 = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
-  ok('schema v4', snap1.schemaVersion === 4 && snap2.schemaVersion === 4);
+  ok('schema v6', snap1.schemaVersion === 6 && snap2.schemaVersion === 6);
   ok('投诉记录数不变', countCp(snap1) === countCp(snap2), { m1: countCp(snap1), m2: countCp(snap2) });
   ok('账本 id 集不变', ledgerIds(snap1) === ledgerIds(snap2));
   ok('兑换状态集不变', redStatus(snap1) === redStatus(snap2));
+  const v5fields = d => Object.values(d.families || {}).flatMap(f => Object.values(f.children || {}));
+  ok('迁移补齐 onboarding/returnNudge', v5fields(snap2).every(c =>
+    c.onboarding && ['not_started', 'active', 'completed', 'expired'].includes(c.onboarding.status)
+    && Array.isArray(c.onboarding.completedOn) && Array.isArray(c.onboarding.history)
+    && c.returnNudge && (c.returnNudge.lastShownForGap === null || typeof c.returnNudge.lastShownForGap === 'string')));
+  ok('迁移保留 rules/pending/feedStreak', v5fields(snap2).every(c =>
+    !!c.rules && Array.isArray(c.pending) && typeof c.feedStreak === 'number'));
+
+  // 遗留数据兼容（修正单要求）：历史数据若出现 status:'idle'，迁移必须显式映射为契约枚举 not_started，并补 pendingGapKey
+  const legacyDb = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+  const lfam = Object.keys(legacyDb.families)[0];
+  const lchild = Object.keys(legacyDb.families[lfam].children)[0];
+  legacyDb.families[lfam].children[lchild].onboarding.status = 'idle';
+  delete legacyDb.families[lfam].children[lchild].returnNudge.pendingGapKey;
+  fs.writeFileSync(DB_FILE, JSON.stringify(legacyDb));
+  execFileSync(process.execPath, ['-e', MIGRATE], { cwd: __dirname });
+  const snap3 = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+  const legacyChild = snap3.families[lfam].children[lchild];
+  ok('遗留 idle 显式映射 not_started', legacyChild.onboarding.status === 'not_started');
+  ok('迁移补 pendingGapKey(schema v6)', legacyChild.returnNudge.pendingGapKey === null);
 
   console.log('== 17 随机灵汐事件（心光雨；服务端以 HABITPET_NO_RANDOM=1 启动 → RNG 固定 0.99，chance=1 必触发） ==');
   {
@@ -496,6 +537,107 @@ async function api(path, body, token) {
     const badLv = await api('/api/battle/finish', { battleId: 'y', mode: 'boss', oppLevel: 9999, win: true }, TX);
     // 9999 钳到 80 → 名义 86，但每日经验上限 30，首场已发 16 → 实发 14
     ok('异常等级被钳制 + 每日经验上限生效', badLv.ok && badLv.xp === 14 && badLv.capped, badLv.xp);
+  }
+
+  console.log('== 18 P1 微习惯计划 + 温和回归（子进程时间旅行，规格验收） ==');
+  {
+    const run = (phase, offset, args) => {
+      let out = '';
+      try {
+        out = execFileSync(process.execPath, ['test_p1_worker.js', phase, ...(args || [])], {
+          cwd: __dirname, encoding: 'utf8', timeout: 90000,
+          env: { ...process.env, P1_PORT: process.env.P1_PORT || '3998', P1_OFFSET: String(offset) }
+        });
+      } catch (e) {
+        out = (e.stdout || '') + '\nP1CRASH ' + String(e.message).slice(0, 200);
+      }
+      const line = out.split('\n').find(l => l.startsWith('P1RESULT '));
+      return line ? JSON.parse(line.slice(9)) : { crash: out.slice(0, 200) };
+    };
+    const a = run('day1', 0);
+    ok('迁移:新孩子 onboarding/returnNudge 就位', a.migrated === true, a.crash);
+    ok('非法模板被拒', a.badPlanRejected === true);
+    ok('稍后再说生效(当日不再打扰)', a.dismissOk === true);
+    ok('开始计划(第1天)', a.started === true);
+    ok('active 重复 start 409', a.dupStart409 === true);
+    ok('active 时 dismiss 409', a.dismissWhileActive409 === true);
+    ok('当天完成小步', a.day1Complete === true);
+    ok('重复完成幂等(不追加)', a.completeIdempotent === true);
+    ok('家长 token 调孩子端点 401', a.parentToken401 === true);
+    ok('状态归属本人', a.stateSelf === true);
+    const b = run('day7', 6, [a.username, String(a.childId)]);
+    ok('重启服务器后计划仍在(持久化)', b.persistedActive === true, b.crash);
+    ok('第7自然日完成→completed', b.day7Completed === true);
+    ok('亲密度/XP/feedStreak 全不变(红线)', b.noScoreChange === true);
+    ok('账本零改动(红线)', b.ledgerUntouched === true);
+    ok('周期摘要归档(history)', b.historyArchived === true);
+    const c = run('expired', 0);
+    ok('第8日读取惰性滚转 expired', c.rolledExpired === true, c.crash);
+    ok('expired 后 complete 409', c.completeAfterExpiry409 === true);
+    ok('重新开始(旧周期已归档)', c.restartOk === true);
+    ok('再次漏完→expired,history≤3', c.expiredAgain === true && c.historyCapped === true);
+    const d = run('missed', 0);
+    ok('漏日不可补填,当日可完成', d.missedNotBackfilled === true, d.crash);
+    const e = run('nudge', 0);
+    ok('≥3个自然日未访问→回归提示', e.nudgeShown === true, e.crash);
+    ok('ack 后同 gap 不再提示', e.noRepeatAfterAck === true);
+    ok('旧 gapKey ack 409', e.staleAck409 === true);
+    ok('坏 gapKey ack 409', e.badKey409 === true);
+    ok('少于3天不提示', e.lessThan3DaysNoNudge === true);
+    // —— 修正单新增测试组 ①⑥：端点响应即落盘（saveNow 先于响应）+ 全流程红线 ——
+    const f = run('persist', 0);
+    ok('端点响应即落盘:start(active+startedOn)', f.startPersisted === true, f.crash);
+    ok('端点响应即落盘:complete(completedOn)', f.completePersisted === true);
+    ok('active 时 dismiss 409(无写入)', f.dismissWhileActive409 === true);
+    ok('展示回归提示即持久化 pending', f.pendingPersisted === true);
+    ok('端点响应即落盘:ack(lastShownForGap+清pending)', f.ackPersisted === true);
+    ok('全流程红线:分数零变化', f.redLinePersist === true);
+    ok('全流程红线:账本零变化', f.ledgerUntouchedPersist === true);
+    // —— 修正单新增测试组 ②：跨设备延迟旧 key 被拒 ——
+    const g = run('oldkey', 0);
+    ok('新 gap 替换旧 pending', g.newPendingReplaces === true, g.crash);
+    ok('跨设备延迟旧 key ack 409', g.delayedOldKey409 === true);
+    ok('当前 pending key ack 200', g.currentKeyAccepted === true);
+    ok('ack 后不再重弹', g.ackStickyAgain === true);
+    // —— 修正单新增测试组 ③：pending 持久化跨进程（=服务重启）后仍可 ack ——
+    const h = run('pendgap', 0);
+    ok('pending 展示(待跨进程验证)', h.pendingShown === true && !!h.gapKey, h.crash);
+    const i = run('pendack', 4, [h.username, String(h.childId), h.gapKey]);
+    ok('服务重启后 pending 仍可 ack', i.pendingAckAfterRestart === true, i.crash);
+    ok('重启后 ack 粘滞', i.ackStickyAfterRestart === true);
+  }
+
+  console.log('== 19 本地缓存投影（node 层：updateFromState/bootChild/离线重启不丢计划卡） ==');
+  {
+    let PL = null, uname = '';
+    for (let att = 0; att < 3 && !PL; att++) {   // 用户名按尝试序号取唯一：即使上次请求实际已到账也能重注册
+      uname = 'cacheboss' + RND + 'x' + att;
+      const r = await api('/api/register', { username: uname, password: 'pass123', familyName: '缓存投影家', securityQ: 'Q', securityA: 'A' });
+      if (r.ok) PL = r.token;
+    }
+    ok('注册缓存投影家', !!PL);
+    const addL = await api('/api/child', { name: '缓存娃', grade: 'G2' }, PL);
+    const bcL = await api('/api/child/bindcode', { childId: addL.childId }, PL);
+    const TL = (await api('/api/bind', { code: bcL.code })).token;
+    await api('/api/pet/select', { speciesId: 'luna' }, TL);
+    const sfL = await api('/api/sync/full', {}, TL);
+    ok('取 raw family 快照', sfL.ok && sfL.family && !!sfL.family.children[addL.childId]);
+    const famFile = path.join(require('os').tmpdir(), 'habitpet-local-fam-' + RND + '.json');
+    fs.writeFileSync(famFile, JSON.stringify({ family: sfL.family, childId: addL.childId }));
+    let out = '';
+    try {
+      out = execFileSync(process.execPath, ['test_local_cache.js'], { cwd: __dirname, encoding: 'utf8', timeout: 60000, env: { ...process.env, LOCAL_FAMILY_FILE: famFile } });
+    } catch (e2) { out = (e2.stdout || '') + '\nLC_CRASH ' + String(e2.message).slice(0, 200); }
+    process.stdout.write(out.split('\n').filter(l => l.startsWith('  ')).join('\n') + '\n');
+    const line = out.split('\n').find(l => l.startsWith('LOCALCACHE '));
+    const lc = line ? JSON.parse(line.slice(11)) : { crash: out.slice(-200) };
+    // —— 修正单新增测试组 ④：本地缓存包含 onboarding/returnNudge；离线重启不丢计划卡 ——
+    ok('本地缓存:updateFromState 缓存 onboarding/returnNudge', lc.cachedViews === true, lc.crash);
+    ok('本地缓存:lastState 完整视图落盘', lc.lastStatePersisted === true);
+    ok('本地缓存:家长快照本地投影字段齐全', lc.projectedViewFields === true);
+    ok('本地缓存:离线重启(无family快照)回退 lastState 不丢计划卡', lc.offlineBootKeptCard === true);
+    ok('本地缓存:重启后缓存视图优先于 raw 投影', lc.offlineCachePriority === true);
+    try { fs.unlinkSync(famFile); } catch (e2) {}
   }
 
   console.log(`\n========== 结果：${pass} 通过 / ${fail} 失败 ==========`);
