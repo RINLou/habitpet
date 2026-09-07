@@ -348,6 +348,7 @@
   }
   function bootChild(token) {
     S.token = token; S.role = 'child';
+    ensurePeriodicPull();
     return DB.kvGet('state').then(function (st) {
       if (!st || st.token !== token) return null;
       S.family = st.family || null; S.oplog = st.oplog || []; S.pendingFinishes = st.pendingFinishes || [];
@@ -357,6 +358,7 @@
       if (!child && S.family && Object.keys(S.family.children).length === 1) child = Object.values(S.family.children)[0];
       if (S.oplog.length) flush();
       if (S.pendingFinishes.length) flushFinishes();
+      schedulePull(800);   // 启动后立刻对齐云端（家长改的配置/奖励及时生效），oplog 未清时 pull 会自行跳过
       if (child) return childMe(S.family, child);
       // 无 family 快照（从未触发 sync/full）：退回最近一次云端完整视图，离线也不丢计划卡
       return S.lastState && S.lastState.id ? S.lastState : null;
@@ -373,7 +375,16 @@
     }
     S.lastState = state;
     if (!S.currentChildId) S.currentChildId = state.id;
+    schedulePull(800);   // 云端响应到达说明在线：尽快刷新本地家庭工作副本（家长配置改动生效）
     persist();
+  }
+
+  // 周期性对齐（每 60s）：孩子端闲置时家长改配置/奖励也能及时生效
+  function ensurePeriodicPull() {
+    if (S._periodicTimer) return;
+    S._periodicTimer = setInterval(function () {
+      if (S.token && S.role === 'child' && !S.oplog.length && document.visibilityState !== 'hidden') pull();
+    }, 60000);
   }
 
   // —— 对外：API 分流 ——
@@ -391,6 +402,9 @@
           if (OPLOG_APIS[path]) { S.oplog.push({ path: path, body: body || {}, ts: Date.now() }); }
           persistFamily();
           flush();
+        } else if (out && out.error) {
+          // 本地拒绝（如投喂时段不符）：可能是本地配置过期，立刻对齐云端后重试即用新规则
+          schedulePull(600);
         }
         return out;
       }
@@ -403,6 +417,7 @@
 
   // 清空本地（登出/换账号）
   function reset() {
+    if (S._periodicTimer) { clearInterval(S._periodicTimer); S._periodicTimer = null; }
     S.family = null; S.friends = []; S.invites = []; S.childStates = {}; S.lastState = null; S.oplog = []; S.pendingFinishes = []; S.token = ''; S.role = ''; S.currentChildId = '';
     DB.kvDel('state').catch(function () {});
   }

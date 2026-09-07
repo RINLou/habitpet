@@ -7,6 +7,7 @@
     "start": "node server.js",
     "test": "node scripts/run-tests.js",
     "accept:360": "node scripts/accept-360.js",
+    "test:anim": "node tests/anim-mvp.test.js",
     "deploy": "bash deploy/deploy.sh"
   },
   "keywords": ["habit", "pet", "parenting", "pokemon-like", "kids"],

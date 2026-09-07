@@ -1,0 +1,388 @@
+{
+  "schemaVersion": "1.0",
+  "characterId": "firam",
+  "generatedAt": "2026-09-07T15:30:12+00:00",
+  "purpose": "焰狼动画素材可复现清单：哈希/提示词/处理参数/重跑指引。运行时资源在 public/anim/firam/（仅帧+契约），生成原始物归档于本目录。",
+  "runtime": {
+    "base": "public/anim/firam/",
+    "files": {
+      "contract.json": {
+        "sha256": "1442886a9b8f168f8e220cb52343b292fbc8835d507b14f2c4933a9cc4ff6719",
+        "bytes": 3286
+      },
+      "eat/frame-0.png": {
+        "sha256": "00578a61e865d81a7e995ffdb2298217d38cad3b06bea2f407ee376f82a5d43b",
+        "bytes": 53803
+      },
+      "eat/frame-1.png": {
+        "sha256": "38da7914d26c10f36cf3b559668ad55f910d46268a0bb5ec74e2bcf705aa4cfa",
+        "bytes": 52873
+      },
+      "eat/frame-2.png": {
+        "sha256": "47108f1e195c1dcd84449ae775a76c61d9646b92a2c7bcaf00ad3d5d945b8b77",
+        "bytes": 49537
+      },
+      "eat/frame-3.png": {
+        "sha256": "1da0eba2404586461f1c1608100cc41677317a05004cfe513139beade158637b",
+        "bytes": 54278
+      },
+      "happy/frame-0.png": {
+        "sha256": "f03a09c9746fe6f546ec7c34672c670097246fb9971f1a23838b33b1bb4c2fa5",
+        "bytes": 60512
+      },
+      "happy/frame-1.png": {
+        "sha256": "009cde40e49790be9180c3cfd9a74ad23f09579b3e207cbc1fcd7cb14bd81374",
+        "bytes": 60021
+      },
+      "happy/frame-2.png": {
+        "sha256": "89ff147f2954b9e2ad66a5200fea9ad7a0e9b2739e3627bf9843abdef7ae5270",
+        "bytes": 59707
+      },
+      "happy/frame-3.png": {
+        "sha256": "2892d2fa0ab33239f73f9cde27fd21b32dea4c8ba73d9ef33a1485d853988171",
+        "bytes": 61449
+      },
+      "idle/frame-0.png": {
+        "sha256": "a5f471f67ba9c17d727b1189507ff52589fb5fb0ee514b63bf5569b089eebac6",
+        "bytes": 56602
+      },
+      "idle/frame-1.png": {
+        "sha256": "780a835c905d253f624235fd62895606de72ca94c5c2583747b1521fb8320d39",
+        "bytes": 56543
+      },
+      "idle/frame-2.png": {
+        "sha256": "121fedc6fb848f8dfb934a61857b787cd64b80158f979fc8cd7f65dd1b5fcc22",
+        "bytes": 56562
+      },
+      "idle/frame-3.png": {
+        "sha256": "5bbf086eda1becd047ca2bd5f1a6db21f366649c23e1822f4976e0c40aa76204",
+        "bytes": 57376
+      },
+      "levelUp/frame-0.png": {
+        "sha256": "12fc39c65ce47c169a03910a7c2f0879defb972661dfdbed17aa67cd1119df3b",
+        "bytes": 49898
+      },
+      "levelUp/frame-1.png": {
+        "sha256": "1c704e497f26127b928ca6224cfd131401be49235c4fca1d79cec1509c9abfa2",
+        "bytes": 53756
+      },
+      "levelUp/frame-2.png": {
+        "sha256": "4b40de2f4d661b96bf080acda4be81f75d0c4814b0fce95040061a90d231d209",
+        "bytes": 50874
+      },
+      "levelUp/frame-3.png": {
+        "sha256": "ab4a6f4e678d81423de1494302876798041f92c92297dffad8da6e637c5a1b65",
+        "bytes": 66195
+      },
+      "levelUp/frame-4.png": {
+        "sha256": "6373838d188582ce33a6373dd685f7d902acb0ba1f11942f9aeb847baeb6b22f",
+        "bytes": 71100
+      },
+      "levelUp/frame-5.png": {
+        "sha256": "0329e4b9fb2518780e7e7eee0adf8e69843e574d39bb8e427975a682b302e5d9",
+        "bytes": 50519
+      },
+      "tired/frame-0.png": {
+        "sha256": "4d589e091e728819365323312b55d21b35d437d160cc9a516ffc21f1d27c180a",
+        "bytes": 44712
+      },
+      "tired/frame-1.png": {
+        "sha256": "f5bec5729d1810ce72c0dd12bac8259cccec1afbef8f44dd0882c4fb843fddb1",
+        "bytes": 45125
+      },
+      "tired/frame-2.png": {
+        "sha256": "5de6e32b68a4956c0fcd3e359953ec26c6943d89a7dbf8515a4abc46f730cc34",
+        "bytes": 44840
+      },
+      "tired/frame-3.png": {
+        "sha256": "fac5578e4746e832dccc0864a5c91ea8c8a09c61260a588e94dc9d06091aeff9",
+        "bytes": 44980
+      }
+    }
+  },
+  "archived": {
+    "base": "docs/animation-assets-archive/firam/",
+    "files": {
+      "qc_report.json": {
+        "sha256": "cdd5aae16ac72b0e73270a76c17aa218f48703e262a96c6fe6814404066efd77",
+        "bytes": 2042
+      },
+      "eat/animation.gif": {
+        "sha256": "2828ec8ee23ab197aaba9a37d6bcb62f2a88c946a119b10b7f860bf0f9b75068",
+        "bytes": 73747
+      },
+      "eat/pipeline-meta.json": {
+        "sha256": "2a55bf062c090c4df3932446130d96b4f190552285b4aa27513f23f017ad5f44",
+        "bytes": 7570
+      },
+      "eat/raw-sheet-clean.png": {
+        "sha256": "25d2aeb0950461e74a862e3373bbafca49199ec74d852dc96efb12443b13dc75",
+        "bytes": 905109
+      },
+      "eat/raw-sheet.png": {
+        "sha256": "e0d8089f45ebc42aa096e7d66323fcc9f1b892ff6d4d12ed3a6eccffbe9d0cb1",
+        "bytes": 901329
+      },
+      "eat/sheet-transparent.png": {
+        "sha256": "b336e687c4968c8768dea42aaed4077e5676308134f53476cce256100b3fedc8",
+        "bytes": 197011
+      },
+      "happy/animation.gif": {
+        "sha256": "0b6901ea408f2a8ad9b018cf557458af0466e6a2a6e7ce328c7abe4f9a19fd25",
+        "bytes": 80614
+      },
+      "happy/pipeline-meta.json": {
+        "sha256": "58d18c5840479664d1d2d3594f4428b627ba090ee054704dfc4774f80282b4a2",
+        "bytes": 7851
+      },
+      "happy/raw-sheet-clean.png": {
+        "sha256": "d7974f8321862d1d576ded1ec068e75625d546f438491babe83f4c74a32f8a50",
+        "bytes": 975878
+      },
+      "happy/raw-sheet.png": {
+        "sha256": "29c241246c7720f4e71e6bcbf912213bcfd393ddaaddde8c54c81fc2bb2e5c19",
+        "bytes": 969074
+      },
+      "happy/sheet-transparent.png": {
+        "sha256": "dff7996f22bc924b6e27a5f26781a429958df52e9ef043bb0d5723fbb8294175",
+        "bytes": 223493
+      },
+      "idle/animation.gif": {
+        "sha256": "8214096eb473d72f02cf6ae2f0577d25ae5bceedd057453a2bdfa232c0601c5b",
+        "bytes": 77916
+      },
+      "idle/pipeline-meta.json": {
+        "sha256": "2651fcffb189afdf405b4e9d9d76883e01e45981ef71ed2c0a3c279463d6ebc6",
+        "bytes": 7579
+      },
+      "idle/raw-sheet-clean.png": {
+        "sha256": "a44c3a85daf4a08a6b326076f5183e42be1acef37713667d12466cb8ae8f1b3a",
+        "bytes": 933841
+      },
+      "idle/raw-sheet.png": {
+        "sha256": "d71a12e498f3f6b591abc551c487b3e95c428f5b70ba15ff02ace6afaaef55b4",
+        "bytes": 930042
+      },
+      "idle/sheet-transparent.png": {
+        "sha256": "da0366434ed0a53d910cac7500680f87f2131e7a9ad2252bab2407c1fdfc22ce",
+        "bytes": 208785
+      },
+      "levelUp/animation.gif": {
+        "sha256": "7f8c9d21518a0b6c278ba7341b312f214e1d7639a45c7ae8c5ed73bf8d0d2476",
+        "bytes": 117519
+      },
+      "levelUp/pipeline-meta.json": {
+        "sha256": "3f413da99da7b44d9ee6ddc3fbb8ea224005def8541fcab29a3bab72492e561d",
+        "bytes": 10686
+      },
+      "levelUp/raw-sheet-clean.png": {
+        "sha256": "4e2644450ffe89b410d77e887104f2eb53fb9943e7a27e2f4b49b17577af9280",
+        "bytes": 1444961
+      },
+      "levelUp/raw-sheet.png": {
+        "sha256": "2f79b41b85df8f48d3effebce4fd605221cc0a0b8f054c17009d7f695c8cf43f",
+        "bytes": 1440505
+      },
+      "levelUp/sheet-transparent.png": {
+        "sha256": "7af43742d540f2c8178c9a90e50484251fa1a6c558efc3b0a079bb8ecfc12f43",
+        "bytes": 316067
+      },
+      "tired/animation.gif": {
+        "sha256": "494c4cfc425f256be4934e05500a7dbd17c82dcc254223391e15b623638a8de0",
+        "bytes": 67063
+      },
+      "tired/pipeline-meta.json": {
+        "sha256": "825e21d7109625e356bb2fefab39a67a948bb0856d0644f1243f54c48b4491fa",
+        "bytes": 7604
+      },
+      "tired/raw-sheet-clean.png": {
+        "sha256": "13cdcafd79efa687a4f1f68f0a6dc65df11513ba5fa76495fe73521b83a64b41",
+        "bytes": 793602
+      },
+      "tired/raw-sheet.png": {
+        "sha256": "573e171abff1694256476f95bfab65d8bb6dff69513af137d0e37f0b58cbfbcb",
+        "bytes": 791159
+      },
+      "tired/sheet-transparent.png": {
+        "sha256": "f1df497c843a860b7a1328e929d9877e38a3014147fdadef954723963199a413",
+        "bytes": 171657
+      },
+      "_generated/2D_cartoon_light_RPG_animation_2026-09-07T14-25-49.png": {
+        "sha256": "f10c43620bc6a1fb7b962ea460db01e390ceab318898cdc798548812d6ba651a",
+        "bytes": 1494256
+      },
+      "_generated/2D_cartoon_light_RPG_animation_2026-09-07T14-30-26.png": {
+        "sha256": "b2a652502a5b6fa293d6171c0740266dc6b7900352068e90f0a30b8926a51369",
+        "bytes": 1444075
+      },
+      "_generated/2D_cartoon_light_RPG_animation_2026-09-07T14-30-27.png": {
+        "sha256": "77333b86b49d9d14fef8777f5352826099f6b9b80d4efbd8e0281d1c2dbc12fd",
+        "bytes": 1305860
+      },
+      "_generated/2D_cartoon_light_RPG_animation_2026-09-07T14-30-32.png": {
+        "sha256": "9545f912d10cb40b10ec217af2812087261f4913442b31ac9fc8e955a0262cc5",
+        "bytes": 2198859
+      },
+      "_generated/2D_cartoon_light_RPG_animation_2026-09-07T14-35-36.png": {
+        "sha256": "589c0ddc77bdcfcf30a05f5703a079488f511f743ac6e39b1ff5255c640c6a92",
+        "bytes": 1515895
+      },
+      "_generated/idle-raw.png": {
+        "sha256": "d71a12e498f3f6b591abc551c487b3e95c428f5b70ba15ff02ace6afaaef55b4",
+        "bytes": 930042
+      },
+      "_reference/firam-adult.png": {
+        "sha256": "8b0f084fcf1dd93a9eb46e666be11f14b048492d2f1947df83ff2987c15dc78b",
+        "bytes": 270191
+      }
+    }
+  },
+  "provenance": {
+    "generator": "WorkBuddy ImageGen（图生图，参考成体裁切图 _reference/firam-adult.png）+ generate2dsprite 风格 Python 后期（洋红背景强制替换 -> process 切分/对齐/strict QC）",
+    "backgroundPreprocess": "magenta_bg.py：四角采样估计背景色，距离阈值 60 内像素替换为纯 #FF00FF，再交由 process 抠图",
+    "perAction": {
+      "idle": {
+        "prompt": "",
+        "input": "C:\\Users\\Administrator\\WorkBuddy\\宠物app\\habitpet\\public\\anim\\firam\\idle\\raw-sheet.png",
+        "processing": {
+          "threshold": 100,
+          "edge_threshold": 150,
+          "rows": 2,
+          "cols": 2,
+          "cell_size": 256,
+          "align": "bottom",
+          "scale_strategy": "preserve",
+          "component_mode": "largest",
+          "duration": 125
+        },
+        "qc": {
+          "frame_count": 4,
+          "valid_frame_count": 4,
+          "empty_count": 0,
+          "edge_touch_count": 0,
+          "paste_clamped_count": 0,
+          "body_scale_mean": 0.5385500737130591,
+          "output_subject_height_mean": 201.75,
+          "body_scale_cv": 0.0015155437350418952,
+          "anchor_x_std": 0.0016451511856921568,
+          "anchor_y_std": 0.001402989645211399,
+          "anchor_y_mean": 0.9246031746031746
+        }
+      },
+      "happy": {
+        "prompt": "",
+        "input": "C:\\Users\\Administrator\\WorkBuddy\\宠物app\\habitpet\\public\\anim\\firam\\happy\\raw-sheet.png",
+        "processing": {
+          "threshold": 100,
+          "edge_threshold": 150,
+          "rows": 2,
+          "cols": 2,
+          "cell_size": 256,
+          "align": "bottom",
+          "scale_strategy": "preserve",
+          "component_mode": "largest",
+          "duration": 100
+        },
+        "qc": {
+          "frame_count": 4,
+          "valid_frame_count": 4,
+          "empty_count": 0,
+          "edge_touch_count": 4,
+          "paste_clamped_count": 0,
+          "body_scale_mean": 0.5387237998625654,
+          "output_subject_height_mean": 208.0,
+          "body_scale_cv": 0.0013277349479372388,
+          "anchor_x_std": 0.00451906427536918,
+          "anchor_y_std": 0.001718304372588166,
+          "anchor_y_mean": 0.9454365079365079
+        }
+      },
+      "eat": {
+        "prompt": "",
+        "input": "C:\\Users\\Administrator\\WorkBuddy\\宠物app\\habitpet\\public\\anim\\firam\\eat\\raw-sheet.png",
+        "processing": {
+          "threshold": 100,
+          "edge_threshold": 150,
+          "rows": 2,
+          "cols": 2,
+          "cell_size": 256,
+          "align": "bottom",
+          "scale_strategy": "preserve",
+          "component_mode": "largest",
+          "duration": 100
+        },
+        "qc": {
+          "frame_count": 4,
+          "valid_frame_count": 4,
+          "empty_count": 0,
+          "edge_touch_count": 0,
+          "paste_clamped_count": 0,
+          "body_scale_mean": 0.4655091094495031,
+          "output_subject_height_mean": 173.5,
+          "body_scale_cv": 0.030972725607099988,
+          "anchor_x_std": 0.003810092136839574,
+          "anchor_y_std": 0.001718304372588166,
+          "anchor_y_mean": 0.9097222222222222
+        }
+      },
+      "tired": {
+        "prompt": "",
+        "input": "C:\\Users\\Administrator\\WorkBuddy\\宠物app\\habitpet\\public\\anim\\firam\\tired\\raw-sheet.png",
+        "processing": {
+          "threshold": 100,
+          "edge_threshold": 150,
+          "rows": 2,
+          "cols": 2,
+          "cell_size": 256,
+          "align": "bottom",
+          "scale_strategy": "preserve",
+          "component_mode": "largest",
+          "duration": 167
+        },
+        "qc": {
+          "frame_count": 4,
+          "valid_frame_count": 4,
+          "empty_count": 0,
+          "edge_touch_count": 0,
+          "paste_clamped_count": 0,
+          "body_scale_mean": 0.44311762372178387,
+          "output_subject_height_mean": 117.0,
+          "body_scale_cv": 0.0016653096854501593,
+          "anchor_x_std": 0.03443403649168374,
+          "anchor_y_std": 0.004960317460317498,
+          "anchor_y_mean": 0.8244047619047619
+        }
+      },
+      "levelUp": {
+        "prompt": "",
+        "input": "C:\\Users\\Administrator\\WorkBuddy\\宠物app\\habitpet\\public\\anim\\firam\\levelUp\\raw-sheet.png",
+        "processing": {
+          "threshold": 100,
+          "edge_threshold": 150,
+          "rows": 2,
+          "cols": 3,
+          "cell_size": 256,
+          "align": "bottom",
+          "scale_strategy": "preserve",
+          "component_mode": "largest",
+          "duration": 125
+        },
+        "qc": {
+          "frame_count": 6,
+          "valid_frame_count": 6,
+          "empty_count": 0,
+          "edge_touch_count": 0,
+          "paste_clamped_count": 0,
+          "body_scale_mean": 0.5304908641202933,
+          "output_subject_height_mean": 197.66666666666666,
+          "body_scale_cv": 0.03397368108766592,
+          "anchor_x_std": 0.055418584299282515,
+          "anchor_y_std": 0.009472241063237248,
+          "anchor_y_mean": 0.9384325396825371
+        }
+      }
+    },
+    "rerun": "按 docs/animation-assets-archive/firam/<action>/pipeline-meta.json 的 prompt 与 processing 参数重跑 ImageGen + 后期；帧产物 sha256 须与本清单 runtime 一致（AI 生成存在随机性，允许 QC 通过前提下内容差异，需更新哈希）",
+    "qcReport": "docs/animation-assets-archive/firam/qc_report.json"
+  }
+}

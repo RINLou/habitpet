@@ -144,6 +144,16 @@ label { font-size: 13px; color: var(--muted); display: block; margin-top: 10px; 
 .pet-art.tri img { width: 100%; height: auto; margin: 0; border-radius: 14px; }
 .pet-art.idle img { animation: petIdle 3.4s ease-in-out infinite; transform-origin: 50% 90%; }
 @keyframes petIdle { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-4px) scale(1.025); } }
+/* 精灵动画帧：覆盖 .pet-art img 的 300% 裁切，按容器等比居中、锚定底部；不继承 idle 浮动 */
+.pet-art .pa-sprite { width: 100%; height: 100%; object-fit: contain; object-position: bottom center; }
+.pet-art.idle img.pa-sprite { animation: none; }
+/* 主视觉通用反馈弹跳（投喂等事件的非精灵阶段反馈） */
+.pet-art img.pet-react { animation: petReact .9s ease; }
+@keyframes petReact { 0% { transform: scale(1); } 30% { transform: scale(1.14) rotate(-5deg); } 55% { transform: scale(.95) rotate(4deg); } 78% { transform: scale(1.08); } 100% { transform: scale(1) rotate(0); } }
+/* 动画演示面板（?demo=1） */
+#anim-demo { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; z-index: 90; }
+#anim-demo .fx-card { text-align: center; }
+#anim-demo .demo-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin: 14px 0; }
 .p-art-fallback { font-size: 64px; line-height: 128px; }
 .pet-art.sm .p-art-fallback { font-size: 34px; line-height: 64px; }
 .pet-art.xs .p-art-fallback { font-size: 22px; line-height: 40px; }
