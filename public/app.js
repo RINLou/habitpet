@@ -111,6 +111,43 @@ function lvlBurst(text) {
   document.body.appendChild(d);
   setTimeout(() => d.remove(), 1800);
 }
+// 主视觉通用反馈：愿望球/幼体等未挂精灵动画的阶段，投喂等事件给一个 CSS 弹跳
+// （成体精灵播放时静态 img 处于隐藏态，加此类无副作用；精灵被禁用时它是唯一反馈）
+function petReact() {
+  const el = document.querySelector('[data-anim="hero"]');
+  if (!el) return;
+  const img = el.querySelector('img');
+  if (!img) return;
+  img.classList.remove('pet-react');
+  void img.offsetWidth; // 重置动画
+  img.classList.add('pet-react');
+  setTimeout(() => img.classList.remove('pet-react'), 950);
+}
+// 动画演示面板（仅 ?demo=1 出现入口）：不用练到成体即可预览全部五套动作
+const ANIM_DEMO = /[?&]demo=1/.test(location.search);
+function openAnimDemo() {
+  const old = document.getElementById('anim-demo');
+  if (old) { old.remove(); PetAnim && PetAnim.scan && PetAnim.scan(document); }
+  const d = document.createElement('div');
+  d.id = 'anim-demo';
+  const btns = [['daily_idle', '待机'], ['feed_success', '投喂'], ['level_up', '升级'], ['return', '回归']]
+    .map(([ev, label]) => `<button class="btn ghost demo-btn" onclick="PetAnim.queueEvent('hero','${ev}')">${label}</button>`).join('');
+  d.innerHTML = `<div class="fx-card">
+    <div class="fx-title">🎬 焰狼动画演示（成体）</div>
+    <div class="pet-art idle" data-anim="hero" data-species="firam" data-stage="adult" style="margin:0 auto">
+      <img class="pos-single" src="img/firam.webp" alt="">
+    </div>
+    <div class="demo-row">${btns}</div>
+    <button class="btn fx-btn" onclick="closeAnimDemo()">关闭演示</button>
+  </div>`;
+  document.body.appendChild(d);
+  if (window.PetAnim && PetAnim.scan) PetAnim.scan(d);
+}
+function closeAnimDemo() {
+  const d = document.getElementById('anim-demo');
+  if (d) d.remove();
+  if (window.PetAnim && PetAnim.scan) PetAnim.scan(document); // 还原真实主视觉
+}
 function toggleMute() {
   const m = Sfx.toggle();
   document.querySelectorAll('.mute-btn').forEach(b => { b.textContent = m ? '🔇' : '🔊'; });
@@ -614,6 +651,7 @@ function childPetTab() {
           ${s.unlocked ? '<span class="badge g">已掌握</span>' : `<span class="badge">Lv${s.unlockLv} 解锁</span>`}
         </div>`).join('')}
       <button class="btn ghost" onclick="renamePet()">✏️ 给伙伴改名</button>
+      ${ANIM_DEMO ? '<button class="btn ghost" onclick="openAnimDemo()">🎬 动画演示</button>' : ''}
     </div>`;
 }
 async function doFeed() {
@@ -630,7 +668,11 @@ async function doFeed() {
     showFx({ img: 'img/reward.webp', title: `${ev.icon} 灵汐奇遇 · ${ev.name}`, sub: `${esc(ev.desc)}${gain ? '（' + gain + '）' : ''}`, btn: '运气爆棚！', auto: 4500, sound: 'coin', speak: '灵汐奇遇，' + ev.name + '！' });
   } else {
     toast(r.streakBonus ? `投喂成功 +${me.rules.feed}，连续 ${me.feedStreak} 天额外 +${r.streakBonus}！` : `投喂成功！亲密度 +${me.rules.feed}`);
-    if (window.PetAnim) PetAnim.queueEvent('hero', 'feed_success');
+    // 精灵动画只在成体焰狼播；其它阶段（愿望球/幼体）给 CSS 弹跳反馈，不抛事件（避免挂死 pending）
+    const fFile = ART_BY_EMOJI[me.pet.emoji] || '';
+    const fSid = Object.keys(ART_BY_SPECIES).find(k => ART_BY_SPECIES[k] === fFile) || '';
+    if (window.PetAnim && PetAnim.isEnabled() && PetAnim.canAnimate(fSid, me.pet.stageKey)) PetAnim.queueEvent('hero', 'feed_success');
+    petReact();
   }
   celebratePet(oldPet, me.pet);
   renderChild();

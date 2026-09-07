@@ -201,14 +201,21 @@
   // —— 挂载：静态 WebP 之上叠精灵层（原始 img 保留用于降级恢复）——
   function mount(el) {
     var sid = el.getAttribute('data-species');
-    if (sid !== 'firam') return Promise.resolve();                 // 种族保护
-    if (el.classList.contains('fainted')) return Promise.resolve(); // 昏迷态保护
+    if (sid !== 'firam' || el.classList.contains('fainted')) {  // 种族/昏迷保护
+      delete pending['hero'];                                   // 此元素永不播动画，积压事件直接丢弃
+      return Promise.resolve();
+    }
     detect();
-    if (reduceMotion || lowPerf) return Promise.resolve();          // 降级：保留原 WebP
+    if (reduceMotion || lowPerf) {                              // 降级：保留原 WebP
+      delete pending['hero'];
+      return Promise.resolve();
+    }
     return loadContract().then(function (c) {
-      if (!c) return;                                               // 契约加载失败：静态
-      // 阶段保护：仅 canonicalStage（adult）挂载精灵；幼体/觉醒保持原 WebP
-      if ((el.getAttribute('data-stage') || '') !== canonicalStage()) return;
+      if (!c || (el.getAttribute('data-stage') || '') !== canonicalStage()) {
+        // 契约失败或阶段不符（愿望球/幼体/觉醒）：保持静态，丢弃积压事件防「进化后乱播旧事件」
+        delete pending['hero'];
+        return;
+      }
       return loadImages('idle').then(function (data) {
         if (!data || animDisabled) return;                          // 加载失败：静态
         heroEl = el;
