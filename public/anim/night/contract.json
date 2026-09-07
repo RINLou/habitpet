@@ -1,0 +1,113 @@
+{
+  "schemaVersion": "1.0",
+  "characterId": "night",
+  "characterName": "影豹·夜刃",
+  "reference": "/img/night.webp",
+  "canonicalStage": "adult",
+  "generatedAt": "2026-09-08T01:51:38.0931164+08:00",
+  "generator": "Codex image_gen + generate2dsprite",
+  "fallback": {
+    "type": "static-webp",
+    "src": "/img/night.webp",
+    "stageCrop": true,
+    "reducedMotion": "static",
+    "lowPerformance": "static",
+    "loadError": "static"
+  },
+  "degradation": {
+    "prefersReducedMotion": true,
+    "lowHardwareConcurrency": 2,
+    "lowDeviceMemory": 2
+  },
+  "sourceCell": {
+    "width": 512,
+    "height": 512,
+    "note": "生成与 QC 原始单元尺寸"
+  },
+  "runtimeCell": {
+    "width": 256,
+    "height": 256,
+    "note": "运行时 frame PNG 尺寸"
+  },
+  "anchor": "bottom-center",
+  "format": {
+    "frames": "{action}/frame-{i}.png",
+    "archive": "docs/animation-assets-archive/night/"
+  },
+  "actions": {
+    "eat": {
+      "rows": 2,
+      "fps": 10,
+      "description": "投喂：吞下心光后抬头回应",
+      "loop": false,
+      "frames": 4,
+      "cols": 2,
+      "holdLastFrame": true
+    },
+    "tired": {
+      "rows": 2,
+      "fps": 6,
+      "description": "回归：久别重逢的轻柔迎接",
+      "loop": true,
+      "frames": 4,
+      "cols": 2,
+      "durationMs": 667
+    },
+    "levelUp": {
+      "rows": 2,
+      "fps": 8,
+      "description": "升级：心光聚拢并完成成长庆祝",
+      "loop": false,
+      "frames": 6,
+      "cols": 3,
+      "holdLastFrame": true
+    },
+    "idle": {
+      "rows": 2,
+      "fps": 8,
+      "description": "待机：身体轻微起伏，族裔特征保持律动",
+      "loop": true,
+      "frames": 4,
+      "cols": 2,
+      "durationMs": 500
+    },
+    "happy": {
+      "rows": 2,
+      "fps": 10,
+      "description": "开心：收到心光后的专属欢跃",
+      "loop": true,
+      "frames": 4,
+      "cols": 2,
+      "durationMs": 400
+    }
+  },
+  "events": {
+    "daily_idle": {
+      "action": "idle",
+      "priority": 0,
+      "interruptible": true
+    },
+    "feed_success": {
+      "sequence": [
+        "eat",
+        "happy"
+      ],
+      "priority": 10,
+      "interruptible": true,
+      "autoReturnToIdle": true
+    },
+    "level_up": {
+      "action": "levelUp",
+      "priority": 20,
+      "interruptible": true,
+      "autoReturnToIdle": true
+    },
+    "return": {
+      "action": "tired",
+      "priority": 15,
+      "interruptible": true,
+      "maxDurationMs": 3000,
+      "autoReturnToIdle": true
+    }
+  }
+}
