@@ -69,6 +69,12 @@ function petArt(emoji, stageKey, cls, idle) {
 function petArtHero(p, fainted) {
   const file = ART_BY_EMOJI[p.emoji] || 'firam.webp';
   const sid = Object.keys(ART_BY_SPECIES).find(k => ART_BY_SPECIES[k] === file) || 'firam';
+  if (p.stageKey === 'orb') {
+    // 愿望球阶段（Lv1-4）：显示愿望球而非三段进化图整版
+    return `<div class="pet-art idle ${fainted ? 'fainted' : ''}" data-anim="hero" data-species="${esc(sid)}" data-stage="orb">
+    <img class="pos-single" src="img/wishball.webp" alt="">
+  </div>`;
+  }
   const pos = STAGE_POS[p.stageKey];
   const posClass = pos === undefined ? 'pos-single' : 'pos-' + pos;
   return `<div class="pet-art idle ${fainted ? 'fainted' : ''}" data-anim="hero" data-species="${esc(sid)}" data-stage="${esc(p.stageKey || '')}" data-emoji="${esc(p.emoji || '')}">
