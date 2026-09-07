@@ -252,6 +252,12 @@ label { font-size: 13px; color: var(--muted); display: block; margin-top: 10px; 
 .fx-card .fx-title { font-size: 23px; font-weight: 900; color: var(--gold); margin: 16px 14px 4px; text-shadow: 0 0 20px rgba(245,200,107,.55); letter-spacing: 1px; }
 .fx-card .fx-sub { color: var(--ink); font-size: 14px; margin: 2px 18px 6px; }
 .fx-card .fx-btn { margin: 8px 18px 18px; }
+.prologue-card { text-align: left; }
+.prologue-img { display: block; width: 100%; max-height: 190px; object-fit: cover; border-radius: 14px; margin-bottom: 12px; }
+.prologue-kicker { color: var(--gold); font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 6px; }
+.prologue-card h3 { font-size: 21px; color: var(--ink); margin: 0 0 6px; }
+.prologue-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+.prologue-actions .btn { margin-top: 0; }
 /* 升级小金光（不挡操作） */
 .lvl-burst {
   position: fixed; left: 50%; top: 34%; transform: translateX(-50%);

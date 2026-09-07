@@ -1,7 +1,7 @@
 {
   "name": "habitpet",
   "version": "1.0.0",
-  "description": "让孩子养成好习惯的宠物养成 App：好习惯换零花钱，学习让宠物变强。",
+  "description": "灵汐大陆：让每个好习惯，点亮一颗星。",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
