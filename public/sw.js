@@ -2,19 +2,26 @@
 // 策略：/api/ 一律不拦（永远走网络）；页面入口 network-first；
 // 静态资源靠 ?v=N 版本号天然失效，缓存只是离线兜底。
 // ⚠️ 每次改版发布时：把 CACHE 和 ASSETS 里的 ?v= 同步升到 index.html 的新版本号！
-const CACHE = 'hp-v10';
+const CACHE = 'hp-v11';
 const ASSETS = [
   '/',
   '/index.html',
-  '/app.js?v=10',
-  '/audio.js?v=10',
-  '/style.css?v=10',
+  '/app.js?v=11',
+  '/audio.js?v=11',
+  '/style.css?v=11',
+  '/anim/player.js?v=11',
   '/manifest.json',
-  '/lib/species.umd.js?v=10',
-  '/lib/localstore.js?v=10',
-  '/lib/engine.umd.js?v=10',
-  '/lib/battle.umd.js?v=10',
-  '/lib/local.js?v=10',
+  '/lib/species.umd.js?v=11',
+  '/lib/localstore.js?v=11',
+  '/lib/engine.umd.js?v=11',
+  '/lib/battle.umd.js?v=11',
+  '/lib/local.js?v=11',
+  '/anim/firam/contract.json',
+  '/anim/firam/idle/frame-0.png', '/anim/firam/idle/frame-1.png', '/anim/firam/idle/frame-2.png', '/anim/firam/idle/frame-3.png',
+  '/anim/firam/happy/frame-0.png', '/anim/firam/happy/frame-1.png', '/anim/firam/happy/frame-2.png', '/anim/firam/happy/frame-3.png',
+  '/anim/firam/eat/frame-0.png', '/anim/firam/eat/frame-1.png', '/anim/firam/eat/frame-2.png', '/anim/firam/eat/frame-3.png',
+  '/anim/firam/tired/frame-0.png', '/anim/firam/tired/frame-1.png', '/anim/firam/tired/frame-2.png', '/anim/firam/tired/frame-3.png',
+  '/anim/firam/levelUp/frame-0.png', '/anim/firam/levelUp/frame-1.png', '/anim/firam/levelUp/frame-2.png', '/anim/firam/levelUp/frame-3.png', '/anim/firam/levelUp/frame-4.png', '/anim/firam/levelUp/frame-5.png',
   '/img/icon-192.png',
   '/img/icon-512.png',
   '/img/wishball.webp'

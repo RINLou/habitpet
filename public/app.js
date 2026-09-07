@@ -65,6 +65,16 @@ function petArt(emoji, stageKey, cls, idle) {
   if (!file) return `<div class="pet-art ${cls || ''}"><div class="p-art-fallback">${emoji || '⚪'}</div></div>`;
   return petArtById(Object.keys(ART_BY_SPECIES).find(k => ART_BY_SPECIES[k] === file), stageKey, cls, idle);
 }
+// 主视觉 hero：渲染静态 WebP 作为降级底图，并打上 data-anim 标记供播放器挂载精灵动画
+function petArtHero(p, fainted) {
+  const file = ART_BY_EMOJI[p.emoji] || 'firam.webp';
+  const sid = Object.keys(ART_BY_SPECIES).find(k => ART_BY_SPECIES[k] === file) || 'firam';
+  const pos = STAGE_POS[p.stageKey];
+  const posClass = pos === undefined ? 'pos-single' : 'pos-' + pos;
+  return `<div class="pet-art idle ${fainted ? 'fainted' : ''}" data-anim="hero" data-species="${esc(sid)}" data-stage="${esc(p.stageKey || '')}" data-emoji="${esc(p.emoji || '')}">
+    <img class="${posClass}" src="img/${file}" alt="">
+  </div>`;
+}
 // 战斗立绘：Boss 用荒野挑战者图，真人/AI 分身按种族+形态裁切
 function battleArt(f) {
   if (f.side === 'boss') return `<div class="pet-art"><img class="pos-single" src="img/boss.webp" alt=""></div>`;
@@ -272,6 +282,7 @@ async function pinApi(path, body) {
 
 // —— 启动 ————————————————————————————————————
 async function boot() {
+  if (window.PetAnim) PetAnim.ready();
   if (!token) return renderAuth();
   if (role === 'child') {
     // v10 本地优先：先用本地快照秒开，再云端校验会话并刷新
@@ -418,11 +429,25 @@ function celebratePet(oldPet, newPet) {
   } else if (stageChanged) {
     showFx({ img: 'img/evo.webp', title: '⚡ 进化！', sub: `${esc(oldPet.stage)} → <b>${esc(newPet.stage)}</b>！星辰之力涌入了 ${esc(newPet.nickname)} 的身体`, btn: '华丽蜕变！', sound: 'evolve', speak: `哇，${newPet.nickname} 进化成 ${newPet.stage} 了！` });
   } else {
-    lvlBurst(`⬆️ Lv${newPet.level}！`);
+    const sid = Object.keys(ART_BY_SPECIES).find(k => ART_BY_SPECIES[k] === ART_BY_EMOJI[newPet.emoji]);
+    if (window.PetAnim && PetAnim.isEnabled() && PetAnim.canAnimate(sid)) PetAnim.queueEvent('hero', 'level_up');
+    else lvlBurst(`⬆️ Lv${newPet.level}！`);
     Sfx.levelup();
   }
 }
 
+// 回归提示：本次打开距上次超过 1 天且宠物在线，则让主视觉播放 tired 3 秒再回 idle（不阻塞任何确认）
+let _returnChecked = false;
+function checkReturnEvent() {
+  if (_returnChecked) return;
+  _returnChecked = true;
+  if (!me || !me.pet || me.fainted) { try { localStorage.setItem('hp_last_visit', String(Date.now())); } catch (_) {} return; }
+  let last = 0;
+  try { last = parseInt(localStorage.getItem('hp_last_visit') || '0', 10) || 0; } catch (_) {}
+  try { localStorage.setItem('hp_last_visit', String(Date.now())); } catch (_) {}
+  if (!last) return;
+  if (Date.now() - last > 24 * 3600 * 1000 && window.PetAnim) PetAnim.queueEvent('hero', 'return');
+}
 function renderChild() {
   if (!me.pet) return renderSpeciesPicker();
   const paused = me.paused;
@@ -448,6 +473,7 @@ function renderChild() {
   else if (curTab === 'battle') renderChildBattleTab(b);
   else if (curTab === 'shop') b.innerHTML = childShopTab();
   else b.innerHTML = childBookTab();
+  if (window.PetAnim) { checkReturnEvent(); PetAnim.scan(document.getElementById('tabbody')); }
 }
 
 // 切换孩子端 Tab：离开对战时清轮询，防定时器泄漏污染其他 Tab
@@ -550,7 +576,7 @@ function childPetTab() {
   }
   return `${welcome}
     <div class="card pet-hero">
-      ${me.fainted ? petArt(p.emoji, p.stageKey, 'fainted', false) : petArt(p.emoji, p.stageKey, '', true)}
+      ${petArtHero(p, me.fainted)}
       <div class="name">${esc(p.nickname)} <span class="stage">Lv${p.level} · ${p.stage}</span></div>
       <div class="lead">${p.speciesName} · ${p.elementName}系 · 学期：${esc(me.semester.name)}${p.tier ? ' · ' + p.tier + '级神宠（亲密度+5%）' : (p.stageKey === 'awaken' ? ' · 觉醒加成：亲密度+3%' : '')}</div>
       <div class="xpbar"><i style="width:${xpPct}%"></i></div>
@@ -598,6 +624,7 @@ async function doFeed() {
     showFx({ img: 'img/reward.webp', title: `${ev.icon} 灵汐奇遇 · ${ev.name}`, sub: `${esc(ev.desc)}${gain ? '（' + gain + '）' : ''}`, btn: '运气爆棚！', auto: 4500, sound: 'coin', speak: '灵汐奇遇，' + ev.name + '！' });
   } else {
     toast(r.streakBonus ? `投喂成功 +${me.rules.feed}，连续 ${me.feedStreak} 天额外 +${r.streakBonus}！` : `投喂成功！亲密度 +${me.rules.feed}`);
+    if (window.PetAnim) PetAnim.queueEvent('hero', 'feed_success');
   }
   celebratePet(oldPet, me.pet);
   renderChild();
