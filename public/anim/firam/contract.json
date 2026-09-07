@@ -19,17 +19,21 @@
     "lowHardwareConcurrency": 2,
     "lowDeviceMemory": 2
   },
-  "baseCell": {
+  "sourceCell": {
     "width": 512,
-    "height": 512
+    "height": 512,
+    "note": "生成与 QC 使用的原始单元尺寸（raw-sheet 切分基准）"
+  },
+  "runtimeCell": {
+    "width": 256,
+    "height": 256,
+    "note": "运行时 frame-*.png 的实际交付尺寸（由 sourceCell 等比缩放而来，播放器直接按帧图原始尺寸渲染）"
   },
   "anchor": "bottom-center",
   "format": {
-    "rawSheet": "{action}/raw-sheet.png",
-    "transparentSheet": "{action}/sheet-transparent.png",
     "frames": "{action}/frame-{i}.png",
-    "preview": "{action}/animation.gif",
-    "meta": "{action}/pipeline-meta.json"
+    "archive": "docs/animation-assets-archive/firam/",
+    "archiveContents": "raw-sheet / sheet-transparent / animation.gif / pipeline-meta.json（提示词与处理参数）/ _reference / _generated / qc_report.json / assets-manifest.json（哈希与重跑指引）"
   },
   "actions": {
     "idle": {

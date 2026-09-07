@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "test": "node test_smoke.js",
+    "test:anim": "node tests/anim-mvp.test.js",
     "deploy": "bash deploy/deploy.sh"
   },
   "keywords": ["habit", "pet", "parenting", "pokemon-like", "kids"],

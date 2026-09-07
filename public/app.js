@@ -430,7 +430,7 @@ function celebratePet(oldPet, newPet) {
     showFx({ img: 'img/evo.webp', title: '⚡ 进化！', sub: `${esc(oldPet.stage)} → <b>${esc(newPet.stage)}</b>！星辰之力涌入了 ${esc(newPet.nickname)} 的身体`, btn: '华丽蜕变！', sound: 'evolve', speak: `哇，${newPet.nickname} 进化成 ${newPet.stage} 了！` });
   } else {
     const sid = Object.keys(ART_BY_SPECIES).find(k => ART_BY_SPECIES[k] === ART_BY_EMOJI[newPet.emoji]);
-    if (window.PetAnim && PetAnim.isEnabled() && PetAnim.canAnimate(sid)) PetAnim.queueEvent('hero', 'level_up');
+    if (window.PetAnim && PetAnim.isEnabled() && PetAnim.canAnimate(sid, newPet.stageKey)) PetAnim.queueEvent('hero', 'level_up');
     else lvlBurst(`⬆️ Lv${newPet.level}！`);
     Sfx.levelup();
   }
