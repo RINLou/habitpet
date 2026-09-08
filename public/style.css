@@ -141,6 +141,18 @@ label { font-size: 13px; color: var(--muted); display: block; margin-top: 10px; 
 .adventure-result > span { font-size: 20px; line-height: 1; }
 .adventure-result b { color: var(--ink); font-size: 13px; }
 .adventure-result div div { white-space: pre-line; margin-top: 3px; }
+.adventure-quests { margin-top: 9px; padding: 8px 9px; border: 1px solid rgba(124,140,255,.22); border-radius: 10px; background: rgba(10,15,40,.34); }
+.quest-head { display: flex; justify-content: space-between; color: var(--gold); font-size: 12px; }
+.quest-head span { color: var(--muted); }
+.quest-item { display: flex; align-items: center; gap: 7px; margin-top: 7px; color: var(--ink); font-size: 12px; }
+.quest-item > span:nth-child(2) { flex: 1; }
+.quest-item small { display: block; margin-top: 1px; color: var(--muted); font-size: 10px; }
+.quest-item > b { color: var(--muted); font-size: 11px; }
+.quest-item.done > b { color: #a7f3d0; }
+.adventure-actions { align-items: center; margin-top: 8px; }
+.adventure-actions .muted-line { margin: 0; }
+.parent-adventure-summary { display: grid; gap: 3px; margin-top: 9px; padding: 8px 10px; border-radius: 10px; background: rgba(124,140,255,.08); color: var(--ink); font-size: 12px; }
+.parent-adventure-summary span { color: var(--muted); font-size: 11px; }
 .feed-state { margin: 9px 0 2px; color: var(--muted); font-size: 12px; }
 .pet-hero .name { font-size: 18px; font-weight: 800; margin-top: 8px; }
 .pet-hero .stage { font-size: 12px; color: var(--gold); font-weight: 700; }

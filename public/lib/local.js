@@ -101,6 +101,15 @@
     var chapterCompleted = completedDays.length >= 7 || !!a.chapterCompletedAt;
     var completedToday = a.lastPlayedOn === today;
     var canPlay = !!child.pet && !child.fainted && !child.pausedAt && child.feedDate === today && !completedToday;
+    var weekKey = function (date) { var d = new Date(String(date) + 'T00:00:00Z'); var day = d.getUTCDay() || 7; d.setUTCDate(d.getUTCDate() - day + 1); return d.toISOString().slice(0, 10); };
+    var week = weekKey(today), records = Array.isArray(a.discoveries) ? a.discoveries.filter(function (x) { return x && x.playedOn && weekKey(x.playedOn) === week; }) : [];
+    var uniqueNodes = {}; records.forEach(function (x) { uniqueNodes[x.nodeId] = true; });
+    var weeklyQuest = chapterCompleted ? { weekKey: week, title: '本周回访任务', tasks: [
+      { id: 'patrol-3', icon: '🧭', title: '巡游三地', desc: '本周回访 3 个不同地点', target: 3, progress: Math.min(3, Object.keys(uniqueNodes).length) },
+      { id: 'echo-2', icon: '📮', title: '回声邮局', desc: '本周收集 2 个奇遇回声', target: 2, progress: Math.min(2, records.filter(function (x) { return x.randomEvent; }).length) },
+      { id: 'signature-lamp', icon: '🏮', title: '伙伴灯火', desc: '回到灵伴的签名地点 1 次', target: 1, progress: Math.min(1, records.filter(function (x) { return x.signature; }).length) }
+    ] } : null;
+    if (weeklyQuest) { weeklyQuest.tasks.forEach(function (t) { t.done = t.progress >= t.target; }); weeklyQuest.completed = weeklyQuest.tasks.filter(function (t) { return t.done; }).length; weeklyQuest.total = weeklyQuest.tasks.length; }
     var nodes = ADVENTURE_ROUTE.map(function (n) {
       var seen = visited.indexOf(n.id) >= 0;
       var status = 'locked';
@@ -119,7 +128,7 @@
       discoveries: Array.isArray(a.discoveries) ? a.discoveries.slice(-10) : [],
       signatureEvents: Array.isArray(a.signatureEvents) ? a.signatureEvents.slice(-10) : [],
       randomEvents: Array.isArray(a.randomEvents) ? a.randomEvents.slice(-10) : [],
-      lastResult: a.lastResult || null, nodes: nodes
+      weeklyQuest: weeklyQuest, lastResult: a.lastResult || null, nodes: nodes
     };
   }
   function childMe(family, child) {

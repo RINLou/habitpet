@@ -800,7 +800,7 @@ function adventureCard() {
     ? (a.chapterCompleted ? '首章已经毕业，今天可以回访走过的节点。' : `第 ${a.chapterDay}/${a.totalDays} 日已点亮，明天继续沿星光前进。`)
     : a.available
       ? (a.chapterCompleted ? '首章已完成，今天可以回访任意已走过的节点。' : `完成投喂后，前往第 ${a.chapterDay}/${a.totalDays} 日节点。`)
-      : '完成今天的投喂后，星图会为你打开一条路。';
+      : '今天先照顾灵伴；章节进度会保留，明天从原来的地方继续。';
   const nodes = a.nodes.map((n, i) => {
     const label = n.status === 'completed' ? '已完成' : n.status === 'current' ? `第 ${n.day} 日` : n.status === 'revisit' ? '可回访' : '未解锁';
     const mark = n.status === 'completed' ? '✓' : n.status === 'locked' ? '🔒' : n.status === 'revisit' ? '↺' : '›';
@@ -813,13 +813,22 @@ function adventureCard() {
     </button>${i < a.nodes.length - 1 ? '<span class="adventure-line" aria-hidden="true"></span>' : ''}</div>`;
   }).join('');
   const extra = result && a.completedToday ? `${result.signature ? `<div>✨ ${esc(result.signature.title)}：${esc(result.signature.story)}</div>` : ''}${result.randomEvent ? `<div>🎲 ${esc(result.randomEvent.title)}：${esc(result.randomEvent.story)}</div>` : ''}` : '';
+  const q = a.weeklyQuest;
+  const quest = q ? `<div class="adventure-quests"><div class="quest-head"><b>📌 ${esc(q.title)}</b><span>${q.completed}/${q.total}</span></div>${q.tasks.map(t => `<div class="quest-item ${t.done ? 'done' : ''}"><span>${t.icon}</span><span>${esc(t.title)}<small>${esc(t.desc)}</small></span><b>${t.progress}/${t.target}${t.done ? ' ✓' : ''}</b></div>`).join('')}</div>` : '';
   return `<div class="adventure-card">
     <div class="adventure-head"><div><div class="onboarding-title">🗺️ ${esc(a.chapter && a.chapter.title || '首章·星光启程')}</div><div class="lead">${status}</div></div><span class="badge ${a.completedToday ? 'g' : a.available ? 'a' : ''}">${a.chapterCompleted ? '可回访' : a.completedToday ? '已完成' : a.available ? '可出发' : '待解锁'}</span></div>
     <div class="adventure-progress"><span>章节进度</span><b>${a.completedDays.length}/${a.totalDays} 日</b><span>${a.chapterCompleted ? '毕业印记已保存' : `当前第 ${a.chapterDay} 日`}</span></div>
     ${result && a.completedToday ? `<div class="adventure-result"><span>${result.icon}</span><div><b>D${result.day} · ${esc(result.nodeName)}</b><div>${esc(result.story)}</div>${extra}</div></div>` : ''}
+    ${quest}
     <div class="adventure-nodes">${nodes}</div>
-    <div class="muted-line">已发现 ${a.visited.length}/${a.nodes.length} 处星图节点 · 毕业后可每日回访 · 探索不会改变经验和亲密度</div>
+    <div class="row adventure-actions"><button class="btn sm ghost" onclick="showAdventureAlbum()">📚 星光相册（${a.discoveries.length}）</button><span class="muted-line">探索不会改变经验和亲密度</span></div>
   </div>`;
+}
+function showAdventureAlbum() {
+  const a = me && me.adventure;
+  if (!a) return;
+  const rows = (a.discoveries || []).slice().reverse().map(x => `<div class="item"><span style="font-size:20px">${x.icon || '✦'}</span><div class="t"><div class="n">D${x.day || '·'} · ${esc(x.nodeName || '星图发现')}</div><div class="s">${esc(x.story || '')}${x.signature ? `<br>✨ ${esc(x.signature.title)}` : ''}${x.randomEvent ? `<br>🎲 ${esc(x.randomEvent.title)}` : ''}</div></div></div>`).join('');
+  openModal(`<h3>📚 星光相册</h3><div class="lead">已保存的节点故事、灵伴签名和随机奇遇</div>${rows || '<div class="muted-line">还没有发现，完成今天的投喂后出发吧。</div>'}<button class="btn ghost" onclick="closeModal()">关闭</button>`);
 }
 async function exploreAdventure(nodeId) {
   const r = await api('/api/adventure/explore', { nodeId });
@@ -1148,6 +1157,9 @@ function renderArena() {
   const myIdx = bt.fighters.indexOf(meF);
   const isFriend = bt.mode === 'friend';
   const myTurn = bt.status !== 'active' || (isFriend ? bt.turn === myIdx : true);
+  const finishCopy = bt.mode === 'sibling' || bt.mode === 'friend'
+    ? (bt.winner === myIdx ? '你赢了！经验已到账' : '虽败犹荣，也有经验拿')
+    : (bt.winner === 'kids' ? '击败 Boss！' : `Boss 太强了。建议先升到 Lv${Math.max(2, me.level + 1)}，或解锁下一招后再来。`);
   const hpPct = f => Math.max(0, Math.round(f.hp / f.hpMax * 100));
   $('#tabbody').innerHTML = `
     <div class="card arena">
@@ -1164,7 +1176,7 @@ function renderArena() {
       ${bt.status === 'active' ? (myTurn ? `
         <div class="mt8">${meF.skills.map((s, i) => `<button class="btn ${i === 0 ? '' : 'ghost'}" onclick="battleMove(${i})">${esc(s.name)} <small>${s.power}威力</small></button>`).join('')}</div>`
         : '<div class="warnbox mt8">等待对方出招…（页面会自动刷新）</div>') : `
-        <div class="okbox mt8">战斗结束！${bt.mode === 'sibling' || bt.mode === 'friend' ? (bt.winner === myIdx ? '你赢了！经验已到账' : '虽败犹荣，也有经验拿') : (bt.winner === 'kids' ? '击败 Boss！' : 'Boss 太强了，下次再来')}</div>
+        <div class="okbox mt8">战斗结束！${finishCopy}</div>
         <button class="btn" onclick="curBattle=null;stopPoll();prevHp={};refreshMe().then(renderChild)">返回对战大厅</button>`}
       <div class="blog">${bt.log.map(l => `<p>${esc(l)}</p>`).join('') || '<p>战斗开始！</p>'}</div>
     </div>`;
@@ -1359,7 +1371,12 @@ async function doForcePin() {
 // PIN 不再拦门：仅在敏感操作（结算/改规则/撤销/删投诉）时由 withPin 弹出二次确认
 
 function parentOverview() {
-  return fam.children.map(c => `
+  return fam.children.map(c => {
+    const a = c.adventure;
+    const last = a && a.lastResult;
+    const q = a && a.weeklyQuest;
+    const adventureSummary = a ? `<div class="parent-adventure-summary"><b>🗺️ 星图 ${a.completedDays.length}/${a.totalDays} 日${a.chapterCompleted ? ' · 已毕业' : ` · 当前第 ${a.chapterDay} 日`}</b><span>${last ? `最近：${esc(last.nodeName)}${last.randomEvent ? ' · 🎲 奇遇' : ''}${last.signature ? ' · ✨ 签名' : ''}` : '还没有冒险记录'}</span>${q ? `<span>本周任务：${q.completed}/${q.total} 完成</span>` : ''}</div>` : '';
+    return `
     <div class="card">
       <h3>${c.pet ? c.pet.emoji : '🥚'} ${esc(c.name)} <span class="badge">${esc(c.grade || '')}</span> ${c.paused ? '<span class="badge a">暂停计</span>' : ''}</h3>
       <div class="stat-grid">
@@ -1368,6 +1385,7 @@ function parentOverview() {
         <div class="stat"><div class="v">¥${c.nextAllowance}</div><div class="k">下月零花钱（基础${c.allowanceBase}${c.allowanceLocked ? '+锁定' + c.allowanceLocked.amount : ''}）</div></div>
         <div class="stat"><div class="v">${c.feedStreak}</div><div class="k">连续投喂</div></div>
       </div>
+      ${adventureSummary}
       ${c.pausedDays >= 7 ? `<div class="warnbox mt8">⏸️ 暂停计已开 ${c.pausedDays} 天，病好了记得关！</div>` : ''}
       ${c.milestone.applications.filter(a => a.status === 'pending').length ? `
         <div class="okbox mt8">🏆 学期大奖申请：${esc(c.milestone.applications.find(a => a.status === 'pending').note)}</div>
@@ -1379,7 +1397,8 @@ function parentOverview() {
         <button class="btn sm ghost" onclick="editChild('${c.id}')">✏️ 编辑</button>
         <button class="btn sm bad" onclick="deleteChild('${c.id}')">🗑️ 删除</button>
       </div>
-    </div>`).join('') + `
+    </div>`;
+  }).join('') + `
     <div class="card">
       <h3>➕ 添加孩子</h3>
       <div class="row"><input id="nc_name" placeholder="名字" style="margin-top:0"><input id="nc_grade" placeholder="年级" style="margin-top:0"></div>
