@@ -2,20 +2,20 @@
 // 策略：/api/ 一律不拦（永远走网络）；页面入口 network-first；
 // 静态资源靠 ?v=N 版本号天然失效，缓存只是离线兜底。
 // ⚠️ 每次改版发布时：把 CACHE 和 ASSETS 里的 ?v= 同步升到 index.html 的新版本号！
-const CACHE = 'hp-v16';
+const CACHE = 'hp-v18';
 const ASSETS = [
   '/',
   '/index.html',
-  '/app.js?v=16',
-  '/audio.js?v=16',
-  '/style.css?v=16',
-  '/anim/player.js?v=16',
+  '/app.js?v=18',
+  '/audio.js?v=18',
+  '/style.css?v=18',
+  '/anim/player.js?v=18',
   '/manifest.json',
-  '/lib/species.umd.js?v=16',
-  '/lib/localstore.js?v=16',
-  '/lib/engine.umd.js?v=16',
-  '/lib/battle.umd.js?v=16',
-  '/lib/local.js?v=16',
+  '/lib/species.umd.js?v=18',
+  '/lib/localstore.js?v=18',
+  '/lib/engine.umd.js?v=18',
+  '/lib/battle.umd.js?v=18',
+  '/lib/local.js?v=18',
   '/anim/firam/contract.json',
   '/anim/firam/idle/frame-0.png', '/anim/firam/idle/frame-1.png', '/anim/firam/idle/frame-2.png', '/anim/firam/idle/frame-3.png',
   '/anim/firam/happy/frame-0.png', '/anim/firam/happy/frame-1.png', '/anim/firam/happy/frame-2.png', '/anim/firam/happy/frame-3.png',

@@ -12,3 +12,6 @@ processed_image_*.png
 # 浏览器验收（scripts/accept-360.js）临时产物
 .accept-360-state.json
 .accept-360-*.png
+
+# Playwright CLI 会话快照（本地验收临时产物）
+.playwright-cli/

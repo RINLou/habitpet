@@ -1,4 +1,4 @@
-// adventure-mvp.test.js — 7 日星图章节、签名事件与随机奇遇回归
+// adventure-mvp.test.js — 7 日星图章节、叙事选择、灵伴关系与随机奇遇回归
 'use strict';
 const B = process.env.BASE_URL || 'http://127.0.0.1:3000';
 const RND = Math.floor(Math.random() * 1000000);
@@ -20,14 +20,28 @@ async function api(path, body, token) {
   for (let i = 0; i < 7; i++) {
     const day = `2026-01-0${i + 1}`;
     child.feedDate = day;
-    const r = adventure.explore(child, adventure.NODE_CATALOG[i].id, day);
-    ok(`第 ${i + 1} 日章节探索`, r.ok && r.result.day === i + 1);
+    const node = adventure.NODE_CATALOG[i];
+    const choice = node.choices[i === 6 ? 2 : i % 2];
+    const r = adventure.explore(child, node.id, day, choice.id);
+    ok(`第 ${i + 1} 日章节探索`, r.ok && r.result.day === i + 1 && r.result.choice.id === choice.id);
   }
   const a = adventure.ensureState(child);
   ok('七日章节完成', a.completedDays.length === 7 && !!a.chapterCompletedAt && a.chapterCompletions.length === 1);
   ok('普通灵伴签名事件记录', a.signatureEvents.some(x => (x.speciesId || x) === 'firam'));
+  ok('七日选择和旧星历均落盘', a.storyChoices.length === 7 && a.lorePages.length === 7);
+  ok('章节结语由终点选择决定', a.chapterEnding && a.chapterEnding.id === 'return' && a.chapterCompletions[0].endingId === 'return');
+  ok('灵伴三段关系线记录', a.companionBeats.length === 3 && a.companionBeats.every(x => x.speciesId === 'firam'));
   ok('章节探索不改数值', child.xp === before.xp && child.intimacy === before.intimacy && child.ledger.balance === before.ledger);
   ok('随机事件结果可复现', JSON.stringify(adventure.randomEventFor('unit-child', '2026-01-01', 'starlight-gate')) === JSON.stringify(adventure.randomEventFor('unit-child', '2026-01-01', 'starlight-gate')));
+  const legacy = { adventure: { chapterDay: 1, completedDays: [] } };
+  const legacyState = adventure.ensureState(legacy);
+  ok('旧冒险数据迁移叙事默认字段', Array.isArray(legacyState.storyChoices) && Array.isArray(legacyState.lorePages) && legacyState.chapterEnding === null);
+  const allArcEntries = Object.keys(adventure.COMPANION_ARCS).every(sid => {
+    const childForArc = { pet: { speciesId: sid } };
+    const diffDay = adventure.COMPANION_ARCS[sid].differenceDay;
+    return ['meet', 'difference', 'resolve'].every((phase, index) => adventure.companionBeatFor(childForArc, adventure.NODE_CATALOG[index === 0 ? 0 : index === 1 ? diffDay - 1 : 6]).phase === phase);
+  });
+  ok('八只普通灵伴均有三段关系入口', allArcEntries);
 })();
 
 (async () => {
@@ -52,16 +66,20 @@ async function api(path, body, token) {
   const nodeId = fed.state.adventure.nodes[0].id;
   const intimacy = fed.state.intimacy, xp = fed.state.xp;
   ok('投喂后首日节点可出发', fed.state.adventure.available === true && fed.state.adventure.nodes[0].status === 'current');
+  ok('当前节点提供故事与分支', fed.state.adventure.nodes[0].intro && fed.state.adventure.nodes[0].choices.length === 2);
   const wrong = await api('/api/adventure/explore', { nodeId: 'moon-tide' }, token);
   ok('不能跳过章节节点', !!wrong.error && wrong.state && wrong.state.adventure.completedDays.length === 0);
-  const explored = await api('/api/adventure/explore', { nodeId }, token);
+  const forged = await api('/api/adventure/explore', { nodeId, choiceId: 'not-a-choice' }, token);
+  ok('服务端拒绝伪造剧情选择', !!forged.error && forged.state && forged.state.adventure.completedDays.length === 0);
+  const explored = await api('/api/adventure/explore', { nodeId, choiceId: 'follow-spark' }, token);
   ok('选择首日节点成功', explored.ok && explored.result && explored.state.adventure.completedToday === true);
+  ok('选择、旧星历与灵伴初见写入', explored.result.choice.id === 'follow-spark' && explored.state.adventure.story.choices.length === 1 && explored.state.adventure.story.lorePages.length === 1 && explored.state.adventure.story.companionBeats.length === 1);
   ok('探索不改亲密度/经验', explored.state.intimacy === intimacy && explored.state.xp === xp);
   ok('探索记录写入', explored.state.adventure.visited.includes(nodeId) && explored.state.adventure.lastResult.nodeId === nodeId);
-  const repeat = await api('/api/adventure/explore', { nodeId: 'moon-tide' }, token);
+  const repeat = await api('/api/adventure/explore', { nodeId: 'moon-tide', choiceId: 'return-shell' }, token);
   ok('当天第二次探索幂等返回', repeat.ok && repeat.repeated === true && repeat.result.nodeId === nodeId);
   const after = await api('/api/me', {}, token);
-  ok('重读后探索状态持久', after.adventure.completedToday === true && after.adventure.lastResult.nodeId === nodeId);
+  ok('重读后探索状态持久', after.adventure.completedToday === true && after.adventure.lastResult.nodeId === nodeId && after.adventure.story.choices[0].choiceId === 'follow-spark');
 
   console.log(`星图冒险结果：${pass} 通过 / ${fail} 失败`);
   process.exit(fail ? 1 : 0);

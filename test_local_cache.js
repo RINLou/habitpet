@@ -34,7 +34,7 @@ function freshRT() {   // 模拟页面/浏览器重启：清 require 缓存重�
 
 let pass = 0, fail = 0;
 const ok = (n, c) => { if (c) { pass++; console.log('  ✓', n); } else { fail++; console.log('  ✗ FAIL:', n); } };
-const R = { projectedViewFields: false, cachedViews: false, lastStatePersisted: false, offlineBootKeptCard: false, offlineCachePriority: false };
+const R = { projectedViewFields: false, adventureStoryProjection: false, cachedViews: false, lastStatePersisted: false, offlineBootKeptCard: false, offlineCachePriority: false };
 
 (async () => {
   const fixture = JSON.parse(fs.readFileSync(process.env.LOCAL_FAMILY_FILE, 'utf8'));
@@ -50,6 +50,10 @@ const R = { projectedViewFields: false, cachedViews: false, lastStatePersisted: 
     && !!(rn1 && rn1.show === false && rn1.gapDays === 0 && rn1.gapKey === null);
   ok('本地投影 onboarding 字段齐全(与 server onboardingView 对齐)', !!(ob1 && ['status', 'planId', 'startedOn', 'finishedOn', 'dayIndex', 'completedOn', 'todayComplete', 'canCompleteToday', 'canStart', 'showStartPrompt', 'canRestart', 'historySummary'].every(k => k in ob1)));
   ok('本地投影 returnNudge 兜底(show=false,服务端裁决)', !!(rn1 && rn1.show === false && rn1.gapDays === 0 && rn1.gapKey === null));
+  R.adventureStoryProjection = !!(me1 && me1.adventure && me1.adventure.chapter && me1.adventure.chapter.title === '第一章·熄灭的七盏灵灯'
+    && me1.adventure.nodes && me1.adventure.nodes[0].choices && me1.adventure.nodes[0].choices[0].id === 'record-promise'
+    && me1.adventure.story && Array.isArray(me1.adventure.story.lorePages));
+  ok('本地投影保留第一章剧情标题、分支和故事收藏字段', R.adventureStoryProjection);
 
   // —— 场景2：云端 childMe 视图回来 → updateFromState 缓存 childStates + lastState 并落盘 ——
   RT.updateFromState({ id: cid, name: me1.name, friends: [], invites: [], onboarding: { status: 'active', planId: 'homework', startedOn: '2026-09-01', dayIndex: 2, completedOn: [], canCompleteToday: true }, returnNudge: { show: true, gapDays: 4, gapKey: 'L0x' } });

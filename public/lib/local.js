@@ -84,16 +84,18 @@
   }
   // 星图冒险的离线投影：云端 lastState 优先，已有 family 快照时也不让星图卡消失。
   var ADVENTURE_ROUTE = [
-    { day: 1, id: 'starlight-gate', icon: '✦', name: '星海关口', region: '星海边境', desc: '把今天的心光送上星图，听见远方灵伴的回声。' },
-    { day: 2, id: 'ember-trail', icon: '🔥', name: '赤曜荒原', region: '焰光边境', desc: '穿过温热的风沙，寻找一枚还没有熄灭的心光种子。' },
-    { day: 3, id: 'moon-tide', icon: '🌙', name: '月见潮汐', region: '潮汐边境', desc: '沿着月光下的潮线前进，寻找一段会发光的回忆。' },
-    { day: 4, id: 'shadow-bridge', icon: '🌉', name: '影桥回廊', region: '暮影峡谷', desc: '穿过会回应脚步的长桥，学会和犹豫相处。' },
-    { day: 5, id: 'green-rain', icon: '🌿', name: '翠雨林地', region: '森语边境', desc: '在温柔的绿雨里收集一颗愿意发芽的种子。' },
-    { day: 6, id: 'stone-pass', icon: '⛰️', name: '磐石隘口', region: '大地边境', desc: '沿着古老的石阶上行，让坚持留下自己的重量。' },
-    { day: 7, id: 'starheart-sanctum', icon: '💫', name: '星心圣所', region: '灵汐核心', desc: '把七日收集的心光交给圣所，听见大陆的第一句回应。' }
+    { day: 1, id: 'starlight-gate', icon: '✦', name: '星海关口', region: '星海边境', desc: '第一盏灵灯熄灭了。把今天的心光送上星图，听见远方灵伴的回声。', intro: '星海守门人说，七盏灵灯正在逐一变暗。每一次真正做到的小事，都能让它亮一点。', clue: '灵灯并不要求完美，它只会回应真实的行动。', choices: [{ id: 'record-promise', label: '先记下今天的愿望', desc: '把微光收进星历。' }, { id: 'follow-spark', label: '顺着微光立刻出发', desc: '追上正在远去的光点。' }] },
+    { day: 2, id: 'ember-trail', icon: '🔥', name: '赤曜荒原', region: '焰光边境', desc: '穿过温热的风沙，寻找一枚还没有熄灭的心光种子。', intro: '荒原信使抱着一枚将熄的心光种子，它可能来不及把灯芯送回去。', clue: '心光会在愿意停下来帮助别人的人身边停留。', choices: [{ id: 'escort-messenger', label: '陪信使一起走', desc: '慢一点，但不让它独自赶路。' }, { id: 'trace-ash', label: '追踪风沙里的浊气', desc: '先找出是谁吹散了灯火。' }] },
+    { day: 3, id: 'moon-tide', icon: '🌙', name: '月见潮汐', region: '潮汐边境', desc: '沿着月光下的潮线前进，寻找一段会发光的回忆。', intro: '潮水退去，一段被抹去的星历浮出水面。', clue: '当人们只记得没做到的事，浊气便有了声音。', choices: [{ id: 'keep-shell', label: '留下“再试一步”的贝壳', desc: '把它收进星历。' }, { id: 'return-shell', label: '把贝壳还给潮汐', desc: '让下一个迷路的人也能找到它。' }] },
+    { day: 4, id: 'shadow-bridge', icon: '🌉', name: '影桥回廊', region: '暮影峡谷', desc: '穿过会回应脚步的长桥，学会和犹豫相处。', intro: '影桥把每个人没能完成的约定映在桥面。今天还愿意再走一步吗？', clue: '浊气最喜欢把一次中断，说成永远的失败。', choices: [{ id: 'speak-to-shadow', label: '和影子说说话', desc: '承认自己也会有没做到的时候。' }, { id: 'cross-together', label: '牵着灵伴一起过桥', desc: '先一起迈出下一步。' }] },
+    { day: 5, id: 'green-rain', icon: '🌿', name: '翠雨林地', region: '森语边境', desc: '在温柔的绿雨里收集一颗愿意发芽的种子。', intro: '最后两盏灵灯需要的不是更大的火，而是有人愿意相信小种子也会发芽。', clue: '被照顾的愿望会慢慢生根，也会学着照亮别人。', choices: [{ id: 'plant-seed', label: '把种子种在这里', desc: '留给后来经过的人。' }, { id: 'carry-seed', label: '带着种子继续走', desc: '让它看看星心圣所的光。' }] },
+    { day: 6, id: 'stone-pass', icon: '⛰️', name: '磐石隘口', region: '大地边境', desc: '沿着古老的石阶上行，面对守着最后灯芯的浊灵。', intro: '浊灵守着灯芯问：你们总会停下，为什么还要点灯？', clue: '真正的勇气不是从不跌倒，而是在跌倒后知道下一步往哪里走。', choices: [{ id: 'show-footprints', label: '给浊灵看一路的脚印', desc: '告诉它，你们不是没有停过。' }, { id: 'share-light', label: '分给浊灵一束心光', desc: '让它亲眼看看光会怎样回来。' }] },
+    { day: 7, id: 'starheart-sanctum', icon: '💫', name: '星心圣所', region: '灵汐核心', desc: '把七日收集的心光交给圣所，决定最后一束光要照向哪里。', intro: '七盏灵灯终于同时亮起。最后一束心光，要照向哪里？', clue: '灯光会熄灭，但愿意再次伸手的人，永远能找到新的火种。', choices: [{ id: 'ending-courage', label: '照亮最远的星路', desc: '让更多人看见前方。' }, { id: 'ending-kindness', label: '留给迷路的小影兽', desc: '先照亮眼前需要帮助的人。' }, { id: 'ending-return', label: '收进明天的愿望球', desc: '给下一次开始留一束光。' }] }
   ];
   function adventureLocalView(child) {
     var a = child.adventure || {};
+    // family 快照有时保存的是 adventureView（story 嵌套），有时是原始 adventure 数据；两种都要能离线继续展示。
+    var remoteStory = (a.story && typeof a.story === 'object') ? a.story : {};
     var today = EN.dateKey();
     var visited = Array.isArray(a.visited) ? a.visited.slice(-30) : [];
     var completedDays = Array.isArray(a.completedDays) ? a.completedDays : [];
@@ -119,7 +121,7 @@
       return Object.assign({}, n, { nextIds: n.day < 7 ? [ADVENTURE_ROUTE[n.day].id] : [], visited: seen, status: status, available: canPlay && (status === 'current' || status === 'revisit') });
     });
     return {
-      chapter: { id: 'first-starlight', title: '首章·星光启程', subtitle: '连续七天，把每天的一小步走成一条回家的路。', totalDays: 7 },
+      chapter: { id: 'first-starlight', title: '第一章·熄灭的七盏灵灯', subtitle: '连续七天，找回七束心光；不必完美，也能重新点亮前路。', totalDays: 7 },
       chapterDay: chapterDay, totalDays: 7, completedDays: completedDays.slice(), chapterCompleted: chapterCompleted,
       chapterCompletedAt: a.chapterCompletedAt || null, completedChapters: Array.isArray(a.chapterCompletions) ? a.chapterCompletions.slice(-5) : [],
       available: canPlay && (chapterCompleted ? visited.length > 0 : true), revisitAvailable: chapterCompleted && visited.length > 0,
@@ -128,6 +130,13 @@
       discoveries: Array.isArray(a.discoveries) ? a.discoveries.slice(-10) : [],
       signatureEvents: Array.isArray(a.signatureEvents) ? a.signatureEvents.slice(-10) : [],
       randomEvents: Array.isArray(a.randomEvents) ? a.randomEvents.slice(-10) : [],
+      story: {
+        choices: Array.isArray(a.storyChoices) ? a.storyChoices.slice(-7) : (Array.isArray(remoteStory.choices) ? remoteStory.choices.slice(-7) : []),
+        lorePages: Array.isArray(a.lorePages) ? a.lorePages.slice(-7) : (Array.isArray(remoteStory.lorePages) ? remoteStory.lorePages.slice(-7) : []),
+        companionBeats: Array.isArray(a.companionBeats) ? a.companionBeats.slice(-8) : (Array.isArray(remoteStory.companionBeats) ? remoteStory.companionBeats.slice(-8) : []),
+        chapterEnding: a.chapterEnding || remoteStory.chapterEnding || null,
+        revisitNotes: Array.isArray(a.revisitNotes) ? a.revisitNotes.slice(-6) : (Array.isArray(remoteStory.revisitNotes) ? remoteStory.revisitNotes.slice(-6) : [])
+      },
       weeklyQuest: weeklyQuest, lastResult: a.lastResult || null, nodes: nodes
     };
   }

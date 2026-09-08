@@ -356,7 +356,7 @@ const routes = {
     const f = store.familyById(sess.familyId); const c = ensureChild(f, sess.childId);
     if (!c) return { code: 404, body: { error: '孩子不存在' } };
     const today = engine.dateKey();
-    const result = adventure.explore(c, p.nodeId, today);
+    const result = adventure.explore(c, p.nodeId, today, p.choiceId);
     if (result.error) {
       const state = childMe(f, c); store.saveNow();
       return { code: result.error === '星图节点不存在' ? 400 : 409, body: { error: result.error, state } };

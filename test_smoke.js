@@ -488,7 +488,7 @@ async function api(path, body, token) {
   const snap1 = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
   execFileSync(process.execPath, ['-e', MIGRATE], { cwd: __dirname });
   const snap2 = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
-  ok('schema v7', snap1.schemaVersion === 7 && snap2.schemaVersion === 7);
+  ok('schema v8', snap1.schemaVersion === 8 && snap2.schemaVersion === 8);
   ok('投诉记录数不变', countCp(snap1) === countCp(snap2), { m1: countCp(snap1), m2: countCp(snap2) });
   ok('账本 id 集不变', ledgerIds(snap1) === ledgerIds(snap2));
   ok('兑换状态集不变', redStatus(snap1) === redStatus(snap2));
@@ -511,7 +511,7 @@ async function api(path, body, token) {
   const snap3 = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
   const legacyChild = snap3.families[lfam].children[lchild];
   ok('遗留 idle 显式映射 not_started', legacyChild.onboarding.status === 'not_started');
-  ok('迁移补 pendingGapKey(schema v7)', legacyChild.returnNudge.pendingGapKey === null && legacyChild.adventure && Array.isArray(legacyChild.adventure.visited));
+  ok('迁移补 pendingGapKey(schema v8)', legacyChild.returnNudge.pendingGapKey === null && legacyChild.adventure && Array.isArray(legacyChild.adventure.visited));
 
   console.log('== 17 随机灵汐事件（心光雨；服务端以 HABITPET_NO_RANDOM=1 启动 → RNG 固定 0.99，chance=1 必触发） ==');
   {
@@ -653,6 +653,7 @@ async function api(path, body, token) {
     // —— 修正单新增测试组 ④：本地缓存包含 onboarding/returnNudge；离线重启不丢计划卡 ——
     ok('本地缓存:updateFromState 缓存 onboarding/returnNudge', lc.cachedViews === true, lc.crash);
     ok('本地缓存:lastState 完整视图落盘', lc.lastStatePersisted === true);
+    ok('本地缓存:星图剧情投影含第一章标题/分支/收藏字段', lc.adventureStoryProjection === true);
     ok('本地缓存:家长快照本地投影字段齐全', lc.projectedViewFields === true);
     ok('本地缓存:离线重启(无family快照)回退 lastState 不丢计划卡', lc.offlineBootKeptCard === true);
     ok('本地缓存:重启后缓存视图优先于 raw 投影', lc.offlineCachePriority === true);
