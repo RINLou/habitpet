@@ -83,23 +83,43 @@
     };
   }
   // 星图冒险的离线投影：云端 lastState 优先，已有 family 快照时也不让星图卡消失。
-  var ADVENTURE_NODES = [
-    { id: 'starlight-gate', icon: '✦', name: '星海关口', region: '星海边境', desc: '把今天的心光送上星图，听见远方灵伴的回声。' },
-    { id: 'ember-trail', icon: '🔥', name: '赤曜荒原', region: '焰光边境', desc: '穿过温热的风沙，寻找一枚还没有熄灭的心光种子。' },
-    { id: 'moon-tide', icon: '🌙', name: '月见潮汐', region: '潮汐边境', desc: '沿着月光下的潮线前进，寻找一段会发光的回忆。' }
+  var ADVENTURE_ROUTE = [
+    { day: 1, id: 'starlight-gate', icon: '✦', name: '星海关口', region: '星海边境', desc: '把今天的心光送上星图，听见远方灵伴的回声。' },
+    { day: 2, id: 'ember-trail', icon: '🔥', name: '赤曜荒原', region: '焰光边境', desc: '穿过温热的风沙，寻找一枚还没有熄灭的心光种子。' },
+    { day: 3, id: 'moon-tide', icon: '🌙', name: '月见潮汐', region: '潮汐边境', desc: '沿着月光下的潮线前进，寻找一段会发光的回忆。' },
+    { day: 4, id: 'shadow-bridge', icon: '🌉', name: '影桥回廊', region: '暮影峡谷', desc: '穿过会回应脚步的长桥，学会和犹豫相处。' },
+    { day: 5, id: 'green-rain', icon: '🌿', name: '翠雨林地', region: '森语边境', desc: '在温柔的绿雨里收集一颗愿意发芽的种子。' },
+    { day: 6, id: 'stone-pass', icon: '⛰️', name: '磐石隘口', region: '大地边境', desc: '沿着古老的石阶上行，让坚持留下自己的重量。' },
+    { day: 7, id: 'starheart-sanctum', icon: '💫', name: '星心圣所', region: '灵汐核心', desc: '把七日收集的心光交给圣所，听见大陆的第一句回应。' }
   ];
   function adventureLocalView(child) {
     var a = child.adventure || {};
     var today = EN.dateKey();
     var visited = Array.isArray(a.visited) ? a.visited.slice(-30) : [];
+    var completedDays = Array.isArray(a.completedDays) ? a.completedDays : [];
+    var chapterDay = Number.isInteger(a.chapterDay) ? a.chapterDay : 1;
+    var chapterCompleted = completedDays.length >= 7 || !!a.chapterCompletedAt;
     var completedToday = a.lastPlayedOn === today;
+    var canPlay = !!child.pet && !child.fainted && !child.pausedAt && child.feedDate === today && !completedToday;
+    var nodes = ADVENTURE_ROUTE.map(function (n) {
+      var seen = visited.indexOf(n.id) >= 0;
+      var status = 'locked';
+      if (chapterCompleted && seen) status = 'revisit';
+      else if (completedDays.indexOf(n.day) >= 0) status = 'completed';
+      else if (!chapterCompleted && n.day === chapterDay) status = 'current';
+      return Object.assign({}, n, { nextIds: n.day < 7 ? [ADVENTURE_ROUTE[n.day].id] : [], visited: seen, status: status, available: canPlay && (status === 'current' || status === 'revisit') });
+    });
     return {
-      available: !!child.pet && !child.fainted && !child.pausedAt && child.feedDate === today && !completedToday,
+      chapter: { id: 'first-starlight', title: '首章·星光启程', subtitle: '连续七天，把每天的一小步走成一条回家的路。', totalDays: 7 },
+      chapterDay: chapterDay, totalDays: 7, completedDays: completedDays.slice(), chapterCompleted: chapterCompleted,
+      chapterCompletedAt: a.chapterCompletedAt || null, completedChapters: Array.isArray(a.chapterCompletions) ? a.chapterCompletions.slice(-5) : [],
+      available: canPlay && (chapterCompleted ? visited.length > 0 : true), revisitAvailable: chapterCompleted && canPlay && visited.length > 0,
       completedToday: completedToday, lastPlayedOn: a.lastPlayedOn || null,
       currentNodeId: a.currentNodeId || null, visited: visited,
       discoveries: Array.isArray(a.discoveries) ? a.discoveries.slice(-10) : [],
-      lastResult: a.lastResult || null,
-      nodes: ADVENTURE_NODES.map(function (n) { return Object.assign({}, n, { visited: visited.indexOf(n.id) >= 0 }); })
+      signatureEvents: Array.isArray(a.signatureEvents) ? a.signatureEvents.slice(-10) : [],
+      randomEvents: Array.isArray(a.randomEvents) ? a.randomEvents.slice(-10) : [],
+      lastResult: a.lastResult || null, nodes: nodes
     };
   }
   function childMe(family, child) {

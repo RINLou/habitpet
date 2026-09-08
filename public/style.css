@@ -118,18 +118,29 @@ label { font-size: 13px; color: var(--muted); display: block; margin-top: 10px; 
 .ob-plan.picked { border-color: var(--brand); box-shadow: 0 0 0 1px rgba(124,140,255,.45); color: var(--ink); }
 .adventure-card { margin-top: 10px; padding: 10px 12px; border-radius: 14px; border: 1px solid rgba(245,200,107,.28); background: linear-gradient(135deg, rgba(245,200,107,.10), rgba(124,140,255,.07)); }
 .adventure-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
-.adventure-nodes { display: grid; gap: 7px; margin-top: 10px; }
-.adventure-node { width: 100%; display: flex; align-items: center; gap: 9px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 12px; background: rgba(10,15,40,.46); color: var(--ink); text-align: left; cursor: pointer; }
+.adventure-progress { display: flex; align-items: center; gap: 8px; margin-top: 9px; color: var(--muted); font-size: 11px; }
+.adventure-progress b { color: var(--gold); font-size: 13px; }
+.adventure-nodes { display: grid; gap: 0; margin-top: 10px; }
+.adventure-map-row { display: flex; flex-direction: column; align-items: stretch; }
+.adventure-node { width: 100%; display: flex; align-items: center; gap: 8px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 12px; background: rgba(10,15,40,.46); color: var(--ink); text-align: left; cursor: pointer; transition: border-color .2s, transform .2s, background .2s; }
 .adventure-node:disabled { opacity: .58; cursor: not-allowed; }
-.adventure-node.visited { border-color: rgba(52,211,153,.34); }
+.adventure-node.current { border-color: rgba(245,200,107,.72); box-shadow: 0 0 0 1px rgba(245,200,107,.16); }
+.adventure-node.current:not(:disabled):hover { transform: translateY(-1px); }
+.adventure-node.completed { border-color: rgba(52,211,153,.34); background: rgba(52,211,153,.07); }
+.adventure-node.revisit { border-color: rgba(124,140,255,.5); }
+.adventure-node.locked { filter: saturate(.7); }
+.adventure-node-day { width: 24px; flex: 0 0 24px; color: var(--gold); font-size: 10px; font-weight: 800; text-align: center; }
 .adventure-node-icon { width: 28px; flex: 0 0 28px; font-size: 20px; text-align: center; }
 .adventure-node-copy { flex: 1; min-width: 0; }
 .adventure-node-copy b { display: block; font-size: 13px; }
+.adventure-node-copy em { margin-left: 5px; color: var(--muted); font-size: 10px; font-style: normal; font-weight: 500; }
 .adventure-node-copy small { display: block; margin-top: 2px; color: var(--muted); font-size: 11px; line-height: 1.35; }
 .adventure-node-mark { color: var(--gold); font-size: 20px; }
+.adventure-line { width: 2px; height: 8px; margin: 0 0 0 26px; background: linear-gradient(var(--gold), rgba(124,140,255,.5)); opacity: .65; }
 .adventure-result { display: flex; gap: 8px; align-items: flex-start; margin-top: 9px; padding: 9px 10px; border-radius: 10px; background: rgba(52,211,153,.10); color: #d1fae5; font-size: 12px; }
 .adventure-result > span { font-size: 20px; line-height: 1; }
 .adventure-result b { color: var(--ink); font-size: 13px; }
+.adventure-result div div { white-space: pre-line; margin-top: 3px; }
 .feed-state { margin: 9px 0 2px; color: var(--muted); font-size: 12px; }
 .pet-hero .name { font-size: 18px; font-weight: 800; margin-top: 8px; }
 .pet-hero .stage { font-size: 12px; color: var(--gold); font-weight: 700; }

@@ -791,34 +791,44 @@ async function dismissOnboarding() {
   else toast(r.error || '稍后再试', true);
 }
 
-// —— 星图冒险 MVP：投喂后每日一次的轻探索，不改 XP/亲密度 ————————————————
+// —— 星图冒险：7 日章节路线、灵伴签名事件与不改数值的随机奇遇 ————————————————
 function adventureCard() {
   const a = me.adventure;
   if (!a || !Array.isArray(a.nodes) || !a.nodes.length) return '';
   const result = a.lastResult;
   const status = a.completedToday
-    ? '今天的星图已经点亮，明天再来发现新的回声。'
+    ? (a.chapterCompleted ? '首章已经毕业，今天可以回访走过的节点。' : `第 ${a.chapterDay}/${a.totalDays} 日已点亮，明天继续沿星光前进。`)
     : a.available
-      ? '选择一处目的地，看看今天的心光会遇见什么。'
+      ? (a.chapterCompleted ? '首章已完成，今天可以回访任意已走过的节点。' : `完成投喂后，前往第 ${a.chapterDay}/${a.totalDays} 日节点。`)
       : '完成今天的投喂后，星图会为你打开一条路。';
-  const nodes = a.nodes.map(n => `
-    <button class="adventure-node ${n.visited ? 'visited' : ''}" ${a.available ? '' : 'disabled'} onclick="exploreAdventure('${esc(n.id)}')">
+  const nodes = a.nodes.map((n, i) => {
+    const label = n.status === 'completed' ? '已完成' : n.status === 'current' ? `第 ${n.day} 日` : n.status === 'revisit' ? '可回访' : '未解锁';
+    const mark = n.status === 'completed' ? '✓' : n.status === 'locked' ? '🔒' : n.status === 'revisit' ? '↺' : '›';
+    return `<div class="adventure-map-row">
+    <button class="adventure-node ${n.status} ${n.visited ? 'visited' : ''}" ${n.available ? '' : 'disabled'} onclick="exploreAdventure('${esc(n.id)}')">
+      <span class="adventure-node-day">D${n.day}</span>
       <span class="adventure-node-icon">${n.icon}</span>
-      <span class="adventure-node-copy"><b>${esc(n.name)}</b><small>${esc(n.region)} · ${esc(n.desc)}</small></span>
-      <span class="adventure-node-mark">${n.visited ? '✓' : '›'}</span>
-    </button>`).join('');
+      <span class="adventure-node-copy"><b>${esc(n.name)} <em>${label}</em></b><small>${esc(n.region)} · ${esc(n.desc)}</small></span>
+      <span class="adventure-node-mark">${mark}</span>
+    </button>${i < a.nodes.length - 1 ? '<span class="adventure-line" aria-hidden="true"></span>' : ''}</div>`;
+  }).join('');
+  const extra = result && a.completedToday ? `${result.signature ? `<div>✨ ${esc(result.signature.title)}：${esc(result.signature.story)}</div>` : ''}${result.randomEvent ? `<div>🎲 ${esc(result.randomEvent.title)}：${esc(result.randomEvent.story)}</div>` : ''}` : '';
   return `<div class="adventure-card">
-    <div class="adventure-head"><div><div class="onboarding-title">🗺️ 今日星图</div><div class="lead">${status}</div></div><span class="badge ${a.completedToday ? 'g' : a.available ? 'a' : ''}">${a.completedToday ? '已完成' : a.available ? '可出发' : '待解锁'}</span></div>
-    ${result && a.completedToday ? `<div class="adventure-result"><span>${result.icon}</span><div><b>${esc(result.nodeName)}</b><div>${esc(result.story)}</div></div></div>` : ''}
+    <div class="adventure-head"><div><div class="onboarding-title">🗺️ ${esc(a.chapter && a.chapter.title || '首章·星光启程')}</div><div class="lead">${status}</div></div><span class="badge ${a.completedToday ? 'g' : a.available ? 'a' : ''}">${a.chapterCompleted ? '可回访' : a.completedToday ? '已完成' : a.available ? '可出发' : '待解锁'}</span></div>
+    <div class="adventure-progress"><span>章节进度</span><b>${a.completedDays.length}/${a.totalDays} 日</b><span>${a.chapterCompleted ? '毕业印记已保存' : `当前第 ${a.chapterDay} 日`}</span></div>
+    ${result && a.completedToday ? `<div class="adventure-result"><span>${result.icon}</span><div><b>D${result.day} · ${esc(result.nodeName)}</b><div>${esc(result.story)}</div>${extra}</div></div>` : ''}
     <div class="adventure-nodes">${nodes}</div>
-    <div class="muted-line">已发现 ${a.visited.length}/${a.nodes.length} 处星图节点 · 探索不会改变经验和亲密度</div>
+    <div class="muted-line">已发现 ${a.visited.length}/${a.nodes.length} 处星图节点 · 毕业后可每日回访 · 探索不会改变经验和亲密度</div>
   </div>`;
 }
 async function exploreAdventure(nodeId) {
   const r = await api('/api/adventure/explore', { nodeId });
   if (r.error) { if (r.state) me = r.state; return toast(r.error, true); }
   me = r.state;
-  if (r.result) showFx({ title: `${r.result.icon} ${r.result.nodeName}`, sub: esc(r.result.story), btn: '收下这段星光', auto: 5200, sound: 'coin', speak: r.result.story });
+  if (r.result) {
+    const bits = [r.result.story, r.result.signature && `✨ ${r.result.signature.title}：${r.result.signature.story}`, r.result.randomEvent && `🎲 ${r.result.randomEvent.title}：${r.result.randomEvent.story}`].filter(Boolean);
+    showFx({ title: `${r.result.icon} ${r.result.nodeName}`, sub: esc(bits.join('\n')), btn: '收下这段星光', auto: 6500, sound: 'coin', speak: bits.join(' ') });
+  }
   renderChild();
 }
 // 温和回归：服务端判定 show 才弹；session 内同 gapKey 只弹一次；ack 不阻塞 UI
