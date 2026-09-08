@@ -1049,7 +1049,7 @@ function renderChildBattleTab(b) {
     <div class="card">
       <h3>⚔️ 对战大厅</h3>
       <div class="lead">对战经验随对手等级浮动：赢 = +6+对方等级，输 = +2+对方等级÷2（每天最多 ${me.battleDailyLimit} 场，今天已打 ${me.battlesToday} 场）。经验只升宠物，绝不花亲密度！</div>
-      <div class="item"><div class="t"><div class="n">🌲 挑战荒野 Boss</div><div class="s">单人闯关，Boss 等级随你</div></div><button class="btn sm" onclick="startBattle('boss')">出发</button></div>
+      <div class="item"><div class="t"><div class="n">🌲 挑战荒野 Boss</div><div class="s">单人闯关，首战友好，等级越高越强</div></div><button class="btn sm" onclick="startBattle('boss')">出发</button></div>
       ${others.map(o => `
         <div class="item"><div class="t"><div class="n">🤝 与 ${esc(o.name)} 联手打 Boss</div><div class="s">TA 的分身 AI 帮你打，不用等 TA 在线</div></div><button class="btn sm ok" onclick="startBattle('coop','${o.id}')">组队</button></div>
         <div class="item"><div class="t"><div class="n">⚔️ 与 ${esc(o.name)} 切磋</div><div class="s">打 TA 宠物的 AI 分身（他 ${o.petEmoji} Lv${o.level}），单挑即打即结算</div></div><button class="btn sm bad" onclick="startBattle('sibling','${o.id}')">开打</button></div>`).join('') || '<div class="muted-line">还没有兄弟姐妹可以约战（等家长添加）</div>'}
