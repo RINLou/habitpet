@@ -1,8 +1,8 @@
-// tests/anim-mvp.test.js — 焰狼动画 MVP 回归断言（review-fix 可复现测试）
+// tests/anim-mvp.test.js — 多灵伴逐帧动画回归断言（review-fix 可复现测试）
 // 运行前提：server 已在 127.0.0.1:3000（与 test_smoke.js 相同前提）
 // 用法：node tests/anim-mvp.test.js
 // 覆盖：
-//   [阶段保护] juvenile / awaken / 非 firam 不挂载精灵；adult 正常挂载
+//   [阶段保护] juvenile / awaken / 未纳入批次的物种不挂载精灵；普通灵伴 adult 正常挂载
 //   [尺寸契约] contract.runtimeCell 与实际 frame PNG 的 IHDR 尺寸一致
 //   [事件优先级] 高优先级抢占、低优先级排队、播完回 idle、pending 冲刷
 //   [首载竞态] 契约未就绪时 queueEvent 不丢失
@@ -17,7 +17,7 @@ const vm = require('vm');
 const http = require('http');
 
 const ROOT = path.join(__dirname, '..');
-const BASE_URL = 'http://127.0.0.1:3000';
+const BASE_URL = process.env.BASE_URL || 'http://127.0.0.1:3000';
 
 let pass = 0, fail = 0;
 function ok(cond, name) {
@@ -101,8 +101,8 @@ function makeSandbox(opts) {
   sandbox.fetch = (url) => {
     const u = String(url);
     const p = u.startsWith('http') ? u.slice(BASE_URL.length) : u;
-    const m = p.match(/\/anim\/firam\/(\w+)\//);
-    if (m && failActions[m[1]]) return Promise.resolve({ ok: false, status: 404, json: () => Promise.reject(new Error('404')) });
+    const m = p.match(/\/anim\/(\w+)\/(\w+)\//);
+    if (m && failActions[m[2]]) return Promise.resolve({ ok: false, status: 404, json: () => Promise.reject(new Error('404')) });
     return fetch(BASE_URL + p).then(r => ({ ok: r.ok, status: r.status, json: () => r.json() }));
   };
   sandbox.Image = function () {
@@ -111,8 +111,8 @@ function makeSandbox(opts) {
       set(v) {
         const u = String(v);
         const p = u.startsWith('http') ? u.slice(BASE_URL.length) : u;
-        const m = p.match(/\/anim\/firam\/(\w+)\//);
-        const fail = m && failActions[m[1]];
+        const m = p.match(/\/anim\/(\w+)\/(\w+)\//);
+        const fail = m && failActions[m[2]];
         if (fail) setTimeout(() => this.onerror && this.onerror(new Error('404 ' + u)), 5);
         else httpStatus(p).then(s => { if (s === 200) { this.onload && this.onload(); } else this.onerror && this.onerror(new Error(s)); });
       }
@@ -149,10 +149,10 @@ async function main() {
     await PetAnim._mount(awk);
     ok(!awk.querySelector('.pa-sprite'), '觉醒(awaken)：不挂载精灵帧');
 
-    const other = makeEl('div', { 'data-anim': 'hero', 'data-species': 'luna', 'data-stage': 'adult' });
+    const other = makeEl('div', { 'data-anim': 'hero', 'data-species': 'kirin', 'data-stage': 'adult' });
     other.appendChild(makeEl('img'));
     await PetAnim._mount(other);
-    ok(!other.querySelector('.pa-sprite'), '非 firam(luna)：不挂载精灵帧');
+    ok(!other.querySelector('.pa-sprite'), '未纳入本批的神兽(kirin)：不挂载精灵帧');
 
     const adult = makeEl('div', { 'data-anim': 'hero', 'data-species': 'firam', 'data-stage': 'adult' });
     const orig = makeEl('img');
@@ -165,7 +165,7 @@ async function main() {
     ok(PetAnim.canAnimate('firam', 'adult') === true, 'canAnimate(firam,adult)=true');
     ok(PetAnim.canAnimate('firam', 'juvenile') === false, 'canAnimate(firam,juvenile)=false');
     ok(PetAnim.canAnimate('firam', 'awaken') === false, 'canAnimate(firam,awaken)=false');
-    ok(PetAnim.canAnimate('luna', 'adult') === false, 'canAnimate(luna,adult)=false');
+    ok(PetAnim.canAnimate('luna', 'adult') === true, 'canAnimate(luna,adult)=true');
 
     // 失败恢复静态（阶段保护元素的原始 img 都还在）
     ok(!!juv.querySelector('img:not(.pa-sprite)'), '幼体原始 img 未被销毁');
@@ -182,6 +182,14 @@ async function main() {
       `实际帧尺寸 ${f.width}x${f.height} 与 runtimeCell 一致`);
     const f6 = await pngSize('/anim/firam/levelUp/frame-5.png');
     ok(f6.width === contract.runtimeCell.width, 'levelUp 帧尺寸一致');
+    console.log('[多物种契约]');
+    for (const sid of ['volt', 'tidal', 'night', 'luna', 'mount', 'thorn', 'rime']) {
+      const c = await (await fetch(BASE_URL + `/anim/${sid}/contract.json`)).json();
+      const frame = await pngSize(`/anim/${sid}/idle/frame-0.png`);
+      ok(c.characterId === sid, `${sid} contract characterId`);
+      ok(frame.width === c.runtimeCell.width && frame.height === c.runtimeCell.height, `${sid} idle 帧尺寸一致`);
+      ok(await httpStatus(`/anim/${sid}/levelUp/frame-5.png`) === 200, `${sid} levelUp 资源可达`);
+    }
   }
 
   // ========== [事件优先级 + 回 idle + 定时器]（step-3）==========

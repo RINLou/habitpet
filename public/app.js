@@ -1,4 +1,4 @@
-/* app.js — 养成好习惯 App 前端（孩子端 + 家长端） */
+/* app.js — 灵汐大陆（孩子端 + 家长端） */
 'use strict';
 
 const $ = s => document.querySelector(s);
@@ -50,6 +50,18 @@ function openIosGuide() {                         // iOS：系统不允许自动
 // ============================================================
 const ART_BY_SPECIES = { firam:'firam.webp', volt:'volt.webp', tidal:'tidal.webp', night:'night.webp', luna:'luna.webp', mount:'mount.webp', thorn:'thorn.webp', rime:'rime.webp', kirin:'kirin.webp', dragon:'dragon.webp' };
 const ART_BY_EMOJI = { '🐺':'firam.webp', '🦅':'volt.webp', '🐢':'tidal.webp', '🐆':'night.webp', '🦊':'luna.webp', '🐻':'mount.webp', '🦎':'thorn.webp', '🐧':'rime.webp', '🦌':'kirin.webp', '🐉':'dragon.webp' };
+const LORE_BY_SPECIES = {
+  firam: { region: '赤曜荒原', role: '把勇气点成火光', tone: '勇敢' },
+  volt: { region: '鸣雷高空', role: '把行动化作闪电', tone: '行动' },
+  tidal: { region: '潮岩湾', role: '用耐心守住潮汐', tone: '坚持' },
+  night: { region: '暮影森林', role: '在安静里找到专注', tone: '专注' },
+  luna: { region: '月见原', role: '用想象照亮心念', tone: '想象' },
+  mount: { region: '磐岳山脊', role: '一步一步扛过难关', tone: '稳重' },
+  thorn: { region: '苍棘雨林', role: '把成长织成新叶', tone: '成长' },
+  rime: { region: '凛冬云海', role: '把清醒带到每一天', tone: '自律' },
+  kirin: { region: '星鹿秘境', role: '聆听星海的愿望', tone: '灵感' },
+  dragon: { region: '曜天圣域', role: '守护所有人的心光', tone: '守护' }
+};
 const STAGE_POS = { juvenile: 0, adult: 1, awaken: 2 };   // 三段进化图：左幼体/中成体/右觉醒
 // stageKey='orb' 用愿望球；有 stageKey 裁对应 1/3；没有则展示完整单图
 function petArtById(sid, stageKey, cls, idle) {
@@ -80,6 +92,10 @@ function petArtHero(p, fainted) {
   return `<div class="pet-art idle ${fainted ? 'fainted' : ''}" data-anim="hero" data-species="${esc(sid)}" data-stage="${esc(p.stageKey || '')}" data-emoji="${esc(p.emoji || '')}">
     <img class="${posClass}" src="img/${file}" alt="">
   </div>`;
+}
+
+function petLore(sid) {
+  return LORE_BY_SPECIES[sid] || { region: '灵汐大陆', role: '陪你收集每一束心光', tone: '心光' };
 }
 // 战斗立绘：Boss 用荒野挑战者图，真人/AI 分身按种族+形态裁切
 function battleArt(f) {
@@ -122,6 +138,52 @@ function petReact() {
   void img.offsetWidth; // 重置动画
   img.classList.add('pet-react');
   setTimeout(() => img.classList.remove('pet-react'), 950);
+}
+
+// —— 首次启动序章：把“灵汐大陆”从背景词变成玩家亲眼经历的故事 ——
+const PROLOGUE_SCENES = [
+  { image: 'img/evo.webp', title: '浊气正在侵蚀灵汐大陆', body: '大陆的星图一颗颗暗下去，只有孩子每天坚持做的小事，还能留下微弱的心光。' },
+  { image: 'img/reward.webp', title: '每一个好习惯，都会留下心光', body: '整理书桌、读几页书、认真完成作业，都会让星海重新亮起来。这里不追求完美，只记录你向前的一小步。' },
+  { image: 'img/wishball.webp', title: '愿望球正在等待你', body: '心光聚成愿望球，里面沉睡着一位灵伴。它会把你的坚持变成勇气、专注、耐心或想象力。' },
+  { image: 'img/awaken.webp', title: '冒险，从今天的一小步开始', body: '选一位伙伴，点亮第一块星图。你的好习惯，就是灵汐大陆重新发光的方式。' }
+];
+let prologueIndex = 0;
+let prologueScheduled = false;
+function openPrologue() {
+  prologueIndex = 0;
+  renderPrologueScene();
+}
+function renderPrologueScene() {
+  const s = PROLOGUE_SCENES[prologueIndex];
+  const last = prologueIndex === PROLOGUE_SCENES.length - 1;
+  openModal(`<div class="prologue-card">
+    <img class="prologue-img" src="${s.image}" alt="">
+    <div class="prologue-kicker">灵汐大陆 · 序章 ${prologueIndex + 1}/${PROLOGUE_SCENES.length}</div>
+    <h3>${s.title}</h3>
+    <div class="lead">${s.body}</div>
+    <div class="prologue-actions">
+      <button class="btn ghost" onclick="skipPrologue()">跳过序章</button>
+      <button class="btn" onclick="nextPrologue()">${last ? '开始冒险' : '继续'}</button>
+    </div>
+  </div>`);
+}
+function nextPrologue() {
+  if (prologueIndex >= PROLOGUE_SCENES.length - 1) return skipPrologue();
+  prologueIndex += 1;
+  renderPrologueScene();
+}
+function skipPrologue() {
+  localStorage.setItem('hp_prologue_seen:' + (me && me.id || 'guest'), '1');
+  closeModal();
+}
+function maybeShowPrologue() {
+  const key = 'hp_prologue_seen:' + (me && me.id || 'guest');
+  if (!me || role !== 'child' || localStorage.getItem(key) || prologueScheduled) return;
+  prologueScheduled = true;
+  setTimeout(() => {
+    prologueScheduled = false;
+    if (!localStorage.getItem(key)) openPrologue();
+  }, 120);
 }
 // 动画演示面板（仅 ?demo=1 出现入口）：不用练到成体即可预览全部五套动作
 const ANIM_DEMO = /[?&]demo=1/.test(location.search);
@@ -374,7 +436,7 @@ async function boot() {
 let authTab = 'login', authIdentity = 'parent';
 function renderAuth() {
   $('#app').innerHTML = `
-    <div class="topbar"><div class="title">🐾 养成好习惯</div><div class="who">宠物大冒险</div></div>
+    <div class="topbar"><div class="title">✦ 灵汐大陆</div><div class="who">让每个好习惯，点亮一颗星</div></div>
     <div class="tabs">
       <div class="tab ${authTab === 'login' ? 'on' : ''}" onclick="authTab='login';renderAuth()">登录</div>
       <div class="tab ${authTab === 'reg' ? 'on' : ''}" onclick="authTab='reg';renderAuth()">注册家庭</div>
@@ -498,7 +560,7 @@ function celebratePet(oldPet, newPet) {
   } else {
     const sid = Object.keys(ART_BY_SPECIES).find(k => ART_BY_SPECIES[k] === ART_BY_EMOJI[newPet.emoji]);
     if (window.PetAnim && PetAnim.isEnabled() && PetAnim.canAnimate(sid, newPet.stageKey)) PetAnim.queueEvent('hero', 'level_up');
-    else lvlBurst(`⬆️ Lv${newPet.level}！`);
+    else { lvlBurst(`⬆️ Lv${newPet.level}！`); petReact(); }
     Sfx.levelup();
   }
 }
@@ -513,12 +575,18 @@ function checkReturnEvent() {
   try { last = parseInt(localStorage.getItem('hp_last_visit') || '0', 10) || 0; } catch (_) {}
   try { localStorage.setItem('hp_last_visit', String(Date.now())); } catch (_) {}
   if (!last) return;
-  if (Date.now() - last > 24 * 3600 * 1000 && window.PetAnim) PetAnim.queueEvent('hero', 'return');
+  if (Date.now() - last > 24 * 3600 * 1000) {
+    if (window.PetAnim) PetAnim.queueEvent('hero', 'return');
+    petReact();
+  }
 }
 function renderChild() {
   if (!me.pet) return renderSpeciesPicker();
   const paused = me.paused;
-  if (!localStorage.getItem('hp_guide_seen')) { localStorage.setItem('hp_guide_seen', '1'); openGuide(); }
+  if (!localStorage.getItem('hp_guide_seen')) {
+    localStorage.setItem('hp_guide_seen', '1');
+    if (localStorage.getItem('hp_prologue_seen:' + (me && me.id || 'guest'))) openGuide();
+  }
   const fk = 'hp_fortune_' + new Date().toDateString();
   if (!localStorage.getItem(fk)) { localStorage.setItem(fk, '1'); setTimeout(() => toast('🔭 今日星运：' + pickDaily(FORTUNES, me.id), false, true), 900); }
   $('#app').innerHTML = `
@@ -527,7 +595,7 @@ function renderChild() {
       <div class="who">${paused ? '⏸️ 暂停计中' : '❤️ 亲密度 ' + me.intimacy} · 下月零花钱 ¥${me.nextAllowance}<br><span class="mute-btn" style="cursor:pointer" onclick="toggleMute()">${Sfx.muted ? '🔇' : '🔊'}</span> · ${installLink()}<a href="#" onclick="openGuide();return false">📖 玩法</a> · <a href="#" onclick="refreshMe().then(renderChild);return false">刷新</a> · <a href="#" style="color:#6b7280" onclick="doLogout();return false">退出</a></div>
     </div>
     ${paused ? `<div class="warnbox">暂停计期间：不重置、不计连击、不扣分，好好休息 💤</div>` : ''}
-    ${me.fainted ? `<div class="warnbox">💀 你的宠物饿晕了！去「宠物」页复活它才能继续对战和领经验</div>` : ''}
+    ${me.fainted ? `<div class="warnbox">💤 灵伴在休眠茧里休息，去「宠物」页免费唤醒它就能继续对战和领经验</div>` : ''}
     <div class="tabs">
       ${[['pet', '🐾 宠物'], ['report', '📝 申报'], ['battle', '⚔️ 对战'], ['shop', '🎁 兑换'], ['book', '📖 图鉴']].map(([k, n]) =>
         `<div class="tab ${curTab === k ? 'on' : ''}" onclick="switchChildTab('${k}')">${n}</div>`).join('')}
@@ -540,6 +608,7 @@ function renderChild() {
   else if (curTab === 'battle') renderChildBattleTab(b);
   else if (curTab === 'shop') b.innerHTML = childShopTab();
   else b.innerHTML = childBookTab();
+  maybeShowPrologue();
   if (window.PetAnim) { checkReturnEvent(); PetAnim.scan(document.getElementById('tabbody')); }
 }
 
@@ -559,14 +628,16 @@ function openTodayAdventure() {
 // —— 新手说明（首次进入自动弹，之后点「📖 玩法」回看）——
 function openGuide() {
   const r = me ? me.rules : {};
-  openModal(`<h3>📖 玩法说明</h3>
+  openModal(`<h3>📖 灵汐大陆玩法</h3>
+    <div class="okbox">在这里，你的每一个好习惯都会变成心光，帮助灵伴穿越大陆、点亮星图。想重看序章，可以在这里重新打开。</div>
+    <button class="btn sm ghost" onclick="openPrologue()">重看灵汐大陆序章</button>
     <div class="lead">你的宠物靠「经验值」长大（升级→进化→觉醒），家里的「亲密度」是零花钱货币（1分=1元）。两个值都只来自真实的好习惯！</div>
     <div class="item"><div class="t"><div class="n">🐾 宠物页</div><div class="s">每天 ${r.feed !== undefined ? r.feed : 1} 分投喂（作业完成才算喂饭）、看五维属性、自由加点、改名字</div></div></div>
     <div class="item"><div class="t"><div class="n">📝 申报页</div><div class="s">考试≥${me.rules.examMin ?? 80} +${r.exam !== undefined ? r.exam : 50} · 默写/出门测≥${me.rules.quizMin ?? 80}% +${r.quiz !== undefined ? r.quiz : 10} · 自豪的事每周1次 +${r.pride !== undefined ? r.pride : 10}（家长审核后到账）</div></div></div>
     <div class="item"><div class="t"><div class="n">⚔️ 对战页</div><div class="s">打 Boss / 兄妹切磋 / 好友对战，赢经验不花亲密度（每天限 ${me ? me.battleDailyLimit : 5} 场）；输了对战也不扣亲密度</div></div></div>
     <div class="item"><div class="t"><div class="n">🎁 兑换页</div><div class="s">用亲密度换奖励；现金直接锁进下月零花钱，其他奖励家长核销后生效</div></div></div>
     <div class="item"><div class="t"><div class="n">📖 图鉴页</div><div class="s">兄弟姐妹榜 + 历届毕业宠物</div></div></div>
-    <div class="warnbox">⚠️ 每月 1 号亲密度重置为初始值（上月没被投诉再加无投诉奖 +${r.noComplaint !== undefined ? r.noComplaint : 100}）；被投诉 −${r.complaint !== undefined ? r.complaint : 50}（家长可取消退分）。宠物 3 天不投喂会饿肚子 −10 亲密度，5 天会饿晕，要花亲密度或降级复活！</div>
+    <div class="warnbox">⚠️ 每月 1 号亲密度重置为初始值（上月没被投诉再加无投诉奖 +${r.noComplaint !== undefined ? r.noComplaint : 100}）；被投诉 −${r.complaint !== undefined ? r.complaint : 50}（家长可取消退分）。默认温和模式：3 天不投喂只提醒，不扣分也不休眠；家长开启严格模式后才会有休眠茧，唤醒一律免费、不扣亲密度也不降级。</div>
     <div class="muted-line">学期结束时宠物毕业进图鉴，下学期重挑新伙伴。连续觉醒还能解锁隐藏神宠 S/SS！</div>
     <button class="btn" onclick="closeModal()">开始冒险！</button>`);
 }
@@ -578,16 +649,17 @@ async function renderSpeciesPicker() {
   const normal = r.species.filter(s => !s.hidden);
   const hidden = r.species.filter(s => s.hidden);
   $('#app').innerHTML = `
-    <div class="topbar"><div class="title">挑选你的伙伴！</div><div class="who"><a href="#" onclick="doLogout();return false">退出</a></div></div>
+    <div class="topbar"><div class="title">挑选你的灵伴</div><div class="who"><a href="#" onclick="doLogout();return false">退出</a></div></div>
     <div class="card">
       <div class="pet-art idle" style="width:92px;height:92px;margin-bottom:8px"><img class="pos-single" src="img/wishball.webp" alt=""></div>
-      <div class="lead">伙伴从「愿望球」里诞生，完成好习惯它会一路进化——学期结束毕业进图鉴，下学期再挑新的～</div>
+      <div class="lead">愿望球从你的心光里醒来。选一位来自不同星域的灵伴，一起把今天的小事变成大陆的光。</div>
       <div class="species-grid mt8">
         ${normal.map(s => `
           <div class="species" onclick="pickSpecies('${s.id}')">
             ${petArtById(s.id, null, 'tri')}
             <div class="nm">${esc(s.name)}</div>
             <div class="el">${s.elementName}系 · ${s.evo.join('→')}</div>
+            <div class="muted-line">${esc(petLore(s.id).region)} · ${esc(petLore(s.id).tone)}</div>
           </div>`).join('')}
       </div>
       <h3 class="mt8">🔒 隐藏神宠（解锁后可选）</h3>
@@ -600,10 +672,12 @@ async function renderSpeciesPicker() {
             ${petArtById(s.id, null, 'tri')}${ok ? '' : '<div class="lockmask">🔒</div>'}
             <div class="nm">${esc(s.name)} <span class="badge ${ok ? 'g' : ''}">${s.tier}</span></div>
             <div class="el">${ok ? s.elementName + '系 · ' + s.evo.join('→') : s.tier === 'S' ? '需任一学期觉醒' : '需连续两学期觉醒'}</div>
+            <div class="muted-line">${esc(petLore(s.id).region)} · ${esc(petLore(s.id).tone)}</div>
           </div>`;
         }).join('')}
       </div>
     </div>`;
+  maybeShowPrologue();
 }
 async function pickSpecies(id) {
   const r = await api('/api/pet/select', { speciesId: id });
@@ -716,13 +790,63 @@ async function dismissOnboarding() {
   if (r.ok) { me = r.state; renderChild(); }
   else toast(r.error || '稍后再试', true);
 }
+
+// —— 星图冒险：7 日章节路线、灵伴签名事件与不改数值的随机奇遇 ————————————————
+function adventureCard() {
+  const a = me.adventure;
+  if (!a || !Array.isArray(a.nodes) || !a.nodes.length) return '';
+  const result = a.lastResult;
+  const status = a.completedToday
+    ? (a.chapterCompleted ? '首章已经毕业，今天可以回访走过的节点。' : `第 ${a.chapterDay}/${a.totalDays} 日已点亮，明天继续沿星光前进。`)
+    : a.available
+      ? (a.chapterCompleted ? '首章已完成，今天可以回访任意已走过的节点。' : `完成投喂后，前往第 ${a.chapterDay}/${a.totalDays} 日节点。`)
+      : '今天先照顾灵伴；章节进度会保留，明天从原来的地方继续。';
+  const nodes = a.nodes.map((n, i) => {
+    const label = n.status === 'completed' ? '已完成' : n.status === 'current' ? `第 ${n.day} 日` : n.status === 'revisit' ? '可回访' : '未解锁';
+    const mark = n.status === 'completed' ? '✓' : n.status === 'locked' ? '🔒' : n.status === 'revisit' ? '↺' : '›';
+    return `<div class="adventure-map-row">
+    <button class="adventure-node ${n.status} ${n.visited ? 'visited' : ''}" ${n.available ? '' : 'disabled'} onclick="exploreAdventure('${esc(n.id)}')">
+      <span class="adventure-node-day">D${n.day}</span>
+      <span class="adventure-node-icon">${n.icon}</span>
+      <span class="adventure-node-copy"><b>${esc(n.name)} <em>${label}</em></b><small>${esc(n.region)} · ${esc(n.desc)}</small></span>
+      <span class="adventure-node-mark">${mark}</span>
+    </button>${i < a.nodes.length - 1 ? '<span class="adventure-line" aria-hidden="true"></span>' : ''}</div>`;
+  }).join('');
+  const extra = result && a.completedToday ? `${result.signature ? `<div>✨ ${esc(result.signature.title)}：${esc(result.signature.story)}</div>` : ''}${result.randomEvent ? `<div>🎲 ${esc(result.randomEvent.title)}：${esc(result.randomEvent.story)}</div>` : ''}` : '';
+  const q = a.weeklyQuest;
+  const quest = q ? `<div class="adventure-quests"><div class="quest-head"><b>📌 ${esc(q.title)}</b><span>${q.completed}/${q.total}</span></div>${q.tasks.map(t => `<div class="quest-item ${t.done ? 'done' : ''}"><span>${t.icon}</span><span>${esc(t.title)}<small>${esc(t.desc)}</small></span><b>${t.progress}/${t.target}${t.done ? ' ✓' : ''}</b></div>`).join('')}</div>` : '';
+  return `<div class="adventure-card">
+    <div class="adventure-head"><div><div class="onboarding-title">🗺️ ${esc(a.chapter && a.chapter.title || '首章·星光启程')}</div><div class="lead">${status}</div></div><span class="badge ${a.completedToday ? 'g' : a.available ? 'a' : ''}">${a.chapterCompleted ? '可回访' : a.completedToday ? '已完成' : a.available ? '可出发' : '待解锁'}</span></div>
+    <div class="adventure-progress"><span>章节进度</span><b>${a.completedDays.length}/${a.totalDays} 日</b><span>${a.chapterCompleted ? '毕业印记已保存' : `当前第 ${a.chapterDay} 日`}</span></div>
+    ${result && a.completedToday ? `<div class="adventure-result"><span>${result.icon}</span><div><b>D${result.day} · ${esc(result.nodeName)}</b><div>${esc(result.story)}</div>${extra}</div></div>` : ''}
+    ${quest}
+    <div class="adventure-nodes">${nodes}</div>
+    <div class="row adventure-actions"><button class="btn sm ghost" onclick="showAdventureAlbum()">📚 星光相册（${a.discoveries.length}）</button><span class="muted-line">探索不会改变经验和亲密度</span></div>
+  </div>`;
+}
+function showAdventureAlbum() {
+  const a = me && me.adventure;
+  if (!a) return;
+  const rows = (a.discoveries || []).slice().reverse().map(x => `<div class="item"><span style="font-size:20px">${x.icon || '✦'}</span><div class="t"><div class="n">D${x.day || '·'} · ${esc(x.nodeName || '星图发现')}</div><div class="s">${esc(x.story || '')}${x.signature ? `<br>✨ ${esc(x.signature.title)}` : ''}${x.randomEvent ? `<br>🎲 ${esc(x.randomEvent.title)}` : ''}</div></div></div>`).join('');
+  openModal(`<h3>📚 星光相册</h3><div class="lead">已保存的节点故事、灵伴签名和随机奇遇</div>${rows || '<div class="muted-line">还没有发现，完成今天的投喂后出发吧。</div>'}<button class="btn ghost" onclick="closeModal()">关闭</button>`);
+}
+async function exploreAdventure(nodeId) {
+  const r = await api('/api/adventure/explore', { nodeId });
+  if (r.error) { if (r.state) me = r.state; return toast(r.error, true); }
+  me = r.state;
+  if (r.result) {
+    const bits = [r.result.story, r.result.signature && `✨ ${r.result.signature.title}：${r.result.signature.story}`, r.result.randomEvent && `🎲 ${r.result.randomEvent.title}：${r.result.randomEvent.story}`].filter(Boolean);
+    showFx({ title: `${r.result.icon} ${r.result.nodeName}`, sub: esc(bits.join('\n')), btn: '收下这段星光', auto: 6500, sound: 'coin', speak: bits.join(' ') });
+  }
+  renderChild();
+}
 // 温和回归：服务端判定 show 才弹；session 内同 gapKey 只弹一次；ack 不阻塞 UI
 let lastReturnNudgeKey = null;
 function maybeShowReturnNudge() {
   const n = me && me.returnNudge;
   if (!n || !n.show || !n.gapKey || n.gapKey === lastReturnNudgeKey) return;
   lastReturnNudgeKey = n.gapKey;
-  // 饿晕时复活卡不能被遮太久：3.5s 自动淡出（按钮仍在，可立刻关）
+  // 休眠茧卡片不能被遮太久：3.5s 自动淡出（按钮仍在，可立刻关）
   showFx({ title: '🌿 好久不见', sub: '好久不见，回来就很好。今天只做一小步也算开始。', btn: '看看今天能做什么', auto: (me && me.fainted) ? 3500 : 0 });
   const b = document.querySelector('#fx .fx-btn');
   if (b) b.onclick = function () {
@@ -738,10 +862,12 @@ function childPetTab() {
   const xpPct = Math.min(100, Math.round((p.xp - p.xpCur) / Math.max(1, p.xpNext - p.xpCur) * 100));
   const fed = me.fedToday;
   const isNew = me.feedStreak === 0 && me.pokedex.length === 0 && me.intimacy === me.rules.initialIntimacy;
+  const sid = Object.keys(ART_BY_SPECIES).find(k => ART_BY_SPECIES[k] === ART_BY_EMOJI[p.emoji]) || 'firam';
+  const lore = petLore(sid);
   const welcome = isNew ? `
     <div class="okbox">
-      <b>欢迎来到宠物大冒险！</b><br>
-      每天按时完成作业可以投喂一次，考试、默写考好了可以申报加分，宠物会升级进化。月底用亲密度换零花钱或奖励 💪
+      <b>欢迎来到灵汐大陆，${esc(p.nickname)}！</b><br>
+      你们来自「${lore.region}」，今天的一个好习惯，就是一束新的心光。完成作业可以投喂灵伴，申报成就还能帮助星图继续亮起来。
     </div>` : '';
   const pending = (me.pending || []).filter(e => e.status === 'pending');
   const nextAction = me.fainted ? '先让伙伴醒来' : me.paused ? '今天安心休息' : fed ? '记录今天的闪光点' : '完成作业，投喂伙伴';
@@ -753,36 +879,36 @@ function childPetTab() {
     milestoneHtml = `<div class="okbox">🏆 宠物已觉醒！你获得一次「学期大奖申请权」${hasPending ? '（申请审核中…）' : ''}</div>
       ${hasPending ? '' : `<button class="btn warn" onclick="applyMilestone()">申请学期大奖</button>`}`;
   }
-  // 饿死机制：昏迷复活 / 饿肚子预警
+  // 缺席机制：休眠茧（唤醒免费）/ 温和提醒（默认不扣分、不休眠）
   let hungerHtml = '';
   if (me.fainted) {
     hungerHtml = `
-    <div class="card" style="border-color:var(--bad)">
-      <h3>💀 ${esc(p.nickname)} 饿晕了！</h3>
-      <div class="warnbox">5 天没投喂，宠物昏迷中：不能对战、不能领经验。选一种方式复活：</div>
+    <div class="card" style="border-color:var(--warn)">
+      <h3>💤 ${esc(p.nickname)} 在休眠茧里休息</h3>
+      <div class="warnbox">有 ${me.hungerDays} 天没投喂，灵伴先睡一会儿。唤醒是免费的：不扣亲密度、不降级，章节进度和星光相册全都还在。</div>
       <div class="row mt8">
-        <button class="btn warn" onclick="doRevive('level')">⬇️ 降 5 级复活</button>
-        <button class="btn ${me.intimacy < 50 ? '' : 'ok'}" ${me.intimacy < 50 ? 'disabled' : ''} onclick="doRevive('intimacy')">❤️ 扣 50 亲密度复活${me.intimacy < 50 ? '（亲密度不足）' : ''}</button>
+        <button class="btn ok" onclick="doRevive()">✨ 免费唤醒灵伴</button>
       </div>
     </div>`;
   } else if (me.hungerDays >= 3) {
-    hungerHtml = `<div class="warnbox">🍖 宠物已经 ${me.hungerDays} 天没吃饭，饿晕倒计时中！今天 ${me.fedToday ? '已投喂 ✓' : '快去投喂！'}</div>`;
+    hungerHtml = `<div class="warnbox">🍖 灵伴已经 ${me.hungerDays} 天没吃饭。别担心，进度都保留着，今天 ${me.fedToday ? '已投喂 ✓' : '回来投喂就能继续冒险。'}</div>`;
   } else if (me.hungerDays === 2) {
-    hungerHtml = `<div class="muted-line">⏰ 提醒：明天再不投喂，宠物就要饿肚子扣分啦</div>`;
+    hungerHtml = `<div class="muted-line">⏰ 提醒：明天再不投喂，灵伴就要先睡一会儿啦（进度不会丢）</div>`;
   }
   return `${welcome}
     <section class="card today-adventure" aria-labelledby="today-adventure-title">
       <div class="today-kicker">今日冒险</div>
       <h2 id="today-adventure-title">${nextAction}</h2>
       <div class="lead">${nextHint}</div>
-      <button class="btn today-cta" ${nextDisabled ? 'disabled' : ''} onclick="openTodayAdventure()">${!fed && !nextDisabled ? '🍖 完成作业，投喂 +' + me.rules.feed : fed ? '📝 去记录今天的成就' : me.fainted ? '💤 先在下方复活伙伴' : '🌙 今天先休息'}</button>
+      <button class="btn today-cta" ${nextDisabled ? 'disabled' : ''} onclick="openTodayAdventure()">${!fed && !nextDisabled ? '🍖 完成作业，投喂 +' + me.rules.feed : fed ? '📝 去记录今天的成就' : me.fainted ? '💤 先在下方唤醒伙伴' : '🌙 今天先休息'}</button>
       ${onboardingCard()}
+      ${adventureCard()}
       ${pending.length ? `<div class="today-pending" role="status">⏳ 有 ${pending.length} 个成就正在等家长查看：${pending.slice(0, 2).map(e => esc(e.label)).join('、')}${pending.length > 2 ? '…' : ''}</div>` : '<div class="today-pending calm">✨ 今天没有待审核的事，按自己的节奏来。</div>'}
     </section>
     <div class="card pet-hero">
       ${petArtHero(p, me.fainted)}
       <div class="name">${esc(p.nickname)} <span class="stage">Lv${p.level} · ${p.stage}</span></div>
-      <div class="lead">${p.speciesName} · ${p.elementName}系 · 学期：${esc(me.semester.name)}${p.tier ? ' · ' + p.tier + '级神宠（亲密度+5%）' : (p.stageKey === 'awaken' ? ' · 觉醒加成：亲密度+3%' : '')}</div>
+      <div class="lead">${p.speciesName} · ${p.elementName}系 · ${lore.region} · ${lore.role} · 学期：${esc(me.semester.name)}${p.tier ? ' · ' + p.tier + '级神宠（亲密度+5%）' : (p.stageKey === 'awaken' ? ' · 觉醒加成：亲密度+3%' : '')}</div>
       <div class="xpbar"><i style="width:${xpPct}%"></i></div>
       <div class="muted-line">经验 ${p.xp} / 下一级 ${p.xpNext}</div>
       <div class="whisper">🌙 ${pickDaily(WHISPERS, me.id)}</div>
@@ -854,13 +980,12 @@ async function doRename() {
   if (r.error) return toast(r.error, true);
   me = r.state; closeModal(); renderChild();
 }
-async function doRevive(mode) {
-  const ask = mode === 'level' ? '确认降 5 级复活？（经验/等级回退，五维成长点不回收）' : '确认消耗 50 亲密度复活？';
-  askConfirm(ask, async () => {
-    const r = await api('/api/pet/revive', { mode });
+async function doRevive() {
+  askConfirm('唤醒灵伴？免费：不扣亲密度、不降级，收藏和章节进度都不会丢。', async () => {
+    const r = await api('/api/pet/revive', { mode: 'free' });
     if (r.error) return toast(r.error, true);
-    me = r.state; toast('宠物复活啦！记得每天投喂 🍖'); renderChild();
-  }, '✨ 复活确认');
+    me = r.state; toast('灵伴醒来啦！记得每天投喂 🍖'); renderChild();
+  }, '✨ 唤醒确认');
 }
 function applyMilestone() {
   openModal(`<h3>申请学期大奖</h3>
@@ -931,7 +1056,7 @@ function renderChildBattleTab(b) {
     <div class="card">
       <h3>⚔️ 对战大厅</h3>
       <div class="lead">对战经验随对手等级浮动：赢 = +6+对方等级，输 = +2+对方等级÷2（每天最多 ${me.battleDailyLimit} 场，今天已打 ${me.battlesToday} 场）。经验只升宠物，绝不花亲密度！</div>
-      <div class="item"><div class="t"><div class="n">🌲 挑战荒野 Boss</div><div class="s">单人闯关，Boss 等级随你</div></div><button class="btn sm" onclick="startBattle('boss')">出发</button></div>
+      <div class="item"><div class="t"><div class="n">🌲 挑战荒野 Boss</div><div class="s">单人闯关，首战友好，等级越高越强</div></div><button class="btn sm" onclick="startBattle('boss')">出发</button></div>
       ${others.map(o => `
         <div class="item"><div class="t"><div class="n">🤝 与 ${esc(o.name)} 联手打 Boss</div><div class="s">TA 的分身 AI 帮你打，不用等 TA 在线</div></div><button class="btn sm ok" onclick="startBattle('coop','${o.id}')">组队</button></div>
         <div class="item"><div class="t"><div class="n">⚔️ 与 ${esc(o.name)} 切磋</div><div class="s">打 TA 宠物的 AI 分身（他 ${o.petEmoji} Lv${o.level}），单挑即打即结算</div></div><button class="btn sm bad" onclick="startBattle('sibling','${o.id}')">开打</button></div>`).join('') || '<div class="muted-line">还没有兄弟姐妹可以约战（等家长添加）</div>'}
@@ -1030,6 +1155,9 @@ function renderArena() {
   const myIdx = bt.fighters.indexOf(meF);
   const isFriend = bt.mode === 'friend';
   const myTurn = bt.status !== 'active' || (isFriend ? bt.turn === myIdx : true);
+  const finishCopy = bt.mode === 'sibling' || bt.mode === 'friend'
+    ? (bt.winner === myIdx ? '你赢了！经验已到账' : '虽败犹荣，也有经验拿')
+    : (bt.winner === 'kids' ? '击败 Boss！' : `Boss 太强了。建议先升到 Lv${Math.max(2, me.level + 1)}，或解锁下一招后再来。`);
   const hpPct = f => Math.max(0, Math.round(f.hp / f.hpMax * 100));
   $('#tabbody').innerHTML = `
     <div class="card arena">
@@ -1046,7 +1174,7 @@ function renderArena() {
       ${bt.status === 'active' ? (myTurn ? `
         <div class="mt8">${meF.skills.map((s, i) => `<button class="btn ${i === 0 ? '' : 'ghost'}" onclick="battleMove(${i})">${esc(s.name)} <small>${s.power}威力</small></button>`).join('')}</div>`
         : '<div class="warnbox mt8">等待对方出招…（页面会自动刷新）</div>') : `
-        <div class="okbox mt8">战斗结束！${bt.mode === 'sibling' || bt.mode === 'friend' ? (bt.winner === myIdx ? '你赢了！经验已到账' : '虽败犹荣，也有经验拿') : (bt.winner === 'kids' ? '击败 Boss！' : 'Boss 太强了，下次再来')}</div>
+        <div class="okbox mt8">战斗结束！${finishCopy}</div>
         <button class="btn" onclick="curBattle=null;stopPoll();prevHp={};refreshMe().then(renderChild)">返回对战大厅</button>`}
       <div class="blog">${bt.log.map(l => `<p>${esc(l)}</p>`).join('') || '<p>战斗开始！</p>'}</div>
     </div>`;
@@ -1241,7 +1369,12 @@ async function doForcePin() {
 // PIN 不再拦门：仅在敏感操作（结算/改规则/撤销/删投诉）时由 withPin 弹出二次确认
 
 function parentOverview() {
-  return fam.children.map(c => `
+  return fam.children.map(c => {
+    const a = c.adventure;
+    const last = a && a.lastResult;
+    const q = a && a.weeklyQuest;
+    const adventureSummary = a ? `<div class="parent-adventure-summary"><b>🗺️ 星图 ${a.completedDays.length}/${a.totalDays} 日${a.chapterCompleted ? ' · 已毕业' : ` · 当前第 ${a.chapterDay} 日`}</b><span>${last ? `最近：${esc(last.nodeName)}${last.randomEvent ? ' · 🎲 奇遇' : ''}${last.signature ? ' · ✨ 签名' : ''}` : '还没有冒险记录'}</span>${q ? `<span>本周任务：${q.completed}/${q.total} 完成</span>` : ''}</div>` : '';
+    return `
     <div class="card">
       <h3>${c.pet ? c.pet.emoji : '🥚'} ${esc(c.name)} <span class="badge">${esc(c.grade || '')}</span> ${c.paused ? '<span class="badge a">暂停计</span>' : ''}</h3>
       <div class="stat-grid">
@@ -1250,6 +1383,7 @@ function parentOverview() {
         <div class="stat"><div class="v">¥${c.nextAllowance}</div><div class="k">下月零花钱（基础${c.allowanceBase}${c.allowanceLocked ? '+锁定' + c.allowanceLocked.amount : ''}）</div></div>
         <div class="stat"><div class="v">${c.feedStreak}</div><div class="k">连续投喂</div></div>
       </div>
+      ${adventureSummary}
       ${c.pausedDays >= 7 ? `<div class="warnbox mt8">⏸️ 暂停计已开 ${c.pausedDays} 天，病好了记得关！</div>` : ''}
       ${c.milestone.applications.filter(a => a.status === 'pending').length ? `
         <div class="okbox mt8">🏆 学期大奖申请：${esc(c.milestone.applications.find(a => a.status === 'pending').note)}</div>
@@ -1261,7 +1395,8 @@ function parentOverview() {
         <button class="btn sm ghost" onclick="editChild('${c.id}')">✏️ 编辑</button>
         <button class="btn sm bad" onclick="deleteChild('${c.id}')">🗑️ 删除</button>
       </div>
-    </div>`).join('') + `
+    </div>`;
+  }).join('') + `
     <div class="card">
       <h3>➕ 添加孩子</h3>
       <div class="row"><input id="nc_name" placeholder="名字" style="margin-top:0"><input id="nc_grade" placeholder="年级" style="margin-top:0"></div>

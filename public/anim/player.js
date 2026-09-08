@@ -1,9 +1,9 @@
-// player.js — 灵汐大陆·焰狼 2D 精灵动画播放器（MVP + review-fix）
+// player.js — 灵汐大陆·多灵伴 2D 精灵动画播放器（焰狼 MVP 扩展）
 // 设计原则：
-//   - 契约驱动：所有动作/帧数/FPS/事件映射/优先级来自 /anim/firam/contract.json
+//   - 契约驱动：动作/帧数/FPS/事件映射/优先级来自当前灵伴 /anim/<species>/contract.json
 //   - 业务只抛事件（PetAnim.queueEvent('hero', eventName)），播放器自己决定播什么
 //   - 阶段保护：仅当 data-stage === contract.canonicalStage（adult）时挂载精灵动画；
-//     幼体（juvenile）/ 觉醒（awaken）/ 非 firam / 昏迷态一律保持原静态 WebP
+//     愿望球/幼体/觉醒/未纳入批次的物种/昏迷态一律保持原静态 WebP
 //   - 事件调度：按契约 priority 确定性调度——高优先级抢占正在播放的事件，
 //     低/同优先级进入 pending（同优先级后者覆盖前者），当前事件播完回 idle 后冲刷
 //   - 首载竞态：契约未就绪时 queueEvent 只入 pending 不丢失，mount 完成后冲刷
@@ -14,11 +14,14 @@
 (function () {
   'use strict';
   var BASE = '/anim/firam/';
+  var activeSid = 'firam';
+  var ANIMATED_SPECIES = { firam: true, volt: true, tidal: true, night: true, luna: true, mount: true, thorn: true, rime: true };
   var DEFAULT_STAGE = 'adult'; // 契约未加载时的保守缺省（与 contract.canonicalStage 一致）
   var FALLBACK_PRIORITY = { daily_idle: 0, feed_success: 10, return: 15, level_up: 20 }; // 契约未就绪时的确定性优先级镜像
 
   var contract = null;
-  var loadPromise = null;
+  var contracts = {};
+  var loadPromises = {};
   var imgCache = {};        // action -> { imgs:[Image], c:actionCfg }
   var failedActions = {};   // action -> true（本会话不再尝试）
   var animDisabled = false; // 任一动作失败后本会话全局禁用
@@ -41,14 +44,16 @@
 
   function canonicalStage() { return (contract && contract.canonicalStage) || DEFAULT_STAGE; }
 
-  function loadContract() {
-    if (contract) return Promise.resolve(contract);
-    if (loadPromise) return loadPromise;
-    loadPromise = fetch(BASE + 'contract.json', { cache: 'no-cache' })
+  function loadContract(sid) {
+    sid = sid || activeSid;
+    if (contracts[sid]) { activeSid = sid; BASE = '/anim/' + sid + '/'; contract = contracts[sid]; return Promise.resolve(contract); }
+    if (loadPromises[sid]) return loadPromises[sid];
+    if (activeSid !== sid) { activeSid = sid; BASE = '/anim/' + sid + '/'; imgCache = {}; }
+    loadPromises[sid] = fetch(BASE + 'contract.json', { cache: 'no-cache' })
       .then(function (r) { return r.json(); })
-      .then(function (j) { contract = j; return j; })
-      .catch(function () { contract = null; return null; });
-    return loadPromise;
+      .then(function (j) { contracts[sid] = j; if (activeSid === sid) contract = j; return j; })
+      .catch(function () { if (activeSid === sid) contract = null; return null; });
+    return loadPromises[sid];
   }
 
   function eventPriority(name) {
@@ -60,7 +65,7 @@
   function loadImages(action) {
     if (failedActions[action]) return Promise.reject(new Error('action unavailable: ' + action));
     if (imgCache[action]) return Promise.resolve(imgCache[action]);
-    return loadContract().then(function (c) {
+    return loadContract(activeSid).then(function (c) {
       if (!c || !c.actions[action]) return null;
       var a = c.actions[action];
       var urls = [];
@@ -201,7 +206,7 @@
   // —— 挂载：静态 WebP 之上叠精灵层（原始 img 保留用于降级恢复）——
   function mount(el) {
     var sid = el.getAttribute('data-species');
-    if (sid !== 'firam' || el.classList.contains('fainted')) {  // 种族/昏迷保护
+    if (!ANIMATED_SPECIES[sid] || el.classList.contains('fainted')) {  // 物种白名单/昏迷保护
       delete pending['hero'];                                   // 此元素永不播动画，积压事件直接丢弃
       return Promise.resolve();
     }
@@ -210,7 +215,7 @@
       delete pending['hero'];
       return Promise.resolve();
     }
-    return loadContract().then(function (c) {
+    return loadContract(sid).then(function (c) {
       if (!c || (el.getAttribute('data-stage') || '') !== canonicalStage()) {
         // 契约失败或阶段不符（愿望球/幼体/觉醒）：保持静态，丢弃积压事件防「进化后乱播旧事件」
         delete pending['hero'];
@@ -236,9 +241,7 @@
 
   function scan(root) {
     detect();
-    loadContract().then(function () {
-      (root || document).querySelectorAll('[data-anim="hero"]').forEach(function (el) { mount(el); });
-    });
+    (root || document).querySelectorAll('[data-anim="hero"]').forEach(function (el) { mount(el); });
   }
 
   // 业务调用：抛出事件。调度规则（确定性）：
@@ -257,7 +260,7 @@
   }
 
   function canAnimate(speciesId, stage) {
-    if (speciesId !== 'firam') return false;
+    if (!ANIMATED_SPECIES[speciesId]) return false;
     if (stage === undefined || stage === null || stage === '') return true; // 未提供阶段时不设卡
     return stage === canonicalStage();
   }
@@ -279,7 +282,7 @@
   }
   function _testReset() {
     playGen++; clearTimer();
-    contract = null; loadPromise = null; imgCache = {}; failedActions = {};
+    contract = null; contracts = {}; loadPromises = {}; activeSid = 'firam'; BASE = '/anim/firam/'; imgCache = {}; failedActions = {};
     animDisabled = false; pending = {}; playing = {}; heroEl = null;
   }
 

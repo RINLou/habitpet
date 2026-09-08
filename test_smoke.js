@@ -418,34 +418,53 @@ async function api(path, body, token) {
   const cdLast = await api('/api/child/delete', { childId: C1, pin: '5678' }, PT);
   ok('最后一个孩子不可删', !!cdLast.error, cdLast.error);
 
-  console.log('== 16a 饿死/复活/加成/隐藏宠资格（单元直测） ==');
+  console.log('== 16a 缺席温和模式/严格模式/免费唤醒/加成/隐藏宠资格（单元直测） ==');
   {
     const storeU = require('./lib/store');
     const engineU = require('./lib/engine');
     storeU.load();
-    const frH = storeU.createFamily('hunger' + RND, 'pass123', '饿肚家', 'q', 'a');
+    const frH = storeU.createFamily('hunger' + RND, 'pass123', '缺席家', 'q', 'a');
     const famH = frH.family;
-    const cH = storeU.addChild(famH, '饿宝', '三年级');
+    const cH = storeU.addChild(famH, '缺席宝', '三年级');
     cH.pet = { speciesId: 'firam', nickname: '焰狼', stats: { atk: 12, def: 8, hp: 10, spd: 10, wis: 8 }, freePoints: 0, skills: ['f1', 'f2', 'f3', 'f4'], maxHpBonus: 0 };
+    // —— 默认温和模式：缺席只提醒，不扣分、不休眠（兑现"章节进度会保留"）——
+    const b0 = cH.intimacy;
+    ok('默认 absenceMode=mercy', engineU.absenceMode(famH) === 'mercy', famH.config.absenceMode);
+    cH.feedDate = engineU.dateKey(new Date(Date.now() - 4 * 86400000));
+    const ev0 = engineU.hungerCheck(famH, cH);
+    ok('温和模式 4 天只提醒不扣分', !!ev0 && ev0.type === 'absent' && cH.intimacy === b0, { type: ev0 && ev0.type, intimacy: cH.intimacy });
+    ok('温和模式不进入休眠茧', cH.fainted !== true);
+    cH.feedDate = engineU.dateKey(new Date(Date.now() - 9 * 86400000));
+    const ev0b = engineU.hungerCheck(famH, cH);
+    ok('温和模式 9 天仍不休眠不扣分', !!ev0b && ev0b.type === 'absent' && cH.fainted !== true && cH.intimacy === b0);
+    // —— 严格模式：家长显式开启后才启用休眠茧与扣分 ——
+    famH.config.absenceMode = 'strict';
+    ok('切到严格模式', engineU.absenceMode(famH) === 'strict');
+    cH.hungerPenaltyDate = '';
     cH.feedDate = engineU.dateKey(new Date(Date.now() - 4 * 86400000));
     const ev1 = engineU.hungerCheck(famH, cH);
-    ok('4天没投喂触发饿肚子', !!ev1 && ev1.type === 'hungry');
+    ok('严格模式 4 天触发饿肚子', !!ev1 && ev1.type === 'hungry');
     ok('一次性-10 → 90', cH.intimacy === 90, cH.intimacy);
     ok('同轮不重复扣', engineU.hungerCheck(famH, cH) === null);
     cH.feedDate = engineU.dateKey(new Date(Date.now() - 6 * 86400000));
     const ev2 = engineU.hungerCheck(famH, cH);
-    ok('5天+饿晕', !!ev2 && ev2.type === 'faint' && cH.fainted === true);
+    ok('严格模式 5 天+进入休眠茧', !!ev2 && ev2.type === 'faint' && cH.fainted === true);
+    // —— 唤醒一律免费：不扣亲密度、不降级 ——
+    const lvB = cH.level, intB = cH.intimacy;
     const rv1 = engineU.revivePet(famH, cH, 'intimacy');
-    ok('扣50亲密度复活 → 40', rv1.ok && cH.intimacy === 40 && !cH.fainted, cH.intimacy);
+    ok('唤醒免费：不扣亲密度', rv1.ok && cH.intimacy === intB && !cH.fainted, { before: intB, after: cH.intimacy });
+    ok('唤醒免费：不降级', cH.level === lvB, { before: lvB, after: cH.level });
     cH.xp = engineU.xpForLevel(12); cH.level = 12; cH.fainted = true;
     const rv2 = engineU.revivePet(famH, cH, 'level');
-    ok('降5级复活 Lv12→Lv7', rv2.ok && cH.level === 7, cH.level);
-    ok('复活当天算吃过饭', engineU.daysSince(cH.feedDate) === 0);
+    ok('旧 level 模式也不再降级（Lv12 保持）', rv2.ok && cH.level === 12, cH.level);
+    ok('唤醒当天算吃过饭', engineU.daysSince(cH.feedDate) === 0);
+    // —— 冻结规则保持 ——
+    famH.config.absenceMode = 'mercy';
     cH.feedDate = engineU.dateKey(new Date(Date.now() - 9 * 86400000));
     cH.pausedAt = Date.now();
-    ok('暂停计冻结饥饿', engineU.hungerCheck(famH, cH) === null);
+    ok('暂停计冻结缺席', engineU.hungerCheck(famH, cH) === null);
     cH.pausedAt = null; famH.config.holidayMode = true;
-    ok('假期模式冻结饥饿', engineU.hungerCheck(famH, cH) === null);
+    ok('假期模式冻结缺席', engineU.hungerCheck(famH, cH) === null);
     famH.config.holidayMode = false;
     const b4 = cH.intimacy;
     cH.level = 20; cH.xp = engineU.xpForLevel(20);
@@ -469,7 +488,7 @@ async function api(path, body, token) {
   const snap1 = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
   execFileSync(process.execPath, ['-e', MIGRATE], { cwd: __dirname });
   const snap2 = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
-  ok('schema v6', snap1.schemaVersion === 6 && snap2.schemaVersion === 6);
+  ok('schema v7', snap1.schemaVersion === 7 && snap2.schemaVersion === 7);
   ok('投诉记录数不变', countCp(snap1) === countCp(snap2), { m1: countCp(snap1), m2: countCp(snap2) });
   ok('账本 id 集不变', ledgerIds(snap1) === ledgerIds(snap2));
   ok('兑换状态集不变', redStatus(snap1) === redStatus(snap2));
@@ -492,7 +511,7 @@ async function api(path, body, token) {
   const snap3 = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
   const legacyChild = snap3.families[lfam].children[lchild];
   ok('遗留 idle 显式映射 not_started', legacyChild.onboarding.status === 'not_started');
-  ok('迁移补 pendingGapKey(schema v6)', legacyChild.returnNudge.pendingGapKey === null);
+  ok('迁移补 pendingGapKey(schema v7)', legacyChild.returnNudge.pendingGapKey === null && legacyChild.adventure && Array.isArray(legacyChild.adventure.visited));
 
   console.log('== 17 随机灵汐事件（心光雨；服务端以 HABITPET_NO_RANDOM=1 启动 → RNG 固定 0.99，chance=1 必触发） ==');
   {
