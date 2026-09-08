@@ -595,7 +595,7 @@ function renderChild() {
       <div class="who">${paused ? '⏸️ 暂停计中' : '❤️ 亲密度 ' + me.intimacy} · 下月零花钱 ¥${me.nextAllowance}<br><span class="mute-btn" style="cursor:pointer" onclick="toggleMute()">${Sfx.muted ? '🔇' : '🔊'}</span> · ${installLink()}<a href="#" onclick="openGuide();return false">📖 玩法</a> · <a href="#" onclick="refreshMe().then(renderChild);return false">刷新</a> · <a href="#" style="color:#6b7280" onclick="doLogout();return false">退出</a></div>
     </div>
     ${paused ? `<div class="warnbox">暂停计期间：不重置、不计连击、不扣分，好好休息 💤</div>` : ''}
-    ${me.fainted ? `<div class="warnbox">💀 你的宠物饿晕了！去「宠物」页复活它才能继续对战和领经验</div>` : ''}
+    ${me.fainted ? `<div class="warnbox">💤 灵伴在休眠茧里休息，去「宠物」页免费唤醒它就能继续对战和领经验</div>` : ''}
     <div class="tabs">
       ${[['pet', '🐾 宠物'], ['report', '📝 申报'], ['battle', '⚔️ 对战'], ['shop', '🎁 兑换'], ['book', '📖 图鉴']].map(([k, n]) =>
         `<div class="tab ${curTab === k ? 'on' : ''}" onclick="switchChildTab('${k}')">${n}</div>`).join('')}
@@ -637,7 +637,7 @@ function openGuide() {
     <div class="item"><div class="t"><div class="n">⚔️ 对战页</div><div class="s">打 Boss / 兄妹切磋 / 好友对战，赢经验不花亲密度（每天限 ${me ? me.battleDailyLimit : 5} 场）；输了对战也不扣亲密度</div></div></div>
     <div class="item"><div class="t"><div class="n">🎁 兑换页</div><div class="s">用亲密度换奖励；现金直接锁进下月零花钱，其他奖励家长核销后生效</div></div></div>
     <div class="item"><div class="t"><div class="n">📖 图鉴页</div><div class="s">兄弟姐妹榜 + 历届毕业宠物</div></div></div>
-    <div class="warnbox">⚠️ 每月 1 号亲密度重置为初始值（上月没被投诉再加无投诉奖 +${r.noComplaint !== undefined ? r.noComplaint : 100}）；被投诉 −${r.complaint !== undefined ? r.complaint : 50}（家长可取消退分）。宠物 3 天不投喂会饿肚子 −10 亲密度，5 天会饿晕，要花亲密度或降级复活！</div>
+    <div class="warnbox">⚠️ 每月 1 号亲密度重置为初始值（上月没被投诉再加无投诉奖 +${r.noComplaint !== undefined ? r.noComplaint : 100}）；被投诉 −${r.complaint !== undefined ? r.complaint : 50}（家长可取消退分）。默认温和模式：3 天不投喂只提醒，不扣分也不休眠；家长开启严格模式后才会有休眠茧，唤醒一律免费、不扣亲密度也不降级。</div>
     <div class="muted-line">学期结束时宠物毕业进图鉴，下学期重挑新伙伴。连续觉醒还能解锁隐藏神宠 S/SS！</div>
     <button class="btn" onclick="closeModal()">开始冒险！</button>`);
 }
@@ -846,7 +846,7 @@ function maybeShowReturnNudge() {
   const n = me && me.returnNudge;
   if (!n || !n.show || !n.gapKey || n.gapKey === lastReturnNudgeKey) return;
   lastReturnNudgeKey = n.gapKey;
-  // 饿晕时复活卡不能被遮太久：3.5s 自动淡出（按钮仍在，可立刻关）
+  // 休眠茧卡片不能被遮太久：3.5s 自动淡出（按钮仍在，可立刻关）
   showFx({ title: '🌿 好久不见', sub: '好久不见，回来就很好。今天只做一小步也算开始。', btn: '看看今天能做什么', auto: (me && me.fainted) ? 3500 : 0 });
   const b = document.querySelector('#fx .fx-btn');
   if (b) b.onclick = function () {
@@ -879,29 +879,28 @@ function childPetTab() {
     milestoneHtml = `<div class="okbox">🏆 宠物已觉醒！你获得一次「学期大奖申请权」${hasPending ? '（申请审核中…）' : ''}</div>
       ${hasPending ? '' : `<button class="btn warn" onclick="applyMilestone()">申请学期大奖</button>`}`;
   }
-  // 饿死机制：昏迷复活 / 饿肚子预警
+  // 缺席机制：休眠茧（唤醒免费）/ 温和提醒（默认不扣分、不休眠）
   let hungerHtml = '';
   if (me.fainted) {
     hungerHtml = `
-    <div class="card" style="border-color:var(--bad)">
-      <h3>💀 ${esc(p.nickname)} 饿晕了！</h3>
-      <div class="warnbox">5 天没投喂，宠物昏迷中：不能对战、不能领经验。选一种方式复活：</div>
+    <div class="card" style="border-color:var(--warn)">
+      <h3>💤 ${esc(p.nickname)} 在休眠茧里休息</h3>
+      <div class="warnbox">有 ${me.hungerDays} 天没投喂，灵伴先睡一会儿。唤醒是免费的：不扣亲密度、不降级，章节进度和星光相册全都还在。</div>
       <div class="row mt8">
-        <button class="btn warn" onclick="doRevive('level')">⬇️ 降 5 级复活</button>
-        <button class="btn ${me.intimacy < 50 ? '' : 'ok'}" ${me.intimacy < 50 ? 'disabled' : ''} onclick="doRevive('intimacy')">❤️ 扣 50 亲密度复活${me.intimacy < 50 ? '（亲密度不足）' : ''}</button>
+        <button class="btn ok" onclick="doRevive()">✨ 免费唤醒灵伴</button>
       </div>
     </div>`;
   } else if (me.hungerDays >= 3) {
-    hungerHtml = `<div class="warnbox">🍖 宠物已经 ${me.hungerDays} 天没吃饭，饿晕倒计时中！今天 ${me.fedToday ? '已投喂 ✓' : '快去投喂！'}</div>`;
+    hungerHtml = `<div class="warnbox">🍖 灵伴已经 ${me.hungerDays} 天没吃饭。别担心，进度都保留着，今天 ${me.fedToday ? '已投喂 ✓' : '回来投喂就能继续冒险。'}</div>`;
   } else if (me.hungerDays === 2) {
-    hungerHtml = `<div class="muted-line">⏰ 提醒：明天再不投喂，宠物就要饿肚子扣分啦</div>`;
+    hungerHtml = `<div class="muted-line">⏰ 提醒：明天再不投喂，灵伴就要先睡一会儿啦（进度不会丢）</div>`;
   }
   return `${welcome}
     <section class="card today-adventure" aria-labelledby="today-adventure-title">
       <div class="today-kicker">今日冒险</div>
       <h2 id="today-adventure-title">${nextAction}</h2>
       <div class="lead">${nextHint}</div>
-      <button class="btn today-cta" ${nextDisabled ? 'disabled' : ''} onclick="openTodayAdventure()">${!fed && !nextDisabled ? '🍖 完成作业，投喂 +' + me.rules.feed : fed ? '📝 去记录今天的成就' : me.fainted ? '💤 先在下方复活伙伴' : '🌙 今天先休息'}</button>
+      <button class="btn today-cta" ${nextDisabled ? 'disabled' : ''} onclick="openTodayAdventure()">${!fed && !nextDisabled ? '🍖 完成作业，投喂 +' + me.rules.feed : fed ? '📝 去记录今天的成就' : me.fainted ? '💤 先在下方唤醒伙伴' : '🌙 今天先休息'}</button>
       ${onboardingCard()}
       ${adventureCard()}
       ${pending.length ? `<div class="today-pending" role="status">⏳ 有 ${pending.length} 个成就正在等家长查看：${pending.slice(0, 2).map(e => esc(e.label)).join('、')}${pending.length > 2 ? '…' : ''}</div>` : '<div class="today-pending calm">✨ 今天没有待审核的事，按自己的节奏来。</div>'}
@@ -981,13 +980,12 @@ async function doRename() {
   if (r.error) return toast(r.error, true);
   me = r.state; closeModal(); renderChild();
 }
-async function doRevive(mode) {
-  const ask = mode === 'level' ? '确认降 5 级复活？（经验/等级回退，五维成长点不回收）' : '确认消耗 50 亲密度复活？';
-  askConfirm(ask, async () => {
-    const r = await api('/api/pet/revive', { mode });
+async function doRevive() {
+  askConfirm('唤醒灵伴？免费：不扣亲密度、不降级，收藏和章节进度都不会丢。', async () => {
+    const r = await api('/api/pet/revive', { mode: 'free' });
     if (r.error) return toast(r.error, true);
-    me = r.state; toast('宠物复活啦！记得每天投喂 🍖'); renderChild();
-  }, '✨ 复活确认');
+    me = r.state; toast('灵伴醒来啦！记得每天投喂 🍖'); renderChild();
+  }, '✨ 唤醒确认');
 }
 function applyMilestone() {
   openModal(`<h3>申请学期大奖</h3>

@@ -190,6 +190,7 @@ function childMe(family, child) {
     battlesToday: child.battleCount?.date === engine.dateKey() ? child.battleCount.count : 0,
     battleDailyLimit: family.config.battleDailyLimit,
     holidayMode: family.config.holidayMode,
+    absenceMode: family.config.absenceMode === 'strict' ? 'strict' : 'mercy',
     paused: !!child.pausedAt, pausedDays,
     allowanceBase: family.config.baseAllowance,
     allowanceLocked: child.allowanceLocked,
@@ -367,7 +368,7 @@ const routes = {
   async feed(sess) {
     const f = store.familyById(sess.familyId); const c = ensureChild(f, sess.childId);
     if (!c.pet) return { code: 400, body: { error: '先选一只宠物吧！' } };
-    if (c.fainted) return { code: 400, body: { error: '宠物饿晕了，先复活再投喂' } };
+    if (c.fainted) return { code: 400, body: { error: '灵伴在休眠茧里，先唤醒再投喂' } };
     if (c.pausedAt) return { code: 400, body: { error: '暂停计期间休息养病，不扣分不计连击' } };
     if (!engine.inFeedWindow(f)) return { code: 400, body: { error: `投喂时间：${f.config.feedWindow.startHour}:00-${f.config.feedWindow.endHour}:00` } };
     const today = engine.dateKey();
@@ -484,7 +485,7 @@ const routes = {
   async battleStart(sess, p) {
     const f = store.familyById(sess.familyId); const me = ensureChild(f, sess.childId);
     if (!me.pet) return { code: 400, body: { error: '先选宠物才能对战' } };
-    if (me.fainted) return { code: 400, body: { error: '宠物饿晕了，先复活才能对战' } };
+    if (me.fainted) return { code: 400, body: { error: '灵伴在休眠茧里，先唤醒才能对战' } };
     const mode = p.mode;
     let opp = null;
     if (mode === 'sibling' || mode === 'coop') {
@@ -504,12 +505,12 @@ const routes = {
   async battleInvite(sess, p) {
     const f = store.familyById(sess.familyId); const me = ensureChild(f, sess.childId);
     if (!me.pet) return { code: 400, body: { error: '先选宠物才能对战' } };
-    if (me.fainted) return { code: 400, body: { error: '宠物饿晕了，先复活才能对战' } };
+    if (me.fainted) return { code: 400, body: { error: '灵伴在休眠茧里，先唤醒才能对战' } };
     const t = store.findChildByFriendCode(p.code);
     if (!t) return { code: 404, body: { error: '对战码不存在' } };
     if (t.child.id === me.id) return { code: 400, body: { error: '不能邀请自己' } };
     if (!t.child.pet) return { code: 400, body: { error: '对方还没有宠物' } };
-    if (t.child.fainted) return { code: 400, body: { error: '对方的宠物饿晕了，等 ta 复活吧' } };
+    if (t.child.fainted) return { code: 400, body: { error: '对方的灵伴在休眠茧里，等 ta 唤醒吧' } };
     if (t.child.pausedAt) return { code: 400, body: { error: '对方暂停计分中，不能对战' } };
     const sp = speciesById(me.pet.speciesId);
     const inv = store.createInvite({ familyId: f.id, childId: me.id, name: me.name, emoji: sp.emoji, level: me.level, speciesName: sp.name }, t.child.id);
@@ -523,7 +524,7 @@ const routes = {
     const fromChild = fromFam && fromFam.children[inv.from.childId];
     if (!fromChild || !fromChild.pet) { store.delInvite(inv.id); return { code: 400, body: { error: '对方状态已变化，邀请失效' } }; }
     if (!me.pet) return { code: 400, body: { error: '先选宠物才能对战' } };
-    if (me.fainted || fromChild.fainted) return { code: 400, body: { error: '有宠物饿晕了，先复活' } };
+    if (me.fainted || fromChild.fainted) return { code: 400, body: { error: '有灵伴在休眠茧里，先唤醒' } };
     if (!battle.canBattleToday(me, f.config.battleDailyLimit)) return { code: 400, body: { error: `今日对战次数已满（上限${f.config.battleDailyLimit}场）` } };
     // v4.1: 发起方也要校验场次（此前只查接收方，可绕过每日上限）
     if (!battle.canBattleToday(fromChild, fromFam.config.battleDailyLimit)) { store.delInvite(inv.id); return { code: 400, body: { error: '对方今日对战次数已满，这场打不了' } }; }
@@ -570,7 +571,7 @@ const routes = {
     const f = store.familyById(sess.familyId); const me = ensureChild(f, sess.childId);
     return { code: 200, body: { ok: true, code: store.ensureFriendCode(me), state: childMe(f, me) } };
   },
-  // 饿死复活：'level' 降 5 级 / 'intimacy' 扣 50 亲密度
+  // 唤醒：一律免费（不扣亲密度、不降级）；mode 参数仅保留向后兼容
   async petRevive(sess, p) {
     const f = store.familyById(sess.familyId); const c = ensureChild(f, sess.childId);
     if (!c.pet) return { code: 400, body: { error: '还没有宠物' } };
@@ -863,6 +864,7 @@ const routes = {
     if (p.battleXpDailyCap !== undefined) f.config.battleXpDailyCap = Math.max(0, Math.round(Number(p.battleXpDailyCap) || 0));
     if (p.randomEventChance !== undefined) f.config.randomEventChance = Math.max(0, Math.min(1, Number(p.randomEventChance) || 0));   // v5
     if (p.holidayMode !== undefined) f.config.holidayMode = !!p.holidayMode;
+    if (p.absenceMode !== undefined) f.config.absenceMode = p.absenceMode === 'strict' ? 'strict' : 'mercy';   // 惩罚需家长显式开启
     if (p.feedWindow) f.config.feedWindow = { startHour: Math.max(0, Math.min(23, Math.round(Number(p.feedWindow.startHour) || 0))), endHour: Math.max(1, Math.min(24, Math.round(Number(p.feedWindow.endHour) || 24))) };
     if (p.semesterStartDate !== undefined) { f.config.semester.startDate = p.semesterStartDate || null; f.config.semester.autoDone = false; }
     if (p.semesterName !== undefined) f.config.semester.name = String(p.semesterName).slice(0, 30);
