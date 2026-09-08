@@ -65,7 +65,16 @@ async function waitReady(url, timeoutMs) {
     if (run.stdout) process.stdout.write(run.stdout);
     if (run.stderr) process.stderr.write(run.stderr);
     if (run.error) console.error('LAUNCHER-ERR', run.error.message);
-    code = run.status === 0 ? 0 : 1;
+    const adventure = spawnSync(process.execPath, ['tests/adventure-mvp.test.js'], {
+      cwd: ROOT,
+      env: Object.assign({}, env, { BASE_URL: 'http://127.0.0.1:' + port }),
+      encoding: 'utf8',
+      timeout: 120000
+    });
+    if (adventure.stdout) process.stdout.write(adventure.stdout);
+    if (adventure.stderr) process.stderr.write(adventure.stderr);
+    if (adventure.error) console.error('ADVENTURE-LAUNCH-ERR', adventure.error.message);
+    code = run.status === 0 && adventure.status === 0 ? 0 : 1;
   } catch (e) {
     console.error('LAUNCHER-ERR', e.message);
     code = 1;

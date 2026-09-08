@@ -6,6 +6,7 @@ const path = require('path');
 const store = require('./lib/store');
 const engine = require('./lib/engine');
 const battle = require('./lib/battle');
+const adventure = require('./lib/adventure');
 const { SPECIES, speciesById, skillById, ELEMENT_NAMES, CHART } = require('./lib/species');
 
 const PORT = process.env.PORT || 3000;
@@ -170,6 +171,7 @@ function childMe(family, child) {
   }
   if (!child.returnNudge || typeof child.returnNudge !== 'object') child.returnNudge = { lastShownForGap: null, pendingGapKey: null };
   if (child.returnNudge.pendingGapKey === undefined) child.returnNudge.pendingGapKey = null;
+  adventure.ensureState(child);
   const today = engine.dateKey(now);
   const previousLastSeenAt = child.lastSeenAt;   // 先存旧值再覆盖，回归间隔才算得对
   child.lastSeenAt = now.toISOString();          // 对战大厅"最近活跃"
@@ -203,6 +205,7 @@ function childMe(family, child) {
     invites: pendingInvitesFor(child),
     onboarding: onboardingView(child, today),
     returnNudge: returnNudgeView(child, previousLastSeenAt, now),
+    adventure: adventure.adventureView(child, today),
     siblings: Object.values(family.children).map(c => ({ id: c.id, name: c.name, intimacy: c.intimacy, level: c.level, petEmoji: c.pet ? (speciesById(c.pet.speciesId) || {}).emoji : '⚪' }))
   };
 }
@@ -339,6 +342,27 @@ const routes = {
     const __st3 = childMe(f, c);
     store.saveNow();
     return { code: 200, body: { ok: true, state: __st3 } };
+  },
+  // 星图冒险 MVP：真实投喂后每日一次，奖励只记录探索/图鉴反馈，不改 XP、亲密度或账本
+  async adventureState(sess) {
+    const f = store.familyById(sess.familyId); const c = ensureChild(f, sess.childId);
+    if (!c) return { code: 404, body: { error: '孩子不存在' } };
+    const state = childMe(f, c);
+    store.saveNow();
+    return { code: 200, body: { ok: true, state: state.adventure } };
+  },
+  async adventureExplore(sess, p) {
+    const f = store.familyById(sess.familyId); const c = ensureChild(f, sess.childId);
+    if (!c) return { code: 404, body: { error: '孩子不存在' } };
+    const today = engine.dateKey();
+    const result = adventure.explore(c, p.nodeId, today);
+    if (result.error) {
+      const state = childMe(f, c); store.saveNow();
+      return { code: result.error === '星图节点不存在' ? 400 : 409, body: { error: result.error, state } };
+    }
+    const state = childMe(f, c);
+    store.saveNow();
+    return { code: 200, body: { ok: true, repeated: !!result.repeated, result: result.result, state } };
   },
   async feed(sess) {
     const f = store.familyById(sess.familyId); const c = ensureChild(f, sess.childId);
@@ -959,7 +983,7 @@ function familyView(f) {
 
 // —— 路由表 & 鉴权 ————————————————————————————
 const PUBLIC = { '/api/register': 'register', '/api/login': 'login', '/api/bind': 'bind', '/api/species': null, '/api/forgot/question': 'forgotQuestion', '/api/forgot/reset': 'forgotReset' };
-const CHILD = { '/api/me': 'me', '/api/feed': 'feed', '/api/submit': 'submit', '/api/redeem': 'redeem', '/api/redeem/request': 'redeemRequest', '/api/pet/select': 'selectPet', '/api/pet/nickname': 'nickname', '/api/pet/allocate': 'allocate', '/api/pet/revive': 'petRevive', '/api/battle/start': 'battleStart', '/api/battle/move': 'battleMove', '/api/battle/state': 'battleState', '/api/battle/finish': 'battleFinish', '/api/battle/invite': 'battleInvite', '/api/battle/invite/accept': 'battleInviteAccept', '/api/battle/invite/decline': 'battleInviteDecline', '/api/friend/code': 'friendCode', '/api/friend/add': 'friendAdd', '/api/friend/del': 'friendDel', '/api/milestone/apply': 'milestoneApply', '/api/sync/full': 'syncFull', '/api/onboarding/start': 'onboardingStart', '/api/onboarding/complete': 'onboardingComplete', '/api/onboarding/dismiss': 'onboardingDismiss', '/api/return-nudge/ack': 'returnNudgeAck' };
+const CHILD = { '/api/me': 'me', '/api/feed': 'feed', '/api/submit': 'submit', '/api/redeem': 'redeem', '/api/redeem/request': 'redeemRequest', '/api/pet/select': 'selectPet', '/api/pet/nickname': 'nickname', '/api/pet/allocate': 'allocate', '/api/pet/revive': 'petRevive', '/api/battle/start': 'battleStart', '/api/battle/move': 'battleMove', '/api/battle/state': 'battleState', '/api/battle/finish': 'battleFinish', '/api/battle/invite': 'battleInvite', '/api/battle/invite/accept': 'battleInviteAccept', '/api/battle/invite/decline': 'battleInviteDecline', '/api/friend/code': 'friendCode', '/api/friend/add': 'friendAdd', '/api/friend/del': 'friendDel', '/api/milestone/apply': 'milestoneApply', '/api/sync/full': 'syncFull', '/api/onboarding/start': 'onboardingStart', '/api/onboarding/complete': 'onboardingComplete', '/api/onboarding/dismiss': 'onboardingDismiss', '/api/return-nudge/ack': 'returnNudgeAck', '/api/adventure/state': 'adventureState', '/api/adventure/explore': 'adventureExplore' };
 const PARENT = { '/api/family': 'family', '/api/sync/full': 'syncFull', '/api/pin/verify': 'pinVerify', '/api/pin/change': 'pinChange', '/api/security': 'securitySet', '/api/child': 'addChild', '/api/child/edit': 'childEdit', '/api/child/delete': 'childDelete', '/api/child/bindcode': 'bindcode', '/api/child/unbind': 'unbind', '/api/approve': 'approve', '/api/manual': 'manual', '/api/complaint': 'complaint', '/api/complaint/edit': 'complaintEdit', '/api/complaint/cancel': 'complaintCancel', '/api/complaint/delete': 'complaintDelete', '/api/ledger/undo': 'ledgerUndo', '/api/rules': 'rules', '/api/config': 'config', '/api/reward': 'reward', '/api/fulfill': 'fulfill', '/api/pause': 'pause', '/api/settle/month': 'settleMonth', '/api/settle/semester': 'settleSemester', '/api/report': 'report', '/api/milestone/approve': 'milestoneApprove' };
 
 const server = http.createServer(async (req, res) => {

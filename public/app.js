@@ -790,6 +790,37 @@ async function dismissOnboarding() {
   if (r.ok) { me = r.state; renderChild(); }
   else toast(r.error || '稍后再试', true);
 }
+
+// —— 星图冒险 MVP：投喂后每日一次的轻探索，不改 XP/亲密度 ————————————————
+function adventureCard() {
+  const a = me.adventure;
+  if (!a || !Array.isArray(a.nodes) || !a.nodes.length) return '';
+  const result = a.lastResult;
+  const status = a.completedToday
+    ? '今天的星图已经点亮，明天再来发现新的回声。'
+    : a.available
+      ? '选择一处目的地，看看今天的心光会遇见什么。'
+      : '完成今天的投喂后，星图会为你打开一条路。';
+  const nodes = a.nodes.map(n => `
+    <button class="adventure-node ${n.visited ? 'visited' : ''}" ${a.available ? '' : 'disabled'} onclick="exploreAdventure('${esc(n.id)}')">
+      <span class="adventure-node-icon">${n.icon}</span>
+      <span class="adventure-node-copy"><b>${esc(n.name)}</b><small>${esc(n.region)} · ${esc(n.desc)}</small></span>
+      <span class="adventure-node-mark">${n.visited ? '✓' : '›'}</span>
+    </button>`).join('');
+  return `<div class="adventure-card">
+    <div class="adventure-head"><div><div class="onboarding-title">🗺️ 今日星图</div><div class="lead">${status}</div></div><span class="badge ${a.completedToday ? 'g' : a.available ? 'a' : ''}">${a.completedToday ? '已完成' : a.available ? '可出发' : '待解锁'}</span></div>
+    ${result && a.completedToday ? `<div class="adventure-result"><span>${result.icon}</span><div><b>${esc(result.nodeName)}</b><div>${esc(result.story)}</div></div></div>` : ''}
+    <div class="adventure-nodes">${nodes}</div>
+    <div class="muted-line">已发现 ${a.visited.length}/${a.nodes.length} 处星图节点 · 探索不会改变经验和亲密度</div>
+  </div>`;
+}
+async function exploreAdventure(nodeId) {
+  const r = await api('/api/adventure/explore', { nodeId });
+  if (r.error) { if (r.state) me = r.state; return toast(r.error, true); }
+  me = r.state;
+  if (r.result) showFx({ title: `${r.result.icon} ${r.result.nodeName}`, sub: esc(r.result.story), btn: '收下这段星光', auto: 5200, sound: 'coin', speak: r.result.story });
+  renderChild();
+}
 // 温和回归：服务端判定 show 才弹；session 内同 gapKey 只弹一次；ack 不阻塞 UI
 let lastReturnNudgeKey = null;
 function maybeShowReturnNudge() {
@@ -853,6 +884,7 @@ function childPetTab() {
       <div class="lead">${nextHint}</div>
       <button class="btn today-cta" ${nextDisabled ? 'disabled' : ''} onclick="openTodayAdventure()">${!fed && !nextDisabled ? '🍖 完成作业，投喂 +' + me.rules.feed : fed ? '📝 去记录今天的成就' : me.fainted ? '💤 先在下方复活伙伴' : '🌙 今天先休息'}</button>
       ${onboardingCard()}
+      ${adventureCard()}
       ${pending.length ? `<div class="today-pending" role="status">⏳ 有 ${pending.length} 个成就正在等家长查看：${pending.slice(0, 2).map(e => esc(e.label)).join('、')}${pending.length > 2 ? '…' : ''}</div>` : '<div class="today-pending calm">✨ 今天没有待审核的事，按自己的节奏来。</div>'}
     </section>
     <div class="card pet-hero">

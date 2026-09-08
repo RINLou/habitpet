@@ -82,6 +82,26 @@
       })
     };
   }
+  // 星图冒险的离线投影：云端 lastState 优先，已有 family 快照时也不让星图卡消失。
+  var ADVENTURE_NODES = [
+    { id: 'starlight-gate', icon: '✦', name: '星海关口', region: '星海边境', desc: '把今天的心光送上星图，听见远方灵伴的回声。' },
+    { id: 'ember-trail', icon: '🔥', name: '赤曜荒原', region: '焰光边境', desc: '穿过温热的风沙，寻找一枚还没有熄灭的心光种子。' },
+    { id: 'moon-tide', icon: '🌙', name: '月见潮汐', region: '潮汐边境', desc: '沿着月光下的潮线前进，寻找一段会发光的回忆。' }
+  ];
+  function adventureLocalView(child) {
+    var a = child.adventure || {};
+    var today = EN.dateKey();
+    var visited = Array.isArray(a.visited) ? a.visited.slice(-30) : [];
+    var completedToday = a.lastPlayedOn === today;
+    return {
+      available: !!child.pet && !child.fainted && !child.pausedAt && child.feedDate === today && !completedToday,
+      completedToday: completedToday, lastPlayedOn: a.lastPlayedOn || null,
+      currentNodeId: a.currentNodeId || null, visited: visited,
+      discoveries: Array.isArray(a.discoveries) ? a.discoveries.slice(-10) : [],
+      lastResult: a.lastResult || null,
+      nodes: ADVENTURE_NODES.map(function (n) { return Object.assign({}, n, { visited: visited.indexOf(n.id) >= 0 }); })
+    };
+  }
   function childMe(family, child) {
     var now = new Date();
     EN.ensureSemester(family);
@@ -123,6 +143,7 @@
         if (cached && cached.returnNudge) return cached.returnNudge;
         return { show: false, gapDays: 0, gapKey: null };   // 回归提示的展示/确认永远由服务端裁决
       })(),
+      adventure: adventureLocalView(child),
       siblings: Object.values(family.children).map(function (c) { return { id: c.id, name: c.name, intimacy: c.intimacy, level: c.level, petEmoji: c.pet ? (speciesById(c.pet.speciesId) || {}).emoji : '⚪' }; })
     };
   }
