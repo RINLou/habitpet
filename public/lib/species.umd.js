@@ -105,13 +105,20 @@ const SPECIES = [
 ];
 const speciesById = id => SPECIES.find(s => s.id === id) || null;
 
-// 生成 Boss：前期给新手留出试错空间，等级越高再逐步收紧差距。
+// 生成 Boss：前期给新手留出试错空间，之后随等级缓慢收紧，但**不让孩子陷入必败**。
+// 2026-09-08 重新标定：旧系数下 Boss 五维 Lv1→Lv12 成长 +76 而孩子仅 +22（约 3.5 倍），
+// Lv4 起孩子首战胜率归零（Lv5~Lv15 全 0%），与「渐进」设计意图相反。
+// 现按真实战斗代码蒙特卡洛网格搜索重新标定（评分 3.890 → 0.170）。详见 lib/species.js。
+const BOSS_TUNE = {
+  statPerLevel: 0.4, mulA: 0.84, mulB: 0.96, mulC: 1.06,
+  hpBase: 0.85, hpStep: 0, hpCap: 1.05
+};
 function makeBoss(level, forCoop) {
   const safeLevel = Math.max(1, Number(level) || 1);
-  const soloMul = Math.min(1.16, 0.70 + Math.max(0, safeLevel - 1) * 0.045);
+  const soloMul = safeLevel < 8 ? BOSS_TUNE.mulA : (safeLevel < 15 ? BOSS_TUNE.mulB : BOSS_TUNE.mulC);
   const mul = forCoop ? Math.min(1.2, 1.02 + Math.max(0, safeLevel - 1) * 0.025) : soloMul;
-  const hpMul = forCoop ? 1 : Math.min(1.1, 0.85 + Math.max(0, safeLevel - 1) * 0.025);
-  const s = n => Math.max(1, Math.round((n + safeLevel * 0.8) * mul));
+  const hpMul = forCoop ? 1 : Math.min(BOSS_TUNE.hpCap, BOSS_TUNE.hpBase + Math.max(0, safeLevel - 1) * BOSS_TUNE.hpStep);
+  const s = n => Math.max(1, Math.round((n + (safeLevel - 1) * BOSS_TUNE.statPerLevel) * mul));
   return {
     name: forCoop ? '远古守护兽' : '荒野挑战者',
     element: 'none',
