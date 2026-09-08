@@ -113,7 +113,7 @@
       chapter: { id: 'first-starlight', title: '首章·星光启程', subtitle: '连续七天，把每天的一小步走成一条回家的路。', totalDays: 7 },
       chapterDay: chapterDay, totalDays: 7, completedDays: completedDays.slice(), chapterCompleted: chapterCompleted,
       chapterCompletedAt: a.chapterCompletedAt || null, completedChapters: Array.isArray(a.chapterCompletions) ? a.chapterCompletions.slice(-5) : [],
-      available: canPlay && (chapterCompleted ? visited.length > 0 : true), revisitAvailable: chapterCompleted && canPlay && visited.length > 0,
+      available: canPlay && (chapterCompleted ? visited.length > 0 : true), revisitAvailable: chapterCompleted && visited.length > 0,
       completedToday: completedToday, lastPlayedOn: a.lastPlayedOn || null,
       currentNodeId: a.currentNodeId || null, visited: visited,
       discoveries: Array.isArray(a.discoveries) ? a.discoveries.slice(-10) : [],

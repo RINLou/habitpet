@@ -108,8 +108,9 @@ const speciesById = id => SPECIES.find(s => s.id === id) || null;
 // 生成 Boss：前期给新手留出试错空间，等级越高再逐步收紧差距。
 function makeBoss(level, forCoop) {
   const safeLevel = Math.max(1, Number(level) || 1);
-  const soloMul = Math.min(1.16, 0.84 + Math.max(0, safeLevel - 1) * 0.035);
+  const soloMul = Math.min(1.16, 0.70 + Math.max(0, safeLevel - 1) * 0.045);
   const mul = forCoop ? Math.min(1.2, 1.02 + Math.max(0, safeLevel - 1) * 0.025) : soloMul;
+  const hpMul = forCoop ? 1 : Math.min(1.1, 0.85 + Math.max(0, safeLevel - 1) * 0.025);
   const s = n => Math.max(1, Math.round((n + safeLevel * 0.8) * mul));
   return {
     name: forCoop ? '远古守护兽' : '荒野挑战者',
@@ -117,7 +118,7 @@ function makeBoss(level, forCoop) {
     emoji: '👹',
     level: safeLevel,
     stats: { atk: s(11), def: s(9), hp: s(10), spd: s(10), wis: s(10) },
-    hpMax: Math.round((s(10) * 5 + safeLevel * 4) * (forCoop ? 1.8 : 1)),
+    hpMax: Math.round((s(10) * 5 + safeLevel * 4) * (forCoop ? 1.8 : hpMul)),
     skills: ['n1', 'n2', 'n3']
   };
 }
