@@ -83,3 +83,32 @@ TypeError: Cannot read properties of null (reading 'phase')
 - Related Files: lib/adventure.js, tests/adventure-mvp.test.js
 
 ---
+
+## [ERR-20260913-002] github_push_connection_reset
+
+**Logged**: 2026-09-13T00:00:00+08:00
+**Priority**: medium
+**Status**: pending
+**Area**: infra
+
+### Summary
+GitHub push for the release branch was reset by the network after the local commit completed.
+
+### Error
+```
+fatal: unable to access 'https://github.com/RINLou/habitpet.git/': Recv failure: Connection was reset
+```
+
+### Context
+- Branch: codex/story-release-ready
+- Commit: 4473ac9
+- A previous push in this workspace also returned an empty remote reply.
+
+### Suggested Fix
+Retry from a stable network connection; verify the remote branch before treating the work as published.
+
+### Metadata
+- Reproducible: unknown
+- Related Files: .git/config
+
+---
