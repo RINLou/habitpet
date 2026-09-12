@@ -106,12 +106,23 @@ const SPECIES = [
 const speciesById = id => SPECIES.find(s => s.id === id) || null;
 
 // 生成 Boss：前期给新手留出试错空间，之后随等级缓慢收紧，但**不让孩子陷入必败**。
-// 2026-09-08 重新标定（与 public/lib/species.umd.js 保持一致）：旧系数下 Boss 五维
-// Lv1→Lv12 成长 +76 而孩子仅 +22（约 3.5 倍），Lv4 起孩子首战胜率归零，与「渐进」意图相反。
-// 现按真实战斗代码蒙特卡洛网格搜索重新标定（评分 3.890 → 0.170）。详见 lib/species.js。
+//
+// 2026-09-08 重新标定：旧系数为 单挑倍率 0.70 起、每级 +0.045（上限 1.16），属性基数
+// `n + level*0.8`。实测（scripts/boss-winrate-scan.js，真实战斗代码蒙特卡洛）发现
+// Boss 五维 Lv1→Lv12 成长 +76，而孩子同期仅 +22（约 3.5 倍），血量倍率 ×4.84 vs 孩子 ×2.19，
+// 导致 Lv4 起孩子首战胜率直接归零（Lv5~Lv15 全 0%），与「渐进式难度」的设计意图完全相反。
+// 现按网格搜索（scripts/boss-tune-search.js，以 Lv1~Lv15 胜率落入 70%~85% 为目标）重新标定，
+// 评分从 3.890 降到 0.170：属性成长降到 +0.5/级、单挑倍率固定 0.85、血量缓升 0.01/级。
+// 单挑倍率按「孩子技能解锁台阶」分段：全物种技能 power 统一在 Lv1/8/15/20 解锁
+// （25/45/65/80），孩子战力在这三档跃升，Boss 强度必须同步跃升才不会失衡。
+// 用单一倍率时实测：Lv1-3≈82-85%、Lv4-7 崩到 18-32%、Lv8+ 又涨到 85-96%（锯齿）。
+// 分段后（scripts/boss-tune-search.js，评分 0.840 → 0.440）各档均回到可玩区间。
 const BOSS_TUNE = {
-  statPerLevel: 0.4, mulA: 0.84, mulB: 0.96, mulC: 1.06,
-  hpBase: 0.85, hpStep: 0, hpCap: 1.05
+  statPerLevel: 0.4,                    // 每级属性基数加成（旧：0.8 且不计 (level-1)）
+  mulA: 0.84,                           // Lv1-7：孩子只有 power25，Boss 压弱
+  mulB: 0.96,                           // Lv8-14：解锁 power45，Boss 跟进
+  mulC: 1.06,                           // Lv15+：解锁 power65，Boss 再跟进
+  hpBase: 0.85, hpStep: 0, hpCap: 1.05  // 血量倍率（旧：0.85 / 0.025 / 1.1）
 };
 function makeBoss(level, forCoop) {
   const safeLevel = Math.max(1, Number(level) || 1);

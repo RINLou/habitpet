@@ -554,7 +554,7 @@ function celebratePet(oldPet, newPet) {
   if (newPet.level <= oldPet.level) return;
   const stageChanged = oldPet.stageKey !== newPet.stageKey;
   if (stageChanged && newPet.stageKey === 'awaken') {
-    showFx({ img: 'img/awaken.webp', title: '✦ 觉醒时刻 ✦', sub: `${esc(newPet.nickname)} 突破凡躯，觉醒为 <b>${esc(newPet.stage)}</b>！亲密度获取 +3%，并解锁「学期大奖」申请权！`, btn: '吾王降临', sound: 'evolve', speak: `${newPet.nickname}，觉醒！` });
+    showFx({ img: 'img/awaken.webp', title: '✦ 觉醒时刻 ✦', sub: `${esc(newPet.nickname)} 突破凡躯，觉醒为 <b>${esc(newPet.stage)}</b>！羁绊获取 +3%，并解锁「学期大奖」申请权！`, btn: '吾王降临', sound: 'evolve', speak: `${newPet.nickname}，觉醒！` });
   } else if (stageChanged) {
     showFx({ img: 'img/evo.webp', title: '⚡ 进化！', sub: `${esc(oldPet.stage)} → <b>${esc(newPet.stage)}</b>！星辰之力涌入了 ${esc(newPet.nickname)} 的身体`, btn: '华丽蜕变！', sound: 'evolve', speak: `哇，${newPet.nickname} 进化成 ${newPet.stage} 了！` });
   } else {
@@ -592,10 +592,10 @@ function renderChild() {
   $('#app').innerHTML = `
     <div class="topbar">
       <div class="title">${esc(me.name)}${me.holidayMode ? ' 🏖️' : ''}</div>
-      <div class="who">${paused ? '⏸️ 暂停计中' : '❤️ 亲密度 ' + me.intimacy} · 下月零花钱 ¥${me.nextAllowance}<br><span class="mute-btn" style="cursor:pointer" onclick="toggleMute()">${Sfx.muted ? '🔇' : '🔊'}</span> · ${installLink()}<a href="#" onclick="openGuide();return false">📖 玩法</a> · <a href="#" onclick="refreshMe().then(renderChild);return false">刷新</a> · <a href="#" style="color:#6b7280" onclick="doLogout();return false">退出</a></div>
+      <div class="who">${paused ? '⏸️ 暂停计中' : '❤️ 羁绊 ' + me.intimacy} · 下月零花钱 ¥${me.nextAllowance}<br><span class="mute-btn" style="cursor:pointer" onclick="toggleMute()">${Sfx.muted ? '🔇' : '🔊'}</span> · ${installLink()}<a href="#" onclick="openGuide();return false">📖 玩法</a> · <a href="#" onclick="refreshMe().then(renderChild);return false">刷新</a> · <a href="#" style="color:#6b7280" onclick="doLogout();return false">退出</a></div>
     </div>
     ${paused ? `<div class="warnbox">暂停计期间：不重置、不计连击、不扣分，好好休息 💤</div>` : ''}
-    ${me.fainted ? `<div class="warnbox">💤 灵伴在休眠茧里休息，去「宠物」页免费唤醒它就能继续对战和领经验</div>` : ''}
+    ${me.fainted ? `<div class="warnbox">💤 灵伴在休眠茧里休息，去「宠物」页免费唤醒它就能继续对战和领心光</div>` : ''}
     <div class="tabs">
       ${[['pet', '🐾 宠物'], ['report', '📝 申报'], ['battle', '⚔️ 对战'], ['shop', '🎁 兑换'], ['book', '📖 图鉴']].map(([k, n]) =>
         `<div class="tab ${curTab === k ? 'on' : ''}" onclick="switchChildTab('${k}')">${n}</div>`).join('')}
@@ -631,13 +631,13 @@ function openGuide() {
   openModal(`<h3>📖 灵汐大陆玩法</h3>
     <div class="okbox">在这里，你的每一个好习惯都会变成心光，帮助灵伴穿越大陆、点亮星图。想重看序章，可以在这里重新打开。</div>
     <button class="btn sm ghost" onclick="openPrologue()">重看灵汐大陆序章</button>
-    <div class="lead">你的宠物靠「经验值」长大（升级→进化→觉醒），家里的「亲密度」是零花钱货币（1分=1元）。两个值都只来自真实的好习惯！</div>
+    <div class="lead">你的灵伴靠「心光」长大（升级→进化→觉醒），家里的「羁绊」是零花钱货币（1分=1元）。两个值都只来自真实的好习惯！</div>
     <div class="item"><div class="t"><div class="n">🐾 宠物页</div><div class="s">每天 ${r.feed !== undefined ? r.feed : 1} 分投喂（作业完成才算喂饭）、看五维属性、自由加点、改名字</div></div></div>
     <div class="item"><div class="t"><div class="n">📝 申报页</div><div class="s">考试≥${me.rules.examMin ?? 80} +${r.exam !== undefined ? r.exam : 50} · 默写/出门测≥${me.rules.quizMin ?? 80}% +${r.quiz !== undefined ? r.quiz : 10} · 自豪的事每周1次 +${r.pride !== undefined ? r.pride : 10}（家长审核后到账）</div></div></div>
-    <div class="item"><div class="t"><div class="n">⚔️ 对战页</div><div class="s">打 Boss / 兄妹切磋 / 好友对战，赢经验不花亲密度（每天限 ${me ? me.battleDailyLimit : 5} 场）；输了对战也不扣亲密度</div></div></div>
-    <div class="item"><div class="t"><div class="n">🎁 兑换页</div><div class="s">用亲密度换奖励；现金直接锁进下月零花钱，其他奖励家长核销后生效</div></div></div>
+    <div class="item"><div class="t"><div class="n">⚔️ 对战页</div><div class="s">打 Boss / 兄妹切磋 / 好友对战，赢心光不花羁绊（每天限 ${me ? me.battleDailyLimit : 5} 场）；输了对战也不扣羁绊</div></div></div>
+    <div class="item"><div class="t"><div class="n">🎁 兑换页</div><div class="s">用羁绊换奖励；现金直接锁进下月零花钱，其他奖励家长核销后生效</div></div></div>
     <div class="item"><div class="t"><div class="n">📖 图鉴页</div><div class="s">兄弟姐妹榜 + 历届毕业宠物</div></div></div>
-    <div class="warnbox">⚠️ 每月 1 号亲密度重置为初始值（上月没被投诉再加无投诉奖 +${r.noComplaint !== undefined ? r.noComplaint : 100}）；被投诉 −${r.complaint !== undefined ? r.complaint : 50}（家长可取消退分）。默认温和模式：3 天不投喂只提醒，不扣分也不休眠；家长开启严格模式后才会有休眠茧，唤醒一律免费、不扣亲密度也不降级。</div>
+    <div class="warnbox">⚠️ 每月 1 号羁绊重置为初始值（上月浊气未侵扰，守护人会给你清风奖 +${r.noComplaint !== undefined ? r.noComplaint : 100}）；若被浊气侵扰，羁绊会暂时减弱 −${r.complaint !== undefined ? r.complaint : 50}（守护人可撤销退分）。默认温和模式：3 天不投喂只提醒，不扣分也不休眠；守护人开启严格模式后才会有休眠茧，唤醒一律免费、不扣羁绊也不降级。</div>
     <div class="muted-line">学期结束时宠物毕业进图鉴，下学期重挑新伙伴。连续觉醒还能解锁隐藏神宠 S/SS！</div>
     <button class="btn" onclick="closeModal()">开始冒险！</button>`);
 }
@@ -663,7 +663,7 @@ async function renderSpeciesPicker() {
           </div>`).join('')}
       </div>
       <h3 class="mt8">🔒 隐藏神宠（解锁后可选）</h3>
-      <div class="muted-line">S 级：任一学期觉醒（Lv20）解锁；SS 级：连续两个学期觉醒解锁。亲密度获取 +5%！</div>
+      <div class="muted-line">S 级：任一学期觉醒（Lv20）解锁；SS 级：连续两个学期觉醒解锁。羁绊获取 +5%！</div>
       <div class="species-grid mt8">
         ${hidden.map(s => {
           const ok = s.tier === 'S' ? el.s : el.ss;
@@ -690,7 +690,7 @@ async function pickSpecies(id) {
 
 // —— 宠物 Tab ————————————————————————————————
 // ============================================================
-// P1：7 天微习惯计划（引导层：不发分、不加经验、不替代投喂）+ 温和回归
+// P1：7 天微习惯计划（引导层：不发分、不加心光、不替代投喂）+ 温和回归
 // ============================================================
 const ONBOARDING_PLANS = {
   homework: { emoji: '📚', title: '写完作业后整理书桌 2 分钟' },
@@ -828,7 +828,7 @@ function adventureCard() {
     ${ending && !a.completedToday ? `<div class="story-ending-mini">✦ 章节结语·${esc(ending.title)}：${esc(ending.story)}</div>` : ''}
     ${quest}
     <div class="adventure-nodes">${nodes}</div>
-    <div class="row adventure-actions">${nextChapter ? `<button class="btn sm" ${a.completedToday ? 'disabled' : ''} onclick="advanceAdventureChapter()">✦ 点亮下一章</button>` : ''}<button class="btn sm ghost" onclick="showAdventureAlbum()">📚 星光相册（${a.discoveries.length}）</button><span class="muted-line">探索不会改变经验和亲密度</span></div>
+    <div class="row adventure-actions">${nextChapter ? `<button class="btn sm" ${a.completedToday ? 'disabled' : ''} onclick="advanceAdventureChapter()">✦ 点亮下一章</button>` : ''}<button class="btn sm ghost" onclick="showAdventureAlbum()">📚 星光相册（${a.discoveries.length}）</button><span class="muted-line">探索不会改变心光和羁绊</span></div>
   </div>`;
 }
 function showAdventureAlbum() {
@@ -913,7 +913,7 @@ function childPetTab() {
     hungerHtml = `
     <div class="card" style="border-color:var(--warn)">
       <h3>💤 ${esc(p.nickname)} 在休眠茧里休息</h3>
-      <div class="warnbox">有 ${me.hungerDays} 天没投喂，灵伴先睡一会儿。唤醒是免费的：不扣亲密度、不降级，章节进度和星光相册全都还在。</div>
+      <div class="warnbox">有 ${me.hungerDays} 天没投喂，灵伴先睡一会儿。唤醒是免费的：不扣羁绊、不降级，章节进度和星光相册全都还在。</div>
       <div class="row mt8">
         <button class="btn ok" onclick="doRevive()">✨ 免费唤醒灵伴</button>
       </div>
@@ -936,9 +936,9 @@ function childPetTab() {
     <div class="card pet-hero">
       ${petArtHero(p, me.fainted)}
       <div class="name">${esc(p.nickname)} <span class="stage">Lv${p.level} · ${p.stage}</span></div>
-      <div class="lead">${p.speciesName} · ${p.elementName}系 · ${lore.region} · ${lore.role} · 学期：${esc(me.semester.name)}${p.tier ? ' · ' + p.tier + '级神宠（亲密度+5%）' : (p.stageKey === 'awaken' ? ' · 觉醒加成：亲密度+3%' : '')}</div>
+      <div class="lead">${p.speciesName} · ${p.elementName}系 · ${lore.region} · ${lore.role} · 学期：${esc(me.semester.name)}${p.tier ? ' · ' + p.tier + '级神宠（羁绊+5%）' : (p.stageKey === 'awaken' ? ' · 觉醒加成：羁绊+3%' : '')}</div>
       <div class="xpbar"><i style="width:${xpPct}%"></i></div>
-      <div class="muted-line">经验 ${p.xp} / 下一级 ${p.xpNext}</div>
+      <div class="muted-line">心光 ${p.xp} / 下一级 ${p.xpNext}</div>
       <div class="whisper">🌙 ${pickDaily(WHISPERS, me.id)}</div>
       <div class="feed-state">${fed ? '✅ 今天已经投喂，伙伴吃得很开心！' : '今日投喂会在上方「今日冒险」完成'}</div>
       <div class="muted-line">连续打卡 ${me.feedStreak} 天（每满 7 天额外 +${me.rules.streak}）${me.weeklyCap > 0 ? ` · 本周已加 ${me.weekEarned}/${me.weeklyCap}` : ''}</div>
@@ -979,10 +979,10 @@ async function doFeed() {
   if (r.feedEvent) {
     // 随机灵汐奇遇：专属插画 + 金币音 + 台词
     const ev = r.feedEvent;
-    const gain = [ev.xp ? '+' + ev.xp + ' 经验' : '', ev.intimacy ? '+' + ev.intimacy + ' 亲密度' : ''].filter(Boolean).join('，');
+    const gain = [ev.xp ? '+' + ev.xp + ' 心光' : '', ev.intimacy ? '+' + ev.intimacy + ' 羁绊' : ''].filter(Boolean).join('，');
     showFx({ img: 'img/reward.webp', title: `${ev.icon} 灵汐奇遇 · ${ev.name}`, sub: `${esc(ev.desc)}${gain ? '（' + gain + '）' : ''}`, btn: '运气爆棚！', auto: 4500, sound: 'coin', speak: '灵汐奇遇，' + ev.name + '！' });
   } else {
-    toast(r.streakBonus ? `投喂成功 +${me.rules.feed}，连续 ${me.feedStreak} 天额外 +${r.streakBonus}！` : `投喂成功！亲密度 +${me.rules.feed}`);
+    toast(r.streakBonus ? `投喂成功 +${me.rules.feed}，连续 ${me.feedStreak} 天额外 +${r.streakBonus}！` : `投喂成功！羁绊 +${me.rules.feed}`);
     // 精灵动画只在成体焰狼播；其它阶段（愿望球/幼体）给 CSS 弹跳反馈，不抛事件（避免挂死 pending）
     const fFile = ART_BY_EMOJI[me.pet.emoji] || '';
     const fSid = Object.keys(ART_BY_SPECIES).find(k => ART_BY_SPECIES[k] === fFile) || '';
@@ -1009,7 +1009,7 @@ async function doRename() {
   me = r.state; closeModal(); renderChild();
 }
 async function doRevive() {
-  askConfirm('唤醒灵伴？免费：不扣亲密度、不降级，收藏和章节进度都不会丢。', async () => {
+  askConfirm('唤醒灵伴？免费：不扣羁绊、不降级，收藏和章节进度都不会丢。', async () => {
     const r = await api('/api/pet/revive', { mode: 'free' });
     if (r.error) return toast(r.error, true);
     me = r.state; toast('灵伴醒来啦！记得每天投喂 🍖'); renderChild();
@@ -1083,7 +1083,7 @@ function renderChildBattleTab(b) {
   b.innerHTML = `
     <div class="card">
       <h3>⚔️ 对战大厅</h3>
-      <div class="lead">对战经验随对手等级浮动：赢 = +6+对方等级，输 = +2+对方等级÷2（每天最多 ${me.battleDailyLimit} 场，今天已打 ${me.battlesToday} 场）。经验只升宠物，绝不花亲密度！</div>
+      <div class="lead">对战心光随对手等级浮动：赢 = +6+对方等级，输 = +2+对方等级÷2（每天最多 ${me.battleDailyLimit} 场，今天已打 ${me.battlesToday} 场）。心光只升灵伴，绝不花羁绊！</div>
       <div class="item"><div class="t"><div class="n">🌲 挑战荒野 Boss</div><div class="s">单人闯关，首战友好，等级越高越强</div></div><button class="btn sm" onclick="startBattle('boss')">出发</button></div>
       ${others.map(o => `
         <div class="item"><div class="t"><div class="n">🤝 与 ${esc(o.name)} 联手打 Boss</div><div class="s">TA 的分身 AI 帮你打，不用等 TA 在线</div></div><button class="btn sm ok" onclick="startBattle('coop','${o.id}')">组队</button></div>
@@ -1153,7 +1153,7 @@ function startPoll() {
     if (r.battle) {
       const wasActive = curBattle.status === 'active';
       curBattle = r.battle;
-      if (curBattle.status === 'finished' && wasActive) { stopPoll(); battleEndJingle(curBattle); await refreshMe(); toast('战斗结束！经验已到账'); }
+      if (curBattle.status === 'finished' && wasActive) { stopPoll(); battleEndJingle(curBattle); await refreshMe(); toast('战斗结束！心光已到账'); }
       // 状态签名没变就不重画，避免每 2 秒闪一次"假刷新"
       if (arenaSigOf(curBattle) !== arenaSig) renderArena();
     } else if (r.error && /不存在/.test(r.error)) {
@@ -1184,7 +1184,7 @@ function renderArena() {
   const isFriend = bt.mode === 'friend';
   const myTurn = bt.status !== 'active' || (isFriend ? bt.turn === myIdx : true);
   const finishCopy = bt.mode === 'sibling' || bt.mode === 'friend'
-    ? (bt.winner === myIdx ? '你赢了！经验已到账' : '虽败犹荣，也有经验拿')
+    ? (bt.winner === myIdx ? '你赢了！心光已到账' : '虽败犹荣，也有心光拿')
     : (bt.winner === 'kids' ? '击败 Boss！' : `Boss 太强了。建议先升到 Lv${Math.max(2, me.level + 1)}，或解锁下一招后再来。`);
   const hpPct = f => Math.max(0, Math.round(f.hp / f.hpMax * 100));
   $('#tabbody').innerHTML = `
@@ -1239,7 +1239,7 @@ function battleEndJingle(bt) {
   const meF = (bt.fighters || []).find(f => f.childId === me.id && !f.isAI);
   if (!meF) return;
   const win = (bt.mode === 'sibling' || bt.mode === 'friend') ? bt.winner === bt.fighters.indexOf(meF) : bt.winner === 'kids';
-  if (win) { Sfx.victory(); Sfx.speak('战斗胜利！经验到账！'); }
+  if (win) { Sfx.victory(); Sfx.speak('战斗胜利！心光到账！'); }
   else { Sfx.defeat(); Sfx.speak('虽败犹荣，下次再战'); }
 }
 async function battleMove(idx) {
@@ -1251,7 +1251,7 @@ async function battleMove(idx) {
   if (r.battle) {
     const wasActive = curBattle.status === 'active';
     curBattle = r.battle;
-    if (r.finished && wasActive) { stopPoll(); await refreshMe(); toast('战斗结束！经验已到账'); }
+    if (r.finished && wasActive) { stopPoll(); await refreshMe(); toast('战斗结束！心光已到账'); }
   }
   renderArena();
 }
@@ -1261,7 +1261,7 @@ function childShopTab() {
   return `
     <div class="card">
       <h3>🎁 奖励商店</h3>
-      <div class="lead">亲密度 ${me.intimacy} 分可以兑换（现金会锁进下月零花钱）</div>
+      <div class="lead">羁绊 ${me.intimacy} 分可以兑换（现金会锁进下月零花钱）</div>
       ${me.rewards.map(r => `
         <div class="item">
           <div class="t"><div class="n">${esc(r.name)}</div><div class="s">${esc(r.desc || '')}</div></div>
@@ -1299,7 +1299,7 @@ function childBookTab() {
     <div class="card">
       <h3>🏆 兄弟姐妹榜 <span class="badge">规则各自独立·娱乐为主</span></h3>
       ${me.siblings.slice().sort((a, b) => b.intimacy - a.intimacy).map((s, i) => `
-        <div class="item"><div class="t"><div class="n">${['🥇', '🥈', '🥉'][i] || (i + 1) + '.'} ${s.petEmoji} ${esc(s.name)}</div></div><div class="s">亲密度 ${s.intimacy} · Lv${s.level}</div></div>`).join('')}
+        <div class="item"><div class="t"><div class="n">${['🥇', '🥈', '🥉'][i] || (i + 1) + '.'} ${s.petEmoji} ${esc(s.name)}</div></div><div class="s">羁绊 ${s.intimacy} · Lv${s.level}</div></div>`).join('')}
     </div>
     <div class="card">
       <h3>📖 我的图鉴（${me.pokedex.length}）</h3>
@@ -1408,7 +1408,7 @@ function parentOverview() {
     <div class="card">
       <h3>${c.pet ? c.pet.emoji : '🥚'} ${esc(c.name)} <span class="badge">${esc(c.grade || '')}</span> ${c.paused ? '<span class="badge a">暂停计</span>' : ''}</h3>
       <div class="stat-grid">
-        <div class="stat"><div class="v">${c.intimacy}</div><div class="k">亲密度（月度）</div></div>
+        <div class="stat"><div class="v">${c.intimacy}</div><div class="k">羁绊（月度）</div></div>
         <div class="stat"><div class="v">${c.pet ? 'Lv' + c.level : '—'}</div><div class="k">${c.pet ? c.pet.stage + ' · ' + esc(c.pet.nickname) : '未选宠物'}</div></div>
         <div class="stat"><div class="v">¥${c.nextAllowance}</div><div class="k">下月零花钱（基础${c.allowanceBase}${c.allowanceLocked ? '+锁定' + c.allowanceLocked.amount : ''}）</div></div>
         <div class="stat"><div class="v">${c.feedStreak}</div><div class="k">连续投喂</div></div>
@@ -1568,7 +1568,7 @@ async function doComplaint(childId) {
     delta: +$('#cm_d').value, reason: $('#cm_r').value
   });
   if (r.error) return toast(r.error, true);
-  fam = r.family; closeModal(); toast('已录入 −' + $('#cm_d').value + ' 亲密度'); renderParent();
+  fam = r.family; closeModal(); toast('已录入 −' + $('#cm_d').value + ' 羁绊'); renderParent();
 }
 function curMonthKey() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
 function activeComplaintCount(c) {
@@ -1615,7 +1615,7 @@ async function complaint(childId, source) {
   askText('录入投诉', '投诉事由（可选）', async reason => {
     const r = await api('/api/complaint', { childId, source, reason: reason || '' });
     if (r.error) return toast(r.error, true);
-    fam = r.family; toast('已录入，-' + fam.rules.complaint + ' 亲密度'); renderParent();
+    fam = r.family; toast('已录入，-' + fam.rules.complaint + ' 羁绊'); renderParent();
   }, { tip: '取消则不录入、不扣分' });
 }
 function editComplaint(childId, recId) {
@@ -1680,7 +1680,7 @@ function editReward(id) {
   const r = id ? fam.rewards.find(x => x.id === id) : null;
   openModal(`<h3>${r ? '编辑' : '新增'}奖励</h3>
     <label>名称</label><input id="rw_n" value="${r ? esc(r.name) : ''}" placeholder="例如 周末游乐园">
-    <label>所需亲密度（现金类 1分=1元）</label><input id="rw_c" type="number" value="${r ? r.cost : 50}">
+    <label>所需羁绊（现金类 1分=1元）</label><input id="rw_c" type="number" value="${r ? r.cost : 50}">
     <label>类型</label><select id="rw_t"><option value="ticket" ${r && r.type === 'ticket' ? 'selected' : ''}>券/特权</option><option value="cash" ${r && r.type === 'cash' ? 'selected' : ''}>现金（锁下月零花钱）</option><option value="thing" ${r && r.type === 'thing' ? 'selected' : ''}>实物</option></select>
     <label>说明</label><input id="rw_d" value="${r ? esc(r.desc || '') : ''}">
     <button class="btn" onclick="saveReward('${id || ''}')">保存</button>
@@ -1710,7 +1710,7 @@ function parentLedger() {
   const mk = curMonthKey();
   return `<div class="card">
     <h3>📒 账本（每笔留痕，当月可撤销）</h3>
-    <div class="muted-line">撤销会反向调整亲密度/经验并留下对冲记录；经验可回退，但宠物五维成长点不回收。系统结算与跨月账目不可撤销。</div>
+    <div class="muted-line">撤销会反向调整羁绊/心光并留下对冲记录；心光可回退，但宠物五维成长点不回收。系统结算与跨月账目不可撤销。</div>
     ${fam.ledger.slice(0, 100).map(l => {
       const canUndo = !l.reversed && l.by !== 'system' && l.ts && l.ts.startsWith(mk) && l.childName;
       return `
@@ -1723,8 +1723,8 @@ function parentLedger() {
   </div>`;
 }
 async function undoLedger(id) {
-  if (requireParentPhrase(`undo-ledger:${id}`, '↩️ 撤销账目', '将反向调整亲密度和经验，并新增一条对冲记录；宠物成长点不会回收。', '撤销', '继续撤销', () => undoLedger(id))) return;
-  askConfirm('撤销该笔账目？将反向调整亲密度/经验（宠物五维成长点不回收），并留下对冲记录。', async () => {
+  if (requireParentPhrase(`undo-ledger:${id}`, '↩️ 撤销账目', '将反向调整羁绊和心光，并新增一条对冲记录；宠物成长点不会回收。', '撤销', '继续撤销', () => undoLedger(id))) return;
+  askConfirm('撤销该笔账目？将反向调整羁绊/心光（宠物五维成长点不回收），并留下对冲记录。', async () => {
     const r = await pinApi('/api/ledger/undo', { ledgerId: id });
     if (!r) return; if (r.error) return toast(r.error, true);
     fam = r.family; toast('已撤销'); renderParent();
@@ -1761,7 +1761,7 @@ function parentSettings() {
     </div>
     <div class="card">
       <h3>🏫 基础配置</h3>
-      <label>月初亲密度</label><input id="cf_init" type="number" value="${c.initialIntimacy}">
+      <label>月初羁绊</label><input id="cf_init" type="number" value="${c.initialIntimacy}">
       <label>基础零花钱（下月零花钱 = 基础 + 锁定加成）</label><input id="cf_base" type="number" value="${c.baseAllowance}">
       <label>投喂时段（小时，假期模式自动全天）</label>
       <div class="row"><input id="cf_sh" type="number" value="${c.feedWindow.startHour}" style="margin-top:0"><span>点 至</span><input id="cf_eh" type="number" value="${c.feedWindow.endHour}" style="margin-top:0"><span>点</span></div>
@@ -1775,7 +1775,7 @@ function parentSettings() {
     </div>
     <div class="card">
       <h3>🔔 结算与月报</h3>
-      <div class="muted-line">月度结算每月1号自动执行（无投诉奖发放+亲密度重置），手动仅用于纠错</div>
+      <div class="muted-line">月度结算每月1号自动执行（无投诉奖发放+羁绊重置），手动仅用于纠错</div>
       <button class="btn ghost" onclick="settleMonth()">手动触发月度结算</button>
       <button class="btn warn" onclick="settleSemester()">🎓 学期结算（宠物毕业进图鉴）</button>
       <button class="btn ok" onclick="showReport()">📄 生成月报（可复制发微信）</button>
@@ -1842,16 +1842,16 @@ async function toggleHoliday() {
   fam = r.family; toast(fam.config.holidayMode ? '假期模式已开启：投喂全天可领，申报切换为假期成就' : '已恢复日常模式'); renderParent();
 }
 async function settleMonth() {
-  if (requireParentPhrase('settle-month', '🗓️ 手动月度结算', '将立即发放无投诉奖并重置亲密度。通常应等待每月 1 日自动执行。', '结算', '继续结算', settleMonth)) return;
-  askConfirm('确认手动触发月度结算？将发放无投诉奖并重置亲密度（通常无需手动）', async () => {
+  if (requireParentPhrase('settle-month', '🗓️ 手动月度结算', '将立即发放无投诉奖并重置羁绊。通常应等待每月 1 日自动执行。', '结算', '继续结算', settleMonth)) return;
+  askConfirm('确认手动触发月度结算？将发放无投诉奖并重置羁绊（通常无需手动）', async () => {
     const r = await pinApi('/api/settle/month', {});
     if (!r) return; if (r.error) return toast(r.error, true);
     fam = r.family; toast('月度结算完成'); renderParent();
   }, '🗓️ 月度结算');
 }
 async function settleSemester() {
-  if (requireParentPhrase('settle-semester', '🎓 学期结算', '所有宠物将毕业进入图鉴，经验清零；新学期需要重新选择宠物。', '毕业', '继续结算', settleSemester)) return;
-  askConfirm('学期结算：所有宠物毕业进图鉴、经验清零、新学期重挑宠物。确认？', async () => {
+  if (requireParentPhrase('settle-semester', '🎓 学期结算', '所有宠物将毕业进入图鉴，心光清零；新学期需要重新选择宠物。', '毕业', '继续结算', settleSemester)) return;
+  askConfirm('学期结算：所有宠物毕业进图鉴、心光清零、新学期重挑宠物。确认？', async () => {
     const r = await pinApi('/api/settle/semester', {});
     if (!r) return; if (r.error) return toast(r.error, true);
     fam = r.family; toast(`学期结算完成，${r.entries} 只宠物毕业进图鉴 🎓`); renderParent();

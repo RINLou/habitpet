@@ -1,0 +1,117 @@
+{
+  "schemaVersion": "1.0",
+  "characterId": "firam",
+  "characterName": "焰狼·弗拉姆",
+  "reference": "/img/firam.webp",
+  "canonicalStage": "adult",
+  "generatedAt": "2026-09-07T14:38:19.484637+00:00",
+  "generator": "WorkBuddy ImageGen + generate2dsprite-style postprocess",
+  "fallback": {
+    "type": "static-webp",
+    "src": "/img/firam.webp",
+    "stageCrop": true,
+    "reducedMotion": "static",
+    "lowPerformance": "static",
+    "loadError": "static"
+  },
+  "degradation": {
+    "prefersReducedMotion": true,
+    "lowHardwareConcurrency": 2,
+    "lowDeviceMemory": 2
+  },
+  "sourceCell": {
+    "width": 512,
+    "height": 512,
+    "note": "生成与 QC 使用的原始单元尺寸（raw-sheet 切分基准）"
+  },
+  "runtimeCell": {
+    "width": 256,
+    "height": 256,
+    "note": "运行时 frame-*.png 的实际交付尺寸（由 sourceCell 等比缩放而来，播放器直接按帧图原始尺寸渲染）"
+  },
+  "anchor": "bottom-center",
+  "format": {
+    "frames": "{action}/frame-{i}.png",
+    "archive": "docs/animation-assets-archive/firam/",
+    "archiveContents": "raw-sheet / sheet-transparent / animation.gif / pipeline-meta.json（提示词与处理参数）/ _reference / _generated / qc_report.json / assets-manifest.json（哈希与重跑指引）"
+  },
+  "actions": {
+    "idle": {
+      "frames": 4,
+      "rows": 2,
+      "cols": 2,
+      "fps": 8,
+      "loop": true,
+      "durationMs": 500,
+      "description": "待机：身体轻微起伏，尾巴火焰稳定燃烧"
+    },
+    "happy": {
+      "frames": 4,
+      "rows": 2,
+      "cols": 2,
+      "fps": 10,
+      "loop": true,
+      "durationMs": 400,
+      "description": "开心：耳朵竖起，原地轻跳，尾巴火焰欢快地晃"
+    },
+    "eat": {
+      "frames": 4,
+      "rows": 2,
+      "cols": 2,
+      "fps": 10,
+      "loop": false,
+      "holdLastFrame": true,
+      "description": "进食：低头啃咬，吞咽，最后一帧抬头舔嘴"
+    },
+    "tired": {
+      "frames": 4,
+      "rows": 2,
+      "cols": 2,
+      "fps": 6,
+      "loop": true,
+      "durationMs": 667,
+      "description": "疲惫/迎接：半趴地面，眼皮沉重，火焰变弱但仍轻轻摇摆"
+    },
+    "levelUp": {
+      "frames": 6,
+      "rows": 2,
+      "cols": 3,
+      "fps": 8,
+      "loop": false,
+      "holdLastFrame": true,
+      "description": "升级：身上火焰爆燃、仰头长嚎、光环收束"
+    }
+  },
+  "events": {
+    "daily_idle": {
+      "action": "idle",
+      "priority": 0,
+      "interruptible": true
+    },
+    "feed_success": {
+      "sequence": [
+        "eat",
+        "happy"
+      ],
+      "priority": 10,
+      "interruptible": true,
+      "autoReturnToIdle": true,
+      "notes": "先播放 eat，然后播放 happy，结束后回到 idle"
+    },
+    "level_up": {
+      "action": "levelUp",
+      "priority": 20,
+      "interruptible": true,
+      "autoReturnToIdle": true,
+      "notes": "普通升级也触发，替代原 lvlBurst 静态文字"
+    },
+    "return": {
+      "action": "tired",
+      "priority": 15,
+      "interruptible": true,
+      "maxDurationMs": 3000,
+      "autoReturnToIdle": true,
+      "notes": "用户离线超过 1 天重新打开时播放 tired，3 秒后回到 idle"
+    }
+  }
+}

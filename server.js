@@ -344,7 +344,7 @@ const routes = {
     store.saveNow();
     return { code: 200, body: { ok: true, state: __st3 } };
   },
-  // 星图冒险 MVP：真实投喂后每日一次，奖励只记录探索/图鉴反馈，不改 XP、亲密度或账本
+  // 星图冒险 MVP：真实投喂后每日一次，奖励只记录探索/图鉴反馈，不改心光、羁绊或账本
   async adventureState(sess) {
     const f = store.familyById(sess.familyId); const c = ensureChild(f, sess.childId);
     if (!c) return { code: 404, body: { error: '孩子不存在' } };
@@ -433,7 +433,7 @@ const routes = {
     const f = store.familyById(sess.familyId); const c = ensureChild(f, sess.childId);
     const r = f.rewards.find(x => x.id === p.rewardId);
     if (!r) return { code: 400, body: { error: '奖励不存在' } };
-    if (c.intimacy < r.cost) return { code: 400, body: { error: `亲密度不够，还差 ${r.cost - c.intimacy} 分` } };
+    if (c.intimacy < r.cost) return { code: 400, body: { error: `羁绊不够，还差 ${r.cost - c.intimacy} 分` } };
     if (r.type === 'cash') {
       const mk = engine.monthKey();
       if (c.allowanceLocked && c.allowanceLocked.monthKey === mk) return { code: 400, body: { error: '本月已锁定过一次零花钱加成' } };
@@ -583,7 +583,7 @@ const routes = {
     const f = store.familyById(sess.familyId); const me = ensureChild(f, sess.childId);
     return { code: 200, body: { ok: true, code: store.ensureFriendCode(me), state: childMe(f, me) } };
   },
-  // 唤醒：一律免费（不扣亲密度、不降级）；mode 参数仅保留向后兼容
+  // 唤醒：一律免费（不扣羁绊、不降级）；mode 参数仅保留向后兼容
   async petRevive(sess, p) {
     const f = store.familyById(sess.familyId); const c = ensureChild(f, sess.childId);
     if (!c.pet) return { code: 400, body: { error: '还没有宠物' } };
@@ -630,7 +630,7 @@ const routes = {
     delete copy.sessions;
     return { code: 200, body: { ok: true, family: copy, ts: Date.now() } };
   },
-  // 本地对战结束后的云端结算：服务端按同一公式重算经验（每日上限钳制），不可被客户端刷分
+  // 本地对战结束后的云端结算：服务端按同一公式重算心光（每日上限钳制），不可被客户端刷分
   async battleFinish(sess, p) {
     const f = store.familyById(sess.familyId); const c = ensureChild(f, sess.childId);
     if (!c.pet) return { code: 400, body: { error: '还没有宠物' } };
@@ -641,10 +641,10 @@ const routes = {
     if (!c.pausedAt) battle.noteBattle(c);
     let actual = 0, capped = false;
     if (c.pausedAt) {
-      // 暂停期对战不发经验，但仍记录场次与流水
-      f.ledger.unshift({ id: store.newId('l'), ts: new Date().toISOString(), childId: c.id, childName: c.name, delta: 0, xp: 0, reason: `对战（暂停计分期间，未发经验）`, by: 'system' });
+      // 暂停期对战不发心光，但仍记录场次与流水
+      f.ledger.unshift({ id: store.newId('l'), ts: new Date().toISOString(), childId: c.id, childName: c.name, delta: 0, xp: 0, reason: `对战（暂停计分期间，未发心光）`, by: 'system' });
     } else if (!battle.canBattleToday(c, f.config.battleDailyLimit)) {
-      capped = true;   // 场次超限（多设备漂移）：只记数不发经验
+      capped = true;   // 场次超限（多设备漂移）：只记数不发心光
     } else {
       const xp = win ? 6 + oppLevel : 2 + Math.floor(oppLevel / 2);
       const cap = (f.config && f.config.battleXpDailyCap !== undefined) ? f.config.battleXpDailyCap : 30;
@@ -658,7 +658,7 @@ const routes = {
       f.ledger.unshift({
         id: store.newId('l'), ts: new Date().toISOString(),
         childId: c.id, childName: c.name, delta: 0, xp: actual,
-        reason: `对战${win ? '胜利' : '失败'}（${mode === 'sibling' ? '兄妹切磋' : 'Boss挑战'} vs Lv${oppLevel}，+${xp} 经验${capped ? `，今日对战经验已达上限 ${cap}，实发 ${actual}` : ''}）`,
+        reason: `对战${win ? '胜利' : '失败'}（${mode === 'sibling' ? '兄妹切磋' : 'Boss挑战'} vs Lv${oppLevel}，+${xp} 心光${capped ? `，今日对战心光已达上限 ${cap}，实发 ${actual}` : ''}）`,
         by: 'system'
       });
     }
@@ -907,7 +907,7 @@ const routes = {
     }
     return { code: 404, body: { error: '兑换记录不存在' } };
   },
-  // 账本撤销（敏感操作，需 PIN）：反向调亲密度/经验，留对冲行
+  // 账本撤销（敏感操作，需 PIN）：反向调羁绊/心光，留对冲行
   async ledgerUndo(sess, p) {
     const f = store.familyById(sess.familyId);
     const bad = requirePin(f, p); if (bad) return bad;
@@ -920,7 +920,7 @@ const routes = {
     if (!c) return { code: 400, body: { error: '该账目未关联孩子，无法撤销' } };
     if (e.delta < 0 && c.pausedAt) return { code: 400, body: { error: '暂停计期间不扣分，无法撤销该账目' } };
     engine.addIntimacy(c, -e.delta);
-    if (e.xp) engine.subXP(c, e.xp);   // 经验可回退；五维成长点不回收（UI 已注明）
+    if (e.xp) engine.subXP(c, e.xp);   // 心光可回退；五维成长点不回收（UI 已注明）
     e.reversed = true;
     ledger(f, c, -e.delta, `撤销：${e.reason}`, 'parent');
     const __fv13 = familyView(f); store.save(); return { code: 200, body: { ok: true, family: __fv13 } };
@@ -961,7 +961,7 @@ const routes = {
       const spent = items.filter(l => l.delta < 0).reduce((s, l) => s + l.delta, 0);
       const complain = (Array.isArray(c.complaints) ? c.complaints : []).filter(x => x.status === 'active' && x.ts && x.ts.startsWith(mk)).length;
       lines.push(`\n${c.name}（${c.grade || '—'}）：`);
-      lines.push(`· 当前亲密度 ${c.intimacy}（本月 +${earned} ${spent}）`);
+      lines.push(`· 当前羁绊 ${c.intimacy}（本月 +${earned} ${spent}）`);
       lines.push(`· 宠物：${c.pet ? (speciesById(c.pet.speciesId)?.name || '?') + ' Lv' + c.level + '（' + engine.stageOf(c.level).name + '）' : '未选'}`);
       lines.push(`· 连续投喂 ${c.feedStreak} 天${complain ? `，本月投诉 ${complain} 次` : '，本月无投诉'}`);
       lines.push(`· 图鉴收藏 ${c.pokedex.length} 只，下月零花钱预计 ${f.config.baseAllowance + (c.allowanceLocked ? c.allowanceLocked.amount : 0)} 元`);

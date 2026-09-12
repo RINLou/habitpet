@@ -13,7 +13,10 @@ const SPECS = [
     browserArgs: 'root.SpeciesMod, root.LocalStore', params: 'species, store' },
   { src: 'battle.js', out: 'battle.umd.js', global: 'BattleMod',
     nodeRequires: [['./species', 'species', 'root.SpeciesMod'], ['./engine', 'engine', 'root.EngineMod'], ['./store', 'store', 'root.LocalStore']],
-    browserArgs: 'root.SpeciesMod, root.EngineMod, root.LocalStore', params: 'species, engine, store' }
+    browserArgs: 'root.SpeciesMod, root.EngineMod, root.LocalStore', params: 'species, engine, store' },
+  // 星图规则也要在离线壳中运行同一份实现，避免服务端更新为三章而本地投影仍停在首章。
+  { src: 'adventure.js', out: 'adventure.umd.js', global: 'AdventureMod',
+    nodeRequires: [], browserArgs: '', params: '' }
 ];
 
 function toCamel(mod) { return mod; }

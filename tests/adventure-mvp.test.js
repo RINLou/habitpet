@@ -3,6 +3,7 @@
 const B = process.env.BASE_URL || 'http://127.0.0.1:3000';
 const RND = Math.floor(Math.random() * 1000000);
 const adventure = require('../lib/adventure');
+const adventureUmd = require('../public/lib/adventure.umd');
 let pass = 0, fail = 0;
 function ok(name, cond, extra) {
   if (cond) { pass++; console.log('  ✓', name, extra !== undefined ? JSON.stringify(extra) : ''); }
@@ -15,6 +16,7 @@ async function api(path, body, token) {
 
 // 纯函数回归：7 天连续完成不会碰数值，并且签名事件只记一次。
 (() => {
+  ok('离线星图模块与服务端三章定义一致', JSON.stringify(adventureUmd.CHAPTERS) === JSON.stringify(adventure.CHAPTERS));
   const child = { id: 'unit-child', pet: { speciesId: 'firam' }, feedDate: '', xp: 17, intimacy: 222, ledger: { balance: 9 } };
   const before = { xp: child.xp, intimacy: child.intimacy, ledger: child.ledger.balance };
   for (let i = 0; i < 7; i++) {
@@ -68,6 +70,16 @@ async function api(path, body, token) {
   const view = adventure.adventureView(child, `2026-02-${String(dayNo + 1).padStart(2, '0')}`);
   ok('三章二十一日主线全部完成', view.campaign.completed && view.campaign.completedChapters.length === 3 && view.story.lorePages.length === 21 && view.story.chapterEndings.length === 3);
   ok('终章后不再允许点亮下一章', !!adventure.advanceChapter(child, '2026-02-22').error);
+  const revisitDay = '2026-02-22';
+  child.feedDate = revisitDay;
+  const beforeRevisit = adventure.adventureView(child, revisitDay);
+  ok('终章后星图展示全部 21 个已访问节点', beforeRevisit.nodes.length === 21 && beforeRevisit.nodes.every(n => n.status === 'revisit'));
+  const signatureNodeId = adventure.SIGNATURE_BY_SPECIES.volt.nodeId;
+  const revisit = adventure.explore(child, signatureNodeId, revisitDay, undefined);
+  const afterRevisit = adventure.adventureView(child, revisitDay);
+  ok('终章后可回访首章签名地点并推进伙伴灯火', revisit.ok && afterRevisit.weeklyQuest && afterRevisit.weeklyQuest.tasks.find(t => t.id === 'signature-lamp').done);
+  const echoTask = afterRevisit.weeklyQuest && afterRevisit.weeklyQuest.tasks.find(t => t.id === 'echo-1');
+  ok('回声邮局首发目标为一次奇遇', !!echoTask && echoTask.target === 1);
   ok('三章主线不改变数值', child.xp === before.xp && child.intimacy === before.intimacy);
 })();
 

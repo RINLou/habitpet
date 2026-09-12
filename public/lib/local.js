@@ -4,7 +4,10 @@
 // 跨用户操作（打卡审批/核销申请/里程碑/好友/跨家庭对战）与家长端全部直连云端。
 (function () {
   'use strict';
-  var CloudURL = (location.protocol === 'file:') ? 'https://c95fc7cf46d04a318a7413ccdf8ea4d6.app.workbuddy.link' : '';
+  // APK 不能绑定临时 WorkBuddy 地址。发布构建会把正式 HTTPS 地址写入 runtime-config.js；
+  // 浏览器/PWA 继续走同源 API。空地址意味着该 APK 尚未完成发布配置。
+  var configuredApiBase = (typeof window.HABITPET_API_BASE === 'string' ? window.HABITPET_API_BASE : '').replace(/\/+$/, '');
+  var CloudURL = (location.protocol === 'file:') ? configuredApiBase : '';
   var S = {
     family: null,      // /api/sync/full 拉回的脱敏 raw family（本地权威工作副本）
     friends: [],       // childMe.friends 云端缓存
@@ -93,6 +96,8 @@
     { day: 7, id: 'starheart-sanctum', icon: '💫', name: '星心圣所', region: '灵汐核心', desc: '把七日收集的心光交给圣所，决定最后一束光要照向哪里。', intro: '七盏灵灯终于同时亮起。最后一束心光，要照向哪里？', clue: '灯光会熄灭，但愿意再次伸手的人，永远能找到新的火种。', choices: [{ id: 'ending-courage', label: '照亮最远的星路', desc: '让更多人看见前方。' }, { id: 'ending-kindness', label: '留给迷路的小影兽', desc: '先照亮眼前需要帮助的人。' }, { id: 'ending-return', label: '收进明天的愿望球', desc: '给下一次开始留一束光。' }] }
   ];
   function adventureLocalView(child) {
+    // 新壳优先使用与服务端同源的三章模块；下面的旧首章投影仅保留给已缓存旧 index 的过渡页。
+    if (window.AdventureMod && typeof window.AdventureMod.adventureView === 'function') return window.AdventureMod.adventureView(child, EN.dateKey());
     var a = child.adventure || {};
     // family 快照有时保存的是 adventureView（story 嵌套），有时是原始 adventure 数据；两种都要能离线继续展示。
     var remoteStory = (a.story && typeof a.story === 'object') ? a.story : {};
@@ -108,7 +113,7 @@
     var uniqueNodes = {}; records.forEach(function (x) { uniqueNodes[x.nodeId] = true; });
     var weeklyQuest = chapterCompleted ? { weekKey: week, title: '本周回访任务', tasks: [
       { id: 'patrol-3', icon: '🧭', title: '巡游三地', desc: '本周回访 3 个不同地点', target: 3, progress: Math.min(3, Object.keys(uniqueNodes).length) },
-      { id: 'echo-2', icon: '📮', title: '回声邮局', desc: '本周收集 2 个奇遇回声', target: 2, progress: Math.min(2, records.filter(function (x) { return x.randomEvent; }).length) },
+      { id: 'echo-1', icon: '📮', title: '回声邮局', desc: '本周收集 1 个奇遇回声', target: 1, progress: Math.min(1, records.filter(function (x) { return x.randomEvent; }).length) },
       { id: 'signature-lamp', icon: '🏮', title: '伙伴灯火', desc: '回到灵伴的签名地点 1 次', target: 1, progress: Math.min(1, records.filter(function (x) { return x.signature; }).length) }
     ] } : null;
     if (weeklyQuest) { weeklyQuest.tasks.forEach(function (t) { t.done = t.progress >= t.target; }); weeklyQuest.completed = weeklyQuest.tasks.filter(function (t) { return t.done; }).length; weeklyQuest.total = weeklyQuest.tasks.length; }

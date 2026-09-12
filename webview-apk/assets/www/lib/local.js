@@ -4,11 +4,16 @@
 // 跨用户操作（打卡审批/核销申请/里程碑/好友/跨家庭对战）与家长端全部直连云端。
 (function () {
   'use strict';
-  var CloudURL = (location.protocol === 'file:') ? 'https://c95fc7cf46d04a318a7413ccdf8ea4d6.app.workbuddy.link' : '';
+  // APK 不能绑定临时 WorkBuddy 地址。发布构建会把正式 HTTPS 地址写入 runtime-config.js；
+  // 浏览器/PWA 继续走同源 API。空地址意味着该 APK 尚未完成发布配置。
+  var configuredApiBase = (typeof window.HABITPET_API_BASE === 'string' ? window.HABITPET_API_BASE : '').replace(/\/+$/, '');
+  var CloudURL = (location.protocol === 'file:') ? configuredApiBase : '';
   var S = {
     family: null,      // /api/sync/full 拉回的脱敏 raw family（本地权威工作副本）
     friends: [],       // childMe.friends 云端缓存
     invites: [],       // childMe.invites 云端缓存
+    childStates: {},   // [childId] 云端 childMe 的 onboarding/returnNudge 视图缓存（离线展示用）
+    lastState: null,   // 最近一次云端完整 childMe 视图（无 family 快照时的离线兜底）
     token: '', role: '', currentChildId: '',
     oplog: [],         // [{path, body, ts}]
     pendingFinishes: [], // [{battleId, mode, oppLevel, win, ts}]
@@ -25,7 +30,7 @@
 
   // —— 持久化 ——
   function persist() {
-    DB.kvSet('state', { family: S.family, oplog: S.oplog, pendingFinishes: S.pendingFinishes, token: S.token, role: S.role, childId: S.currentChildId }).catch(function () {});
+    DB.kvSet('state', { family: S.family, oplog: S.oplog, pendingFinishes: S.pendingFinishes, token: S.token, role: S.role, childId: S.currentChildId, childStates: S.childStates, lastState: S.lastState }).catch(function () {});
   }
   function persistFamily() { persist(); }
 
@@ -43,6 +48,102 @@
       skills: skills, stage: st.name, stageKey: st.key,
       xp: child.xp, xpNext: EN.xpForLevel(child.level + 1), xpCur: EN.xpForLevel(child.level), level: child.level,
       tier: sp.tier || null, fainted: !!child.fainted
+    };
+  }
+  // P1 修正：server.js dayDiff 的本地复刻（两个 YYYY-MM-DD 的自然日差，b - a）
+  function obDayDiff(a, b) {
+    var pa = a.split('-').map(Number), pb = b.split('-').map(Number);
+    return Math.round((new Date(pb[0], pb[1] - 1, pb[2]) - new Date(pa[0], pa[1] - 1, pa[2])) / 86400000);
+  }
+  // P1 修正：server.js onboardingView 的本地复刻（无云端缓存视图时由 raw family 现算，离线不丢计划卡）。
+  // 与服务端的差异：惰性滚转只做视图级镜像（active 且已过第 7 自然日 → 按 expired 展示），
+  // 不改 raw 数据、不归档 history——滚转落库永远由云端权威完成，pull 对齐后自动一致。
+  function onboardingLocalView(child) {
+    var ob = child.onboarding;
+    if (!ob || typeof ob !== 'object') ob = {};
+    var today = EN.dateKey();
+    var status = ob.status || 'not_started';
+    var finishedOn = ob.finishedOn || null;
+    if (status === 'active' && ob.startedOn && obDayDiff(ob.startedOn, today) > 6) {
+      status = 'expired'; finishedOn = finishedOn || today;
+    }
+    var active = status === 'active' && !!ob.startedOn;
+    var off = active ? obDayDiff(ob.startedOn, today) : -1;
+    var todayComplete = active && (ob.completedOn || []).indexOf(today) >= 0;
+    var history = Array.isArray(ob.history) ? ob.history : [];
+    return {
+      status: status, planId: ob.planId || null, startedOn: ob.startedOn || null, finishedOn: finishedOn,
+      dayIndex: active ? Math.min(7, Math.max(1, off + 1)) : null,
+      completedOn: (ob.completedOn || []).slice(),
+      todayComplete: todayComplete,
+      canCompleteToday: active && off >= 0 && off <= 6 && !todayComplete,
+      canStart: ['not_started', 'expired', 'completed'].indexOf(status) >= 0,
+      showStartPrompt: status === 'not_started' && ob.lastDismissedOn !== today,
+      canRestart: status === 'expired' || status === 'completed',
+      historySummary: history.slice(-3).map(function (h) {
+        return { planId: h.planId, startedOn: h.startedOn, completedCount: (h.completedOn || []).length, status: h.status, finishedOn: h.finishedOn || null };
+      })
+    };
+  }
+  // 星图冒险的离线投影：云端 lastState 优先，已有 family 快照时也不让星图卡消失。
+  var ADVENTURE_ROUTE = [
+    { day: 1, id: 'starlight-gate', icon: '✦', name: '星海关口', region: '星海边境', desc: '第一盏灵灯熄灭了。把今天的心光送上星图，听见远方灵伴的回声。', intro: '星海守门人说，七盏灵灯正在逐一变暗。每一次真正做到的小事，都能让它亮一点。', clue: '灵灯并不要求完美，它只会回应真实的行动。', choices: [{ id: 'record-promise', label: '先记下今天的愿望', desc: '把微光收进星历。' }, { id: 'follow-spark', label: '顺着微光立刻出发', desc: '追上正在远去的光点。' }] },
+    { day: 2, id: 'ember-trail', icon: '🔥', name: '赤曜荒原', region: '焰光边境', desc: '穿过温热的风沙，寻找一枚还没有熄灭的心光种子。', intro: '荒原信使抱着一枚将熄的心光种子，它可能来不及把灯芯送回去。', clue: '心光会在愿意停下来帮助别人的人身边停留。', choices: [{ id: 'escort-messenger', label: '陪信使一起走', desc: '慢一点，但不让它独自赶路。' }, { id: 'trace-ash', label: '追踪风沙里的浊气', desc: '先找出是谁吹散了灯火。' }] },
+    { day: 3, id: 'moon-tide', icon: '🌙', name: '月见潮汐', region: '潮汐边境', desc: '沿着月光下的潮线前进，寻找一段会发光的回忆。', intro: '潮水退去，一段被抹去的星历浮出水面。', clue: '当人们只记得没做到的事，浊气便有了声音。', choices: [{ id: 'keep-shell', label: '留下“再试一步”的贝壳', desc: '把它收进星历。' }, { id: 'return-shell', label: '把贝壳还给潮汐', desc: '让下一个迷路的人也能找到它。' }] },
+    { day: 4, id: 'shadow-bridge', icon: '🌉', name: '影桥回廊', region: '暮影峡谷', desc: '穿过会回应脚步的长桥，学会和犹豫相处。', intro: '影桥把每个人没能完成的约定映在桥面。今天还愿意再走一步吗？', clue: '浊气最喜欢把一次中断，说成永远的失败。', choices: [{ id: 'speak-to-shadow', label: '和影子说说话', desc: '承认自己也会有没做到的时候。' }, { id: 'cross-together', label: '牵着灵伴一起过桥', desc: '先一起迈出下一步。' }] },
+    { day: 5, id: 'green-rain', icon: '🌿', name: '翠雨林地', region: '森语边境', desc: '在温柔的绿雨里收集一颗愿意发芽的种子。', intro: '最后两盏灵灯需要的不是更大的火，而是有人愿意相信小种子也会发芽。', clue: '被照顾的愿望会慢慢生根，也会学着照亮别人。', choices: [{ id: 'plant-seed', label: '把种子种在这里', desc: '留给后来经过的人。' }, { id: 'carry-seed', label: '带着种子继续走', desc: '让它看看星心圣所的光。' }] },
+    { day: 6, id: 'stone-pass', icon: '⛰️', name: '磐石隘口', region: '大地边境', desc: '沿着古老的石阶上行，面对守着最后灯芯的浊灵。', intro: '浊灵守着灯芯问：你们总会停下，为什么还要点灯？', clue: '真正的勇气不是从不跌倒，而是在跌倒后知道下一步往哪里走。', choices: [{ id: 'show-footprints', label: '给浊灵看一路的脚印', desc: '告诉它，你们不是没有停过。' }, { id: 'share-light', label: '分给浊灵一束心光', desc: '让它亲眼看看光会怎样回来。' }] },
+    { day: 7, id: 'starheart-sanctum', icon: '💫', name: '星心圣所', region: '灵汐核心', desc: '把七日收集的心光交给圣所，决定最后一束光要照向哪里。', intro: '七盏灵灯终于同时亮起。最后一束心光，要照向哪里？', clue: '灯光会熄灭，但愿意再次伸手的人，永远能找到新的火种。', choices: [{ id: 'ending-courage', label: '照亮最远的星路', desc: '让更多人看见前方。' }, { id: 'ending-kindness', label: '留给迷路的小影兽', desc: '先照亮眼前需要帮助的人。' }, { id: 'ending-return', label: '收进明天的愿望球', desc: '给下一次开始留一束光。' }] }
+  ];
+  function adventureLocalView(child) {
+    // 新壳优先使用与服务端同源的三章模块；下面的旧首章投影仅保留给已缓存旧 index 的过渡页。
+    if (window.AdventureMod && typeof window.AdventureMod.adventureView === 'function') return window.AdventureMod.adventureView(child, EN.dateKey());
+    var a = child.adventure || {};
+    // family 快照有时保存的是 adventureView（story 嵌套），有时是原始 adventure 数据；两种都要能离线继续展示。
+    var remoteStory = (a.story && typeof a.story === 'object') ? a.story : {};
+    var today = EN.dateKey();
+    var visited = Array.isArray(a.visited) ? a.visited.slice(-30) : [];
+    var completedDays = Array.isArray(a.completedDays) ? a.completedDays : [];
+    var chapterDay = Number.isInteger(a.chapterDay) ? a.chapterDay : 1;
+    var chapterCompleted = completedDays.length >= 7 || !!a.chapterCompletedAt;
+    var completedToday = a.lastPlayedOn === today;
+    var canPlay = !!child.pet && !child.fainted && !child.pausedAt && child.feedDate === today && !completedToday;
+    var weekKey = function (date) { var d = new Date(String(date) + 'T00:00:00Z'); var day = d.getUTCDay() || 7; d.setUTCDate(d.getUTCDate() - day + 1); return d.toISOString().slice(0, 10); };
+    var week = weekKey(today), records = Array.isArray(a.discoveries) ? a.discoveries.filter(function (x) { return x && x.playedOn && weekKey(x.playedOn) === week; }) : [];
+    var uniqueNodes = {}; records.forEach(function (x) { uniqueNodes[x.nodeId] = true; });
+    var weeklyQuest = chapterCompleted ? { weekKey: week, title: '本周回访任务', tasks: [
+      { id: 'patrol-3', icon: '🧭', title: '巡游三地', desc: '本周回访 3 个不同地点', target: 3, progress: Math.min(3, Object.keys(uniqueNodes).length) },
+      { id: 'echo-1', icon: '📮', title: '回声邮局', desc: '本周收集 1 个奇遇回声', target: 1, progress: Math.min(1, records.filter(function (x) { return x.randomEvent; }).length) },
+      { id: 'signature-lamp', icon: '🏮', title: '伙伴灯火', desc: '回到灵伴的签名地点 1 次', target: 1, progress: Math.min(1, records.filter(function (x) { return x.signature; }).length) }
+    ] } : null;
+    if (weeklyQuest) { weeklyQuest.tasks.forEach(function (t) { t.done = t.progress >= t.target; }); weeklyQuest.completed = weeklyQuest.tasks.filter(function (t) { return t.done; }).length; weeklyQuest.total = weeklyQuest.tasks.length; }
+    var nodes = ADVENTURE_ROUTE.map(function (n) {
+      var seen = visited.indexOf(n.id) >= 0;
+      var status = 'locked';
+      if (chapterCompleted && seen) status = 'revisit';
+      else if (completedDays.indexOf(n.day) >= 0) status = 'completed';
+      else if (!chapterCompleted && n.day === chapterDay) status = 'current';
+      return Object.assign({}, n, { nextIds: n.day < 7 ? [ADVENTURE_ROUTE[n.day].id] : [], visited: seen, status: status, available: canPlay && (status === 'current' || status === 'revisit') });
+    });
+    return {
+      chapter: { id: 'first-starlight', title: '第一章·熄灭的七盏灵灯', subtitle: '连续七天，找回七束心光；不必完美，也能重新点亮前路。', totalDays: 7 },
+      chapterDay: chapterDay, totalDays: 7, completedDays: completedDays.slice(), chapterCompleted: chapterCompleted,
+      chapterCompletedAt: a.chapterCompletedAt || null, completedChapters: Array.isArray(a.chapterCompletions) ? a.chapterCompletions.slice(-5) : [],
+      available: canPlay && (chapterCompleted ? visited.length > 0 : true), revisitAvailable: chapterCompleted && visited.length > 0,
+      completedToday: completedToday, lastPlayedOn: a.lastPlayedOn || null,
+      currentNodeId: a.currentNodeId || null, visited: visited,
+      discoveries: Array.isArray(a.discoveries) ? a.discoveries.slice(-10) : [],
+      signatureEvents: Array.isArray(a.signatureEvents) ? a.signatureEvents.slice(-10) : [],
+      randomEvents: Array.isArray(a.randomEvents) ? a.randomEvents.slice(-10) : [],
+      story: {
+        choices: Array.isArray(a.storyChoices) ? a.storyChoices.slice(-7) : (Array.isArray(remoteStory.choices) ? remoteStory.choices.slice(-7) : []),
+        lorePages: Array.isArray(a.lorePages) ? a.lorePages.slice(-7) : (Array.isArray(remoteStory.lorePages) ? remoteStory.lorePages.slice(-7) : []),
+        companionBeats: Array.isArray(a.companionBeats) ? a.companionBeats.slice(-8) : (Array.isArray(remoteStory.companionBeats) ? remoteStory.companionBeats.slice(-8) : []),
+        chapterEnding: a.chapterEnding || remoteStory.chapterEnding || null,
+        chapterEndings: Array.isArray(a.chapterEndings) ? a.chapterEndings.slice(-3) : (Array.isArray(remoteStory.chapterEndings) ? remoteStory.chapterEndings.slice(-3) : []),
+        revisitNotes: Array.isArray(a.revisitNotes) ? a.revisitNotes.slice(-6) : (Array.isArray(remoteStory.revisitNotes) ? remoteStory.revisitNotes.slice(-6) : [])
+      },
+      weeklyQuest: weeklyQuest, lastResult: a.lastResult || null, nodes: nodes
     };
   }
   function childMe(family, child) {
@@ -75,6 +176,18 @@
       eligibility: EN.hiddenPetEligibility(child),
       friendCode: localFriendCode(child),
       friends: S.friends, invites: S.invites,
+      // P1 修正：本地投影 onboarding/returnNudge——优先云端缓存视图，缺失时由 raw family 现算（离线不丢计划卡）
+      onboarding: (function () {
+        var cached = S.childStates[child.id];
+        if (cached && cached.onboarding) return cached.onboarding;
+        return onboardingLocalView(child);
+      })(),
+      returnNudge: (function () {
+        var cached = S.childStates[child.id];
+        if (cached && cached.returnNudge) return cached.returnNudge;
+        return { show: false, gapDays: 0, gapKey: null };   // 回归提示的展示/确认永远由服务端裁决
+      })(),
+      adventure: adventureLocalView(child),
       siblings: Object.values(family.children).map(function (c) { return { id: c.id, name: c.name, intimacy: c.intimacy, level: c.level, petEmoji: c.pet ? (speciesById(c.pet.speciesId) || {}).emoji : '⚪' }; })
     };
   }
@@ -300,26 +413,48 @@
   }
   function bootChild(token) {
     S.token = token; S.role = 'child';
+    ensurePeriodicPull();
     return DB.kvGet('state').then(function (st) {
-      if (!st || !st.family || st.token !== token) return null;
-      S.family = st.family; S.oplog = st.oplog || []; S.pendingFinishes = st.pendingFinishes || [];
+      if (!st || st.token !== token) return null;
+      S.family = st.family || null; S.oplog = st.oplog || []; S.pendingFinishes = st.pendingFinishes || [];
+      S.childStates = st.childStates || {}; S.lastState = st.lastState || null;
       S.currentChildId = st.childId || '';
-      var child = S.currentChildId && S.family.children[S.currentChildId];
-      if (!child && Object.keys(S.family.children).length === 1) child = Object.values(S.family.children)[0];
-      if (!child) return null;
+      var child = S.currentChildId && S.family && S.family.children[S.currentChildId];
+      if (!child && S.family && Object.keys(S.family.children).length === 1) child = Object.values(S.family.children)[0];
       if (S.oplog.length) flush();
       if (S.pendingFinishes.length) flushFinishes();
-      return childMe(S.family, child);
+      schedulePull(800);   // 启动后立刻对齐云端（家长改的配置/奖励及时生效），oplog 未清时 pull 会自行跳过
+      if (child) {
+        // 章节切换响应先写 lastState，家庭快照随后异步 pull；两者章节不一致时优先权威完整视图，避免离线重启倒回旧章节。
+        if (S.lastState && S.lastState.id === child.id && S.lastState.adventure && S.lastState.adventure.chapter
+          && child.adventure && S.lastState.adventure.chapter.id !== child.adventure.chapterId) return S.lastState;
+        return childMe(S.family, child);
+      }
+      // 无 family 快照（从未触发 sync/full）：退回最近一次云端完整视图，离线也不丢计划卡
+      return S.lastState && S.lastState.id ? S.lastState : null;
     }).catch(function () { return null; });
   }
 
-  // 云端 childMe 响应回来时更新缓存（friends/invites 等云端数据）
+  // 云端 childMe 响应回来时更新缓存（friends/invites/onboarding/returnNudge/完整视图）
   function updateFromState(state) {
     if (!state || !state.id) return;
     if (state.friends) S.friends = state.friends;
     if (state.invites) S.invites = state.invites;
+    if (state.onboarding || state.returnNudge) {
+      S.childStates[state.id] = { onboarding: state.onboarding || null, returnNudge: state.returnNudge || null, ts: Date.now() };
+    }
+    S.lastState = state;
     if (!S.currentChildId) S.currentChildId = state.id;
+    schedulePull(800);   // 云端响应到达说明在线：尽快刷新本地家庭工作副本（家长配置改动生效）
     persist();
+  }
+
+  // 周期性对齐（每 60s）：孩子端闲置时家长改配置/奖励也能及时生效
+  function ensurePeriodicPull() {
+    if (S._periodicTimer) return;
+    S._periodicTimer = setInterval(function () {
+      if (S.token && S.role === 'child' && !S.oplog.length && document.visibilityState !== 'hidden') pull();
+    }, 60000);
   }
 
   // —— 对外：API 分流 ——
@@ -337,6 +472,9 @@
           if (OPLOG_APIS[path]) { S.oplog.push({ path: path, body: body || {}, ts: Date.now() }); }
           persistFamily();
           flush();
+        } else if (out && out.error) {
+          // 本地拒绝（如投喂时段不符）：可能是本地配置过期，立刻对齐云端后重试即用新规则
+          schedulePull(600);
         }
         return out;
       }
@@ -349,7 +487,8 @@
 
   // 清空本地（登出/换账号）
   function reset() {
-    S.family = null; S.friends = []; S.invites = []; S.oplog = []; S.pendingFinishes = []; S.token = ''; S.role = ''; S.currentChildId = '';
+    if (S._periodicTimer) { clearInterval(S._periodicTimer); S._periodicTimer = null; }
+    S.family = null; S.friends = []; S.invites = []; S.childStates = {}; S.lastState = null; S.oplog = []; S.pendingFinishes = []; S.token = ''; S.role = ''; S.currentChildId = '';
     DB.kvDel('state').catch(function () {});
   }
 
