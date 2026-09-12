@@ -44,6 +44,33 @@ async function api(path, body, token) {
   ok('八只普通灵伴均有三段关系入口', allArcEntries);
 })();
 
+// 三章主线：每章七日、完成后显式点亮下一章；全程不改变数值。
+(() => {
+  const child = { id: 'campaign-child', pet: { speciesId: 'volt' }, xp: 31, intimacy: 188 };
+  const before = { xp: child.xp, intimacy: child.intimacy };
+  let dayNo = 0;
+  adventure.CHAPTERS.forEach((chapter, chapterIndex) => {
+    chapter.nodes.forEach((node, nodeIndex) => {
+      dayNo++;
+      const today = `2026-02-${String(dayNo).padStart(2, '0')}`;
+      child.feedDate = today;
+      const choice = node.choices[nodeIndex === chapter.nodes.length - 1 ? 0 : nodeIndex % 2];
+      const result = adventure.explore(child, node.id, today, choice.id);
+      ok(`${chapter.title} D${node.day} 可完成`, result.ok && result.result.chapterId === chapter.id);
+    });
+    const state = adventure.ensureState(child);
+    ok(`${chapter.title} 结语与章节记录落盘`, state.chapterId === chapter.id && state.chapterCompletedAt && state.chapterCompletions.some(x => x.chapterId === chapter.id) && state.chapterEndings.some(x => x.chapterId === chapter.id));
+    if (chapterIndex < adventure.CHAPTERS.length - 1) {
+      const advanced = adventure.advanceChapter(child, `2026-02-${String(dayNo).padStart(2, '0')}`);
+      ok(`${chapter.title} 可显式点亮下一章`, advanced.ok && advanced.chapter.id === adventure.CHAPTERS[chapterIndex + 1].id);
+    }
+  });
+  const view = adventure.adventureView(child, `2026-02-${String(dayNo + 1).padStart(2, '0')}`);
+  ok('三章二十一日主线全部完成', view.campaign.completed && view.campaign.completedChapters.length === 3 && view.story.lorePages.length === 21 && view.story.chapterEndings.length === 3);
+  ok('终章后不再允许点亮下一章', !!adventure.advanceChapter(child, '2026-02-22').error);
+  ok('三章主线不改变数值', child.xp === before.xp && child.intimacy === before.intimacy);
+})();
+
 (async () => {
   const reg = await api('/api/register', { username: 'adventure' + RND, password: 'pass123', familyName: '星图测试家' });
   const parent = reg.token;
@@ -58,6 +85,8 @@ async function api(path, body, token) {
   ok('孩子状态包含 7 日星图', before.adventure && before.adventure.nodes.length === 7 && before.adventure.totalDays === 7);
   const stateApi = await api('/api/adventure/state', {}, token);
   ok('星图状态端点可读', stateApi.ok && stateApi.state && stateApi.state.nodes.length === 7);
+  const prematureAdvance = await api('/api/adventure/advance', {}, token);
+  ok('未完成章节不可点亮下一章', !!prematureAdvance.error && prematureAdvance.state && prematureAdvance.state.adventure.campaign.currentIndex === 1);
   ok('未投喂前星图不可出发', before.adventure && before.adventure.available === false);
   const locked = await api('/api/adventure/explore', { nodeId: 'starlight-gate' }, token);
   ok('未投喂探索被拦截', !!locked.error && locked.state && locked.state.adventure.available === false);

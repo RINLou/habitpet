@@ -135,6 +135,7 @@
         lorePages: Array.isArray(a.lorePages) ? a.lorePages.slice(-7) : (Array.isArray(remoteStory.lorePages) ? remoteStory.lorePages.slice(-7) : []),
         companionBeats: Array.isArray(a.companionBeats) ? a.companionBeats.slice(-8) : (Array.isArray(remoteStory.companionBeats) ? remoteStory.companionBeats.slice(-8) : []),
         chapterEnding: a.chapterEnding || remoteStory.chapterEnding || null,
+        chapterEndings: Array.isArray(a.chapterEndings) ? a.chapterEndings.slice(-3) : (Array.isArray(remoteStory.chapterEndings) ? remoteStory.chapterEndings.slice(-3) : []),
         revisitNotes: Array.isArray(a.revisitNotes) ? a.revisitNotes.slice(-6) : (Array.isArray(remoteStory.revisitNotes) ? remoteStory.revisitNotes.slice(-6) : [])
       },
       weeklyQuest: weeklyQuest, lastResult: a.lastResult || null, nodes: nodes
@@ -418,7 +419,12 @@
       if (S.oplog.length) flush();
       if (S.pendingFinishes.length) flushFinishes();
       schedulePull(800);   // 启动后立刻对齐云端（家长改的配置/奖励及时生效），oplog 未清时 pull 会自行跳过
-      if (child) return childMe(S.family, child);
+      if (child) {
+        // 章节切换响应先写 lastState，家庭快照随后异步 pull；两者章节不一致时优先权威完整视图，避免离线重启倒回旧章节。
+        if (S.lastState && S.lastState.id === child.id && S.lastState.adventure && S.lastState.adventure.chapter
+          && child.adventure && S.lastState.adventure.chapter.id !== child.adventure.chapterId) return S.lastState;
+        return childMe(S.family, child);
+      }
       // 无 family 快照（从未触发 sync/full）：退回最近一次云端完整视图，离线也不丢计划卡
       return S.lastState && S.lastState.id ? S.lastState : null;
     }).catch(function () { return null; });

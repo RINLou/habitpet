@@ -791,17 +791,20 @@ async function dismissOnboarding() {
   else toast(r.error || '稍后再试', true);
 }
 
-// —— 星图冒险：7 日章节路线、灵伴签名事件与不改数值的随机奇遇 ————————————————
+// —— 星图冒险：三章 21 日主线、灵伴签名事件与不改数值的随机奇遇 ————————————————
 function adventureCard() {
   const a = me.adventure;
   if (!a || !Array.isArray(a.nodes) || !a.nodes.length) return '';
   const result = a.lastResult;
   const storyState = a.story || {};
   const ending = storyState.chapterEnding;
+  const campaign = a.campaign || {};
+  const nextChapter = campaign.nextChapter;
+  const campaignLine = campaign.totalChapters ? `<div class="adventure-campaign"><span>主线</span><b>${campaign.currentIndex}/${campaign.totalChapters} 章</b><small>${(campaign.chapters || []).map(c => c.status === 'completed' || c.status === 'completed-current' ? '●' : c.status === 'current' ? '◉' : c.status === 'unlocked' ? '○' : '·').join(' ')}</small></div>` : '';
   const status = a.completedToday
-    ? (a.chapterCompleted ? '首章已经毕业，今天可以回访走过的节点。' : `第 ${a.chapterDay}/${a.totalDays} 日已点亮，明天继续沿星光前进。`)
+    ? (a.chapterCompleted ? '本章已完成；明天可回访，或点亮下一章。' : `第 ${a.chapterDay}/${a.totalDays} 日已点亮，明天继续沿星光前进。`)
     : a.available
-      ? (a.chapterCompleted ? '首章已完成，今天可以回访任意已走过的节点。' : `完成投喂后，前往第 ${a.chapterDay}/${a.totalDays} 日节点。`)
+      ? (a.chapterCompleted ? '本章已完成，今天可以回访任意已走过的节点。' : `完成投喂后，前往第 ${a.chapterDay}/${a.totalDays} 日节点。`)
       : '今天先照顾灵伴；章节进度会保留，明天从原来的地方继续。';
   const nodes = a.nodes.map((n, i) => {
     const label = n.status === 'completed' ? '已完成' : n.status === 'current' ? `第 ${n.day} 日` : n.status === 'revisit' ? '可回访' : '未解锁';
@@ -819,23 +822,24 @@ function adventureCard() {
   const quest = q ? `<div class="adventure-quests"><div class="quest-head"><b>📌 ${esc(q.title)}</b><span>${q.completed}/${q.total}</span></div>${q.tasks.map(t => `<div class="quest-item ${t.done ? 'done' : ''}"><span>${t.icon}</span><span>${esc(t.title)}<small>${esc(t.desc)}</small></span><b>${t.progress}/${t.target}${t.done ? ' ✓' : ''}</b></div>`).join('')}</div>` : '';
   return `<div class="adventure-card">
     <div class="adventure-head"><div><div class="onboarding-title">🗺️ ${esc(a.chapter && a.chapter.title || '首章·星光启程')}</div><div class="lead">${status}</div></div><span class="badge ${a.completedToday ? 'g' : a.available ? 'a' : ''}">${a.chapterCompleted ? '可回访' : a.completedToday ? '已完成' : a.available ? '可出发' : '待解锁'}</span></div>
+    ${campaignLine}
     <div class="adventure-progress"><span>章节进度</span><b>${a.completedDays.length}/${a.totalDays} 日</b><span>${a.chapterCompleted ? '毕业印记已保存' : `当前第 ${a.chapterDay} 日`}</span></div>
     ${result && a.completedToday ? `<div class="adventure-result"><span>${result.icon}</span><div><b>D${result.day} · ${esc(result.nodeName)}</b><div>${esc(result.story)}</div>${extra}</div></div>` : ''}
     ${ending && !a.completedToday ? `<div class="story-ending-mini">✦ 章节结语·${esc(ending.title)}：${esc(ending.story)}</div>` : ''}
     ${quest}
     <div class="adventure-nodes">${nodes}</div>
-    <div class="row adventure-actions"><button class="btn sm ghost" onclick="showAdventureAlbum()">📚 星光相册（${a.discoveries.length}）</button><span class="muted-line">探索不会改变经验和亲密度</span></div>
+    <div class="row adventure-actions">${nextChapter ? `<button class="btn sm" ${a.completedToday ? 'disabled' : ''} onclick="advanceAdventureChapter()">✦ 点亮下一章</button>` : ''}<button class="btn sm ghost" onclick="showAdventureAlbum()">📚 星光相册（${a.discoveries.length}）</button><span class="muted-line">探索不会改变经验和亲密度</span></div>
   </div>`;
 }
 function showAdventureAlbum() {
   const a = me && me.adventure;
   if (!a) return;
   const s = a.story || {};
-  const rows = (a.discoveries || []).slice().reverse().map(x => `<div class="item"><span style="font-size:20px">${x.icon || '✦'}</span><div class="t"><div class="n">D${x.day || '·'} · ${esc(x.nodeName || '星图发现')}</div><div class="s">${esc(x.story || '')}${x.choice ? `<br>选择：${esc(x.choice.label)}` : ''}${x.signature ? `<br>✨ ${esc(x.signature.title)}` : ''}${x.randomEvent ? `<br>🎲 ${esc(x.randomEvent.title)}` : ''}</div></div></div>`).join('');
+  const rows = (a.discoveries || []).slice().reverse().map(x => `<div class="item"><span style="font-size:20px">${x.icon || '✦'}</span><div class="t"><div class="n">${x.chapterTitle ? `${esc(x.chapterTitle)} · ` : ''}D${x.day || '·'} · ${esc(x.nodeName || '星图发现')}</div><div class="s">${esc(x.story || '')}${x.choice ? `<br>选择：${esc(x.choice.label)}` : ''}${x.signature ? `<br>✨ ${esc(x.signature.title)}` : ''}${x.randomEvent ? `<br>🎲 ${esc(x.randomEvent.title)}` : ''}</div></div></div>`).join('');
   const lore = (s.lorePages || []).map(x => `<div class="story-album-row"><b>📜 ${esc(x.title)}</b><span>${esc(x.story)}</span></div>`).join('');
   const letters = (s.companionBeats || []).map(x => `<div class="story-album-row"><b>${esc(x.icon || '💌')} ${esc(x.title)}</b><span>${esc(x.story)}</span></div>`).join('');
-  const ending = s.chapterEnding ? `<div class="story-ending-mini">✦ 章节结语·${esc(s.chapterEnding.title)}：${esc(s.chapterEnding.story)}</div>` : '';
-  openModal(`<h3>📚 星光相册</h3><div class="lead">节点故事、旧星历和灵伴写给你的信</div>${ending}${lore ? `<h4>📜 旧星历</h4>${lore}` : ''}${letters ? `<h4>💌 灵伴来信</h4>${letters}` : ''}<h4>🗺️ 冒险记录</h4>${rows || '<div class="muted-line">还没有发现，完成今天的投喂后出发吧。</div>'}<button class="btn ghost" onclick="closeModal()">关闭</button>`);
+  const endings = (s.chapterEndings || (s.chapterEnding ? [s.chapterEnding] : [])).map(x => `<div class="story-ending-mini">✦ ${esc(x.chapterTitle || '章节结语')} · ${esc(x.title)}：${esc(x.story)}</div>`).join('');
+  openModal(`<h3>📚 星光相册</h3><div class="lead">三章故事、星历和灵伴写给你的信</div>${endings}${lore ? `<h4>📜 星历档案</h4>${lore}` : ''}${letters ? `<h4>💌 灵伴来信</h4>${letters}` : ''}<h4>🗺️ 冒险记录</h4>${rows || '<div class="muted-line">还没有发现，完成今天的投喂后出发吧。</div>'}<button class="btn ghost" onclick="closeModal()">关闭</button>`);
 }
 function openAdventureChoice(nodeId) {
   const a = me && me.adventure;
@@ -855,6 +859,13 @@ async function exploreAdventure(nodeId, choiceId) {
     const bits = [r.result.story, r.result.choice && `你的选择：${r.result.choice.label}。${r.result.choice.outcome}`, r.result.companionBeat && `💌 ${r.result.companionBeat.title}：${r.result.companionBeat.story}`, r.result.chapterEnding && `✦ ${r.result.chapterEnding.title}：${r.result.chapterEnding.story}`, r.result.signature && `✨ ${r.result.signature.title}：${r.result.signature.story}`, r.result.randomEvent && `🎲 ${r.result.randomEvent.title}：${r.result.randomEvent.story}`].filter(Boolean);
     showFx({ title: `${r.result.icon} ${r.result.nodeName}`, sub: esc(bits.join('\n')), btn: '收下这段星光', auto: 6500, sound: 'coin', speak: bits.join(' ') });
   }
+  renderChild();
+}
+async function advanceAdventureChapter() {
+  const r = await api('/api/adventure/advance', {});
+  if (r.error) { if (r.state) me = r.state; return toast(r.error, true); }
+  me = r.state;
+  toast(`已点亮 ${r.chapter.title}，明天带着心光继续出发。`);
   renderChild();
 }
 // 温和回归：服务端判定 show 才弹；session 内同 gapKey 只弹一次；ack 不阻塞 UI
@@ -1391,7 +1402,8 @@ function parentOverview() {
     const last = a && a.lastResult;
     const q = a && a.weeklyQuest;
     const ending = a && a.story && a.story.chapterEnding;
-    const adventureSummary = a ? `<div class="parent-adventure-summary"><b>🗺️ 星图 ${a.completedDays.length}/${a.totalDays} 日${a.chapterCompleted ? ' · 已毕业' : ` · 当前第 ${a.chapterDay} 日`}</b><span>${last ? `最近：${esc(last.nodeName)}${last.choice ? ` · 选择「${esc(last.choice.label)}」` : ''}${last.randomEvent ? ' · 🎲 奇遇' : ''}${last.signature ? ' · ✨ 签名' : ''}` : '还没有冒险记录'}</span>${ending ? `<span>章节结语：${esc(ending.title)}</span>` : ''}${q ? `<span>本周任务：${q.completed}/${q.total} 完成</span>` : ''}</div>` : '';
+    const campaign = a && a.campaign;
+    const adventureSummary = a ? `<div class="parent-adventure-summary"><b>🗺️ ${campaign ? `主线 ${campaign.currentIndex}/${campaign.totalChapters} 章 · ` : ''}星图 ${a.completedDays.length}/${a.totalDays} 日${a.chapterCompleted ? ' · 本章已完成' : ` · 当前第 ${a.chapterDay} 日`}</b><span>${last ? `最近：${esc(last.nodeName)}${last.choice ? ` · 选择「${esc(last.choice.label)}」` : ''}${last.randomEvent ? ' · 🎲 奇遇' : ''}${last.signature ? ' · ✨ 签名' : ''}` : '还没有冒险记录'}</span>${ending ? `<span>章节结语：${esc(ending.title)}</span>` : ''}${q ? `<span>本周任务：${q.completed}/${q.total} 完成</span>` : ''}</div>` : '';
     return `
     <div class="card">
       <h3>${c.pet ? c.pet.emoji : '🥚'} ${esc(c.name)} <span class="badge">${esc(c.grade || '')}</span> ${c.paused ? '<span class="badge a">暂停计</span>' : ''}</h3>

@@ -18,8 +18,8 @@ Error: listen EADDRINUSE: address already in use :::3000
 - The existing local application service already owned port 3000.
 
 ### Resolution
-- **Resolved**: 2026-09-08T19:25:00+08:00
-- **Notes**: Do not stop or replace the existing service. Reuse it for `npm run test:anim`; use `npm test` for isolated server regression.
+- **Resolved**: 2026-09-13T00:00:00+08:00
+- **Notes**: `npm run test:anim` now uses `scripts/run-anim-tests.js` to allocate an isolated random port and temporary data directory; no pre-existing local service is required.
 
 ### Metadata
 - Reproducible: yes
@@ -56,5 +56,30 @@ Use an installed Edge executable when available, or use the in-app browser autom
 ### Metadata
 - Reproducible: yes
 - Related Files: `scripts/accept-360.js`
+
+---
+
+## [ERR-20260913-001] chapter_node_metadata_compatibility
+
+**Logged**: 2026-09-13T00:00:00+08:00
+**Priority**: medium
+**Status**: resolved
+**Area**: tests
+
+### Summary
+Adding a chapterId guard to companion story beats broke callers that use exported first-chapter NODE_CATALOG nodes without runtime metadata.
+
+### Error
+```
+TypeError: Cannot read properties of null (reading 'phase')
+```
+
+### Resolution
+- Treat a missing node.chapterId as the legacy first chapter; require an explicit non-first chapter ID before suppressing a first-chapter companion beat.
+- Keep new runtime nodes explicitly tagged, while preserving the documented NODE_CATALOG export contract.
+
+### Metadata
+- Reproducible: yes
+- Related Files: lib/adventure.js, tests/adventure-mvp.test.js
 
 ---
