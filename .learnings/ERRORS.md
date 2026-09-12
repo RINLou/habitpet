@@ -382,7 +382,7 @@ Rejected by policy
 
 **Logged**: 2026-09-13T11:20:00+08:00
 **Priority**: medium
-**Status**: investigating
+**Status**: blocked
 **Area**: delivery
 
 ### Summary
@@ -394,7 +394,8 @@ Recv failure: Connection was reset
 ```
 
 ### Resolution
-- Retry the idempotent branch push once; if it still fails, retain the local commit hash and hand off that exact commit to WorkBuddy for delivery.
+- Retried the idempotent branch push once. A remote reference check then timed out connecting to GitHub over port 443.
+- Retain the local commit hash and hand off that exact commit to WorkBuddy for delivery when network access returns.
 
 ### Metadata
 - Reproducible: unknown
