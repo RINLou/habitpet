@@ -377,3 +377,27 @@ Rejected by policy
 - Related Files: .gitignore
 
 ---
+
+## [ERR-20260913-015] github_push_connection_reset
+
+**Logged**: 2026-09-13T11:20:00+08:00
+**Priority**: medium
+**Status**: investigating
+**Area**: delivery
+
+### Summary
+The first attempt to push the release candidate branch to GitHub lost its HTTPS connection before the remote confirmed receipt.
+
+### Error
+```
+Recv failure: Connection was reset
+```
+
+### Resolution
+- Retry the idempotent branch push once; if it still fails, retain the local commit hash and hand off that exact commit to WorkBuddy for delivery.
+
+### Metadata
+- Reproducible: unknown
+- Related Files: .git/refs/heads/codex/story-release-ready
+
+---
