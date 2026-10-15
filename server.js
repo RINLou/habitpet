@@ -1150,7 +1150,7 @@ async function adminRoutes(req, res, pathname, url) {
       const creds = lingxiSync.loadCreds();
       return json(res, 200, {
         ok: true,
-        config: { url: lingxiSync.LINGXI_URL, userSet: !!(creds && creds.user), passSet: !!(creds && creds.pass), credsUser: creds ? creds.user : null },
+        config: { url: (creds && creds.url) || lingxiSync.LINGXI_URL, urlSource: (creds && creds.url) ? 'credentials' : 'env-default', userSet: !!(creds && creds.user), passSet: !!(creds && creds.pass), credsUser: creds ? creds.user : null },
         state: lingxiSync.readState(),
         snapshots: lingxiSync.listSnapshots(),
         latest: snap ? { pulledAt: snap.pulledAt, familyName: snap.family.name, username: (snap.family.parent || {}).username, children: Object.values(snap.family.children || {}).map(c => ({ name: c.name, grade: c.grade, level: c.level, intimacy: c.intimacy, points: c.points, ledgerLen: (snap.family.ledger || []).length, pokedex: (c.pokedex || []).length })), photos: Object.keys(snap.photos || {}).length } : null
@@ -1158,7 +1158,7 @@ async function adminRoutes(req, res, pathname, url) {
     }
     if (pathname === '/api/admin/lingxi/config') {
       if (!p.user || !p.pass) return json(res, 400, { error: 'user/pass 必填' });
-      return json(res, 200, lingxiSync.saveCreds(p.user, p.pass));
+      return json(res, 200, lingxiSync.saveCreds(p.user, p.pass, p.url));   // v12: url 可选（源云地址覆盖）
     }
     if (pathname === '/api/admin/lingxi/pull') {
       const snap = await lingxiSync.pullSnapshot();
@@ -1289,9 +1289,13 @@ if (!process.env.HABITPET_NO_TIMER) setInterval(() => {
   if (hungerEvents) { store.save(); console.log(`[hunger] 触发 ${hungerEvents} 次饥饿事件`); }
 }, 60 * 1000).unref();
 process.on('SIGINT', () => { store.saveNow(); console.log('已保存退出'); process.exit(0); });
+// v12.1: 未捕获异常兜底——记日志不退出（定时器/写盘异常曾致 30s 崩溃循环）
+process.on('uncaughtException', (e) => { console.error('[uncaught]', (e && e.stack) || e); });
+process.on('unhandledRejection', (e) => { console.error('[unhandledRejection]', (e && (e.stack || e.message)) || e); });
 
 server.listen(PORT, () => console.log(`habitpet 正式版已启动: http://localhost:${PORT}`));
 
 // —— v11 灵汐云每日同步：每 6 小时唤起一次，dailyPull 内部按日期去重（一天最多拉一次）———
-setInterval(() => { lingxiSync.dailyPull().then(r => { if (r && !r.skipped) console.log('[lingxi-sync] 每日同步完成', JSON.stringify(r)); }).catch(e => console.error('[lingxi-sync]', e.message)); }, 6 * 3600 * 1000).unref();
-setTimeout(() => { lingxiSync.dailyPull().then(r => { if (r && !r.skipped) console.log('[lingxi-sync] 启动同步完成', JSON.stringify(r)); }).catch(e => console.error('[lingxi-sync]', e.message)); }, 30 * 1000).unref();
+// v12.1: Promise.resolve 包装——同步 throw 也进 rejection 链，绝不让定时器杀死进程
+setInterval(() => { Promise.resolve().then(() => lingxiSync.dailyPull()).then(r => { if (r && !r.skipped) console.log('[lingxi-sync] 每日同步完成', JSON.stringify(r)); }).catch(e => console.error('[lingxi-sync]', e.message)); }, 6 * 3600 * 1000).unref();
+setTimeout(() => { Promise.resolve().then(() => lingxiSync.dailyPull()).then(r => { if (r && !r.skipped) console.log('[lingxi-sync] 启动同步完成', JSON.stringify(r)); }).catch(e => console.error('[lingxi-sync]', e.message)); }, 30 * 1000).unref();

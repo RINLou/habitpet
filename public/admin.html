@@ -75,6 +75,13 @@
         <button class="sm ghost" onclick="lxStatusLoad()">刷新状态</button>
       </div>
       <div class="bar" style="margin-top:10px; padding-top:10px; border-top:1px solid var(--line)">
+        <span class="muted">源云配置：</span>
+        <input id="lxUrl" placeholder="源云地址(可选)" style="padding:6px;width:280px">
+        <input id="lxUser" placeholder="账号" style="padding:6px;width:130px">
+        <input id="lxPass" placeholder="密码" type="password" style="padding:6px;width:130px">
+        <button class="sm ghost" onclick="lxConfig()">保存凭据</button>
+      </div>
+      <div class="bar" style="margin-top:10px; padding-top:10px; border-top:1px solid var(--line)">
         <span class="muted">一键迁移到新库家庭：</span>
         <select id="lxTarget" style="padding:6px"></select>
         <label class="muted" style="font-size:13px"><input type="checkbox" id="lxFresh" checked> 迁移前先拉最新</label>
@@ -177,6 +184,13 @@ async function loadBackups() {
 $('#search').addEventListener('input', renderRows);
 
 // —— 灵汐云同步面板 ————————————————————————————
+async function lxConfig() {
+  const user = $('#lxUser').value.trim(), pass = $('#lxPass').value.trim(), url = $('#lxUrl').value.trim();
+  if (!user || !pass) return msg('#lxMsg', '账号/密码必填', true);
+  const d = await api('/api/admin/lingxi/config', { user, pass, url: url || undefined });
+  msg('#lxMsg', d.ok ? '✅ 凭据已保存' + (d.url ? '（源：' + esc(d.url) + '）' : '') : (d.error || '失败'), !d.ok);
+  lxStatusLoad();
+}
 async function lxStatusLoad() {
   const d = await api('/api/admin/lingxi/status');
   if (d.error) return msg('#lxStatus', d.error, true);

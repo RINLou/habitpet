@@ -95,6 +95,8 @@ async function api(path, body, token) {
   const token = bind.token;
   await api('/api/pet/select', { speciesId: 'luna' }, token);
   await api('/api/config', { holidayMode: true }, parent);
+  // 任务板活跃奖 flaky 规避：4 选 3 有 50% 概率同时抽中「投喂+探索」，凑 2 个发 +5 会污染硬编码数值断言
+  await api('/api/config', { dailyQuestReward: false }, parent);
 
   const before = await api('/api/me', {}, token);
   ok('孩子状态包含 7 日星图', before.adventure && before.adventure.nodes.length === 7 && before.adventure.totalDays === 7);
