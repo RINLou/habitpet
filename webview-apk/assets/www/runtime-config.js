@@ -1,3 +1,3 @@
-// 发布构建会覆盖这个值；Web/PWA 同源部署时保持空字符串即可。
-// 不要在这里放临时隧道或测试环境地址。
-window.HABITPET_API_BASE = '';
+// APK 打包副本：file:// 壳无法同源，必须显式指向云端。
+// Web/PWA 的 public/runtime-config.js 保持空字符串（同源），勿混淆。
+window.HABITPET_API_BASE = 'https://habitpet.app.workbuddy.host';
