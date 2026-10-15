@@ -4,7 +4,18 @@
 
 ---
 
-## 2026-10-15：v12 合并版 —— 灵汐玩法为主 + 开发线工程（双线合一）
+## 2026-10-15（晚）：v12.1 收尾 —— 崩溃修复 + 数据迁移 + APK 云地址注入，全链路交付
+
+接上节 v12 合并版，本次完成上线三件事（commit `f02534b`、`8b7e659`，分支 `merge/lingxi-base` 已推 GitHub）：
+
+1. **启动 30 秒崩溃修复（P0）**：根因 `lib/lingxi_sync.js` 的 `dailyPull()` 首行 `ensureDir()` 同步调用在 try 外，沙盒数据目录异常时抛未捕获异常杀死进程。修复：函数整体 try/catch + `server.js` 定时器改 `Promise.resolve().then(() => dailyPull())` 包装 + `process.on('uncaughtException'/'unhandledRejection')` 兜底。本地模拟只读数据目录 35 秒存活验证；线上部署后 85 秒两次探活正常。
+2. **测试 flaky 修复**：adventure-mvp 注册段加 `dailyQuestReward:false`（任务板 4 选 3 有 50% 概率同抽「投喂+探索」凑 2 发 +5 活跃奖污染硬编码断言）。最终全量 408 项断言全绿（295 主套件 + 73 星图 + 19 同步冒烟 + 21 admin）。
+3. **数据迁移完成**：新云此前无柚子柠檬部落 → admin 通道三连（config 注入源云凭据 url=https://c95fc7cf...link → pull → apply create:true）。落地：家庭 `fb963ce1054fa`，孩子柠檬(Lv19)/柚子(Lv15)/孩子3(Lv5) 数值齐全，账本 276 条（admin list 核实 ledgerCount=276；登录接口显示 150 是 `ledger.slice(0,150)` 展示截断，非丢数据）。`louyilin2001/xc0tqozr` 新云登录通过，投喂窗口 19-21 等配置保留。
+4. **APK runtime-config 注入**：APK 壳是 file:// 无法同源，`assets/www/runtime-config.js` 为空则连不上云。在已签名的 v12 包上用 python zipfile 替换该条目（`HABITPET_API_BASE='https://habitpet.app.workbuddy.host'`）→ zipalign → apksigner 重签（keystore habitpet/habitpet）。仓库 `webview-apk/assets/www/runtime-config.js` 同步写入云地址（public/ 下保持空串勿混淆）。云端 `/apk/habitpet-latest.apk` SHA256 与本地一致校验通过。
+
+遗留：全家换装 v12 稳定运行后，废灵汐旧库（老开发云 c95fc7cf...link 保留作备份源，不急删）。
+
+
 
 实施人：小虾米。老板裁决：合并以灵汐版本为主（被全家真实玩过、动画/世界观/温和缺席/Boss 重标定都经校验），把开发线（v7 试用反馈、第四章、v9 玩法深化、v10 管理后台、v11 灵汐同步迁移）移植上去。两条线在 GitHub 上无共同祖先，按文件逐个裁决。
 
