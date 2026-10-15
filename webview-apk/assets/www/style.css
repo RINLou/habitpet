@@ -362,3 +362,13 @@ label { font-size: 13px; color: var(--muted); display: block; margin-top: 10px; 
 /* Parent review: surface time-sensitive requests and make pending network actions legible. */
 .card:has([data-review-id]) { border-color: rgba(245, 200, 107, .32); }
 [data-review-id]:disabled { min-width: 108px; }
+
+/* v9 遭遇图鉴三态：毕业拥有 / 遭遇过剪影 / 未遭遇 */
+.dex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; margin-top: 8px; }
+.dex-slot { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 10px 6px; border-radius: 12px; border: 1px solid var(--line); background: rgba(10,15,40,.42); text-align: center; min-height: 92px; justify-content: center; }
+.dex-slot.own { border-color: rgba(52,211,153,.38); background: rgba(52,211,153,.08); }
+.dex-slot.seen { border-style: dashed; }
+.dex-slot.unknown { opacity: .72; }
+.dex-emoji { font-size: 26px; line-height: 1.1; filter: drop-shadow(0 2px 6px rgba(0,0,0,.35)); }
+.dex-emoji.sil { filter: brightness(0) blur(1.2px) opacity(.62); }
+.dex-name { font-size: 11px; color: var(--ink); font-weight: 600; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

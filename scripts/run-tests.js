@@ -75,6 +75,26 @@ async function waitReady(url, timeoutMs) {
     if (adventure.stderr) process.stderr.write(adventure.stderr);
     if (adventure.error) console.error('ADVENTURE-LAUNCH-ERR', adventure.error.message);
     code = run.status === 0 && adventure.status === 0 ? 0 : 1;
+    // v11: 灵汐同步/迁移 冒烟（自起假灵汐云+独立服务，不依赖主服务）
+    if (code === 0) {
+      const run2 = spawnSync(process.execPath, ['test_lingxi_sync.js'], {
+        cwd: ROOT, env, encoding: 'utf8', timeout: 300000
+      });
+      if (run2.stdout) process.stdout.write(run2.stdout);
+      if (run2.stderr) process.stderr.write(run2.stderr);
+      if (run2.error) console.error('LAUNCHER-ERR', run2.error.message);
+      code = run2.status === 0 ? 0 : 1;
+    }
+    // v10: 管理后台冒烟（独立服务 + ADMIN_KEY）
+    if (code === 0) {
+      const run3 = spawnSync(process.execPath, ['admin_smoke.js'], {
+        cwd: ROOT, env, encoding: 'utf8', timeout: 300000
+      });
+      if (run3.stdout) process.stdout.write(run3.stdout);
+      if (run3.stderr) process.stderr.write(run3.stderr);
+      if (run3.error) console.error('LAUNCHER-ERR', run3.error.message);
+      code = run3.status === 0 ? 0 : 1;
+    }
   } catch (e) {
     console.error('LAUNCHER-ERR', e.message);
     code = 1;

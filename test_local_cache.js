@@ -20,6 +20,7 @@ function stubEnv() {
   window.LocalStore = { newId: p => p + 'x' + Math.random().toString(36).slice(2), familyById: () => null, getBattle: () => null, putBattle: () => {}, delBattle: () => {} };
   window.SpeciesMod = require('./lib/species');
   window.EngineMod = require('./lib/engine');
+  window.AdventureMod = require('./lib/adventure');   // 星图冒险与服务端同源（离线镜像依赖）
   window.BattleMod = { canBattleToday: () => true, noteBattle: () => {}, startBattle: () => ({}), playerMove: () => ({}), getBattle: () => null };
   global.location = { protocol: 'http:' };
   global.fetch = async () => { throw new Error('offline'); };
@@ -34,7 +35,7 @@ function freshRT() {   // 模拟页面/浏览器重启：清 require 缓存重�
 
 let pass = 0, fail = 0;
 const ok = (n, c) => { if (c) { pass++; console.log('  ✓', n); } else { fail++; console.log('  ✗ FAIL:', n); } };
-const R = { projectedViewFields: false, adventureStoryProjection: false, cachedViews: false, lastStatePersisted: false, offlineBootKeptCard: false, offlineCachePriority: false };
+const R = { projectedViewFields: false, cachedViews: false, lastStatePersisted: false, offlineBootKeptCard: false, offlineCachePriority: false };
 
 (async () => {
   const fixture = JSON.parse(fs.readFileSync(process.env.LOCAL_FAMILY_FILE, 'utf8'));
@@ -50,10 +51,28 @@ const R = { projectedViewFields: false, adventureStoryProjection: false, cachedV
     && !!(rn1 && rn1.show === false && rn1.gapDays === 0 && rn1.gapKey === null);
   ok('本地投影 onboarding 字段齐全(与 server onboardingView 对齐)', !!(ob1 && ['status', 'planId', 'startedOn', 'finishedOn', 'dayIndex', 'completedOn', 'todayComplete', 'canCompleteToday', 'canStart', 'showStartPrompt', 'canRestart', 'historySummary'].every(k => k in ob1)));
   ok('本地投影 returnNudge 兜底(show=false,服务端裁决)', !!(rn1 && rn1.show === false && rn1.gapDays === 0 && rn1.gapKey === null));
-  R.adventureStoryProjection = !!(me1 && me1.adventure && me1.adventure.chapter && me1.adventure.chapter.title === '第一章·熄灭的七盏灵灯'
-    && me1.adventure.nodes && me1.adventure.nodes[0].choices && me1.adventure.nodes[0].choices[0].id === 'record-promise'
-    && me1.adventure.story && Array.isArray(me1.adventure.story.lorePages));
-  ok('本地投影保留第一章剧情标题、分支和故事收藏字段', R.adventureStoryProjection);
+
+  // —— 场景1b：星图冒险本地投影（AdventureMod 同源四章 + 剧情收藏字段） ——
+  const adv1 = me1 && me1.adventure;
+  R.adventureStoryProjection = !!(adv1 && adv1.chapter && adv1.chapter.title === '第一章·熄灭的七盏灵灯'
+    && adv1.campaign && adv1.campaign.totalChapters === 4
+    && adv1.nodes && adv1.nodes.length === 7 && adv1.nodes[0].choices && adv1.nodes[0].choices[0].id === 'record-promise'
+    && adv1.story && Array.isArray(adv1.story.lorePages));
+  ok('本地投影冒险视图(四章主线/首章分支/剧情收藏字段)', R.adventureStoryProjection);
+
+  // —— 场景1c：v9 任务板/赛季Boss/出战配置/遭遇图鉴 本地投影 ——
+  const v9a = me1;
+  R.v9Projection = !!(v9a && v9a.dailyQuests && v9a.dailyQuests.date
+    && Array.isArray(v9a.dailyQuests.quests) && v9a.dailyQuests.quests.length === 3
+    && v9a.dailyQuests.reward === 5 && v9a.dailyQuests.rewarded === false
+    && v9a.boss && !!v9a.boss.id && typeof v9a.boss.daysLeft === 'number'
+    && v9a.battleLoadout === null && v9a.pokedexKills && v9a.pokedexSeen && Array.isArray(v9a.siblingFeed));
+  ok('本地投影 v9 字段(任务板3题/赛季Boss/出战默认/遭遇图鉴)', R.v9Projection);
+  // 确定性：离线两次冷启动同一天出题一致（seed=日期+孩子id）
+  const RT1b = freshRT();
+  const me1b = await RT1b.bootChild('tk1');
+  R.questDeterminism = !!(me1b && me1b.dailyQuests && JSON.stringify(me1b.dailyQuests.quests.map(q => q.id)) === JSON.stringify(v9a.dailyQuests.quests.map(q => q.id)));
+  ok('任务板离线冷启动两次出题一致(确定性)', R.questDeterminism);
 
   // —— 场景2：云端 childMe 视图回来 → updateFromState 缓存 childStates + lastState 并落盘 ——
   RT.updateFromState({ id: cid, name: me1.name, friends: [], invites: [], onboarding: { status: 'active', planId: 'homework', startedOn: '2026-09-01', dayIndex: 2, completedOn: [], canCompleteToday: true }, returnNudge: { show: true, gapDays: 4, gapKey: 'L0x' } });

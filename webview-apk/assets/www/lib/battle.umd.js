@@ -10,8 +10,8 @@
 // v3：统一为「1 个真人 + N 个 AI」；战斗状态落盘持久化
 // v4：动态经验（随对方等级浮动）+ 好友跨家庭真人对战（turn 轮换，双方各自轮询）
 'use strict';
-var speciesById = species.speciesById; var skillById = species.skillById; var makeBoss = species.makeBoss; var typeMult = species.typeMult; var ELEMENT_NAMES = species.ELEMENT_NAMES;
-var addXP = engine.addXP; var stageOf = engine.stageOf; var dateKey = engine.dateKey;
+var speciesById = species.speciesById; var skillById = species.skillById; var makeBoss = species.makeBoss; var typeMult = species.typeMult; var ELEMENT_NAMES = species.ELEMENT_NAMES; var currentBoss = species.currentBoss; var BOSS_ROSTER = species.BOSS_ROSTER;
+var addXP = engine.addXP; var addIntimacy = engine.addIntimacy; var stageOf = engine.stageOf; var dateKey = engine.dateKey;
 var store = store;
 
 // 战斗状态存 db.battles（随 save() 防抖落盘，服务重启不丢）
@@ -23,14 +23,20 @@ const battles = {
 
 function snapshot(child, isAI, familyId) {
   const sp = speciesById(child.pet.speciesId);
+  const unlocked = (child.pet.skills || []).filter(id => { const s = skillById(id); return s && s.unlockLv <= child.level; });
+  // v9: 技能出战配置（4 选 3）——合法配置取交集，未配置/非法则默认全带（向后兼容）
+  const lo = child.battleLoadout;
+  const loadout = (Array.isArray(lo) && lo.length >= 1 && lo.length <= 3 && lo.every(id => unlocked.includes(id)))
+    ? unlocked.filter(id => lo.includes(id)) : unlocked;
   return {
     childId: child.id, familyId: familyId || null, name: child.name, speciesName: sp.name, emoji: sp.emoji, element: sp.element,
+    speciesId: child.pet.speciesId,
     stageKey: stageOf(child.level).key,   // v5: 前端按形态裁立绘
     level: child.level,
     stats: { ...child.pet.stats },
     hpMax: child.pet.stats.hp * 5 + (child.pet.maxHpBonus || 0) * 3 + child.level * 4,
     hp: 0,
-    skills: (child.pet.skills || []).filter(id => { const s = skillById(id); return s && s.unlockLv <= child.level; }),
+    skills: loadout,
     isAI: !!isAI,          // true = AI 分身/盟友，其战斗结果不回写真实孩子数据
     side: null
   };
@@ -77,8 +83,10 @@ function startBattle(family, mode, childA, childB, familyB) {
     fb = snapshot(childB, false, familyB ? familyB.id : null);   // 跨家庭真人
   }
   const lvl = mode === 'coop' ? Math.max(childA.level, childB.level) + 1 : childA.level;
+  let bossDef = null;
   if (mode === 'boss' || mode === 'coop') {
-    boss = makeBoss(lvl, mode === 'coop');
+    bossDef = currentBoss();               // v9: 赛季轮换 Boss（确定性，全端一致）
+    boss = makeBoss(lvl, mode === 'coop', bossDef);
     boss.isAI = true; boss.childId = null; boss.side = 'boss';
   }
 
@@ -92,6 +100,7 @@ function startBattle(family, mode, childA, childB, familyB) {
     familyId: family.id, mode, status: 'active', round: 1,
     familyIds: mode === 'friend' ? [family.id, familyB ? familyB.id : null] : [family.id],
     fighters,
+    bossId: bossDef ? bossDef.id : null,   // v9: 首杀图鉴用
     turn: 0,                    // 开局先手为发起方
     actedThisRound: false,
     log: [], createdAt: Date.now(), finishedAt: null, rewarded: false
@@ -102,8 +111,45 @@ function startBattle(family, mode, childA, childB, familyB) {
   // v4.1: 好友对战按敏捷定先手（平局发起方先手）；其余模式真人恒先
   if (mode === 'friend') state.turn = (fb.stats.spd > fa.stats.spd) ? 1 : 0;
 
+  // v9: 遭遇图鉴——开战即点亮对方物种剪影（Boss / 兄妹分身 / 好友灵伴）
+  recordEncounters(family, childA, state);
+
   battles.set(state.id, state);
   return { battleId: state.id, state: publicBattle(state) };
+}
+
+// v9: 遭遇图鉴——把这场战斗里遇到的物种写进 child.pokedexSeen（幂等）
+function recordEncounters(family, childA, st) {
+  if (!childA.pet) return;
+  if (!childA.pokedexSeen || typeof childA.pokedexSeen !== 'object') childA.pokedexSeen = {};
+  let changed = false;
+  for (const f of st.fighters) {
+    if (f === st.fighters[0] || !f.speciesId) continue;   // 只记对手方
+    if (!childA.pokedexSeen[f.speciesId]) { childA.pokedexSeen[f.speciesId] = new Date().toISOString(); changed = true; }
+  }
+  return changed;
+}
+
+// v9: 首杀图鉴——首次击败某 Boss：点亮图鉴 + 一次性亲密度奖励（幂等）
+const FIRST_KILL_REWARD = 5;
+function bossDefById(bossId) { return BOSS_ROSTER.find(b => b.id === bossId) || null; }
+function recordBossKill(fam, child, bossId, bossName) {
+  if (!fam || !child || !bossId) return null;
+  if (!child.pokedexKills || typeof child.pokedexKills !== 'object') child.pokedexKills = {};
+  if (!child.pokedexSeen || typeof child.pokedexSeen !== 'object') child.pokedexSeen = {};
+  if (child.pokedexKills[bossId]) return null;   // 只奖一次
+  child.pokedexKills[bossId] = new Date().toISOString();
+  const def = bossDefById(bossId);
+  const spId = def ? def.speciesId : null;
+  if (spId && !child.pokedexSeen[spId]) child.pokedexSeen[spId] = new Date().toISOString();
+  addIntimacy(child, FIRST_KILL_REWARD);
+  fam.ledger.unshift({
+    id: store.newId('l'), ts: new Date().toISOString(),
+    childId: child.id, childName: child.name, delta: FIRST_KILL_REWARD, xp: 0,
+    reason: `🏅 首杀图鉴：首次击败「${bossName || (def && def.name) || bossId}」（图鉴点亮 +${FIRST_KILL_REWARD} 亲密度）`,
+    by: 'system', after: child.intimacy
+  });
+  return { bossId, reward: FIRST_KILL_REWARD };
 }
 
 // 玩家出招：真人出招 → AI 依次行动 →（好友对战）轮转到对方真人
@@ -217,8 +263,9 @@ function grantBattleRewards(st) {
     if (st.mode === 'sibling' || st.mode === 'friend') win = (st.winner === st.fighters.indexOf(f));
     else win = (st.winner === 'kids');
     const xp = win ? 6 + oppLv : 2 + Math.floor(oppLv / 2);
-    // 每日经验上限
-    const cap = (fam.config && fam.config.battleXpDailyCap !== undefined) ? fam.config.battleXpDailyCap : 30;
+    // 每日经验上限：家长设置值为 Lv1 基础，随等级提升每级 +3（v7：封顶不再一档到底）
+    const base = (fam.config && fam.config.battleXpDailyCap !== undefined) ? fam.config.battleXpDailyCap : 30;
+    const cap = base + Math.max(0, child.level - 1) * 3;
     const today = dateKey();
     if (!child.battleXp || child.battleXp.date !== today) child.battleXp = { date: today, amount: 0 };
     const remaining = Math.max(0, cap - (child.battleXp.amount || 0));
@@ -226,12 +273,17 @@ function grantBattleRewards(st) {
     child.battleXp.amount = (child.battleXp.amount || 0) + actual;
     const capped = actual < xp;
     if (actual > 0) addXP(child, actual);
-    results.push({ childId: f.childId, childName: f.name, win, xp: actual, capped, stage: stageOf(child.level).name });
+    // v9: Boss 赛季首杀——击败当前轮换 Boss 且首次，点亮图鉴 + 一次性奖励
+    let firstKill = null;
+    if (win && (st.mode === 'boss' || st.mode === 'coop') && st.bossId) {
+      firstKill = recordBossKill(fam, child, st.bossId);
+    }
+    results.push({ childId: f.childId, childName: f.name, win, xp: actual, capped, stage: stageOf(child.level).name, firstKill });
     fam.ledger.unshift({
       id: store.newId('l'), ts: new Date().toISOString(),
       childId: child.id, childName: child.name, delta: 0, xp: actual,
       reason: `对战${win ? '胜利' : '失败'}（${st.mode === 'friend' ? '好友对战' : st.mode === 'sibling' ? '兄妹切磋' : 'Boss挑战'} vs Lv${oppLv}，+${xp} 经验${capped ? `，今日对战经验已达上限 ${cap}，实发 ${actual}` : ''}）`,
-      by: 'system'
+      by: 'system', after: child.intimacy
     });
   }
   return results;
@@ -273,6 +325,6 @@ function noteBattle(child) {
   child.battleCount.count++;
 }
 
-return { startBattle, playerMove, getBattle, canBattleToday, noteBattle, publicBattle };
+return { startBattle, playerMove, getBattle, canBattleToday, noteBattle, publicBattle, recordBossKill, bossDefById, FIRST_KILL_REWARD };
 
 });

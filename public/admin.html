@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>养成好习惯 · 管理后台</title>
+<style>
+  :root { --line: rgba(255,255,255,.14); --ink: #e8ecf8; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, "Microsoft YaHei", sans-serif; background: #0b1028; color: var(--ink); min-height: 100vh; padding: 20px; }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+  h1 { font-size: 20px; margin-bottom: 4px; }
+  .sub { color: #8b93b8; font-size: 13px; margin-bottom: 16px; }
+  .card { background: rgba(15,22,46,.7); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-bottom: 14px; }
+  input, button, select { font: inherit; }
+  input { background: rgba(255,255,255,.06); border: 1px solid var(--line); border-radius: 8px; color: var(--ink); padding: 8px 10px; }
+  button { background: #4f6ef7; color: #fff; border: none; border-radius: 8px; padding: 8px 14px; cursor: pointer; }
+  button.ghost { background: transparent; border: 1px solid var(--line); }
+  button.danger { background: #d64545; }
+  button.sm { padding: 5px 10px; font-size: 13px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: #8b93b8; font-weight: 600; }
+  .muted { color: #8b93b8; }
+  .err { color: #ff8f8f; margin: 8px 0; }
+  .ok { color: #6fe3a5; margin: 8px 0; }
+  .bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+  pre { background: rgba(0,0,0,.35); border-radius: 8px; padding: 10px; font-size: 12px; overflow: auto; max-height: 320px; }
+  .tag { display: inline-block; background: rgba(79,110,247,.18); border-radius: 6px; padding: 2px 8px; font-size: 12px; margin-right: 4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🐾 养成好习惯 · 管理后台</h1>
+  <div class="sub">仅限管理员。需要服务端配置 ADMIN_KEY，未配置时所有操作被拒绝。</div>
+
+  <div class="card" id="loginCard">
+    <div class="bar">
+      <input id="key" type="password" placeholder="管理密钥 ADMIN_KEY" style="width:280px">
+      <button onclick="loadList()">进入后台</button>
+      <span id="loginMsg"></span>
+    </div>
+  </div>
+
+  <div id="main" style="display:none">
+    <div class="card">
+      <div class="bar">
+        <b>家庭账号列表</b>
+        <span id="stat" class="muted"></span>
+        <input id="search" placeholder="搜索账号/家庭名/孩子名" style="flex:1;min-width:180px">
+        <button class="sm ghost" onclick="loadList()">刷新</button>
+      </div>
+      <div style="overflow:auto">
+        <table id="tbl">
+          <thead><tr><th>账号</th><th>家庭名</th><th>孩子</th><th>创建时间</th><th>最后活跃</th><th>操作</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="bar"><b>备份管理</b><span class="muted">每日自动备份（保留30份）· 手动备份带时间戳</span></div>
+      <div class="bar">
+        <button class="sm" onclick="doBackup()">立即备份</button>
+        <button class="sm ghost" onclick="loadBackups()">刷新备份列表</button>
+      </div>
+      <div id="bkList" class="muted">尚未加载</div>
+    </div>
+
+    <div class="card">
+      <div class="bar"><b>灵汐云同步 · 一键迁移</b><span class="muted">每日自动拉取旧云快照 · 迁移绝不删除任何数据（数值取高、历史全并入）</span></div>
+      <div id="lxStatus" class="muted">尚未加载</div>
+      <div class="bar" style="margin-top:10px">
+        <button class="sm" onclick="lxPull()">立即拉取灵汐云</button>
+        <button class="sm ghost" onclick="lxStatusLoad()">刷新状态</button>
+      </div>
+      <div class="bar" style="margin-top:10px; padding-top:10px; border-top:1px solid var(--line)">
+        <span class="muted">一键迁移到新库家庭：</span>
+        <select id="lxTarget" style="padding:6px"></select>
+        <label class="muted" style="font-size:13px"><input type="checkbox" id="lxFresh" checked> 迁移前先拉最新</label>
+        <button class="sm" onclick="lxApply()">迁移</button>
+        <span id="lxMsg"></span>
+      </div>
+      <div class="muted" style="font-size:12px;margin-top:6px">提示：目标家庭里没有的孩子（按名字匹配：柚子/柠檬）会被新建并完整继承等级/亲密度/积分/图鉴/账本/打卡照片；已有孩子只增不减。</div>
+    </div>
+
+    <div class="card" id="detail" style="display:none"></div>
+  </div>
+</div>
+<script>
+let KEY = '';
+const $ = s => document.querySelector(s);
+function msg(el, text, isErr) { $(el).innerHTML = `<span class="${isErr ? 'err' : 'ok'}">${text}</span>`; }
+async function api(path, body) {
+  const r = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: KEY, ...(body || {}) }) });
+  return r.json();
+}
+async function loadList() {
+  KEY = $('#key').value.trim();
+  const d = await api('/api/admin/list');
+  if (d.error) return msg('#loginMsg', d.error, true);
+  $('#loginCard').style.display = 'none';
+  $('#main').style.display = '';
+  $('#stat').textContent = `共 ${d.total} 个家庭`;
+  window.FAMS = d.families;
+  renderRows();
+}
+function renderRows() {
+  const q = ($('#search').value || '').toLowerCase();
+  const list = window.FAMS.filter(f => !q || f.username.toLowerCase().includes(q) || String(f.familyName).toLowerCase().includes(q) || (f.children || []).some(c => String(c.name).toLowerCase().includes(q)));
+  $('#rows').innerHTML = list.map(f => `<tr>
+    <td><b>${f.username}</b></td>
+    <td>${esc(f.familyName)}</td>
+    <td>${(f.children || []).map(c => esc(c.name)).join('、') || '<span class="muted">无</span>'} <span class="muted">(${f.childCount})</span></td>
+    <td class="muted">${(f.createdAt || '').slice(0, 10)}</td>
+    <td class="muted">${f.lastActive ? String(f.lastActive).slice(0, 16).replace('T', ' ') : '—'}</td>
+    <td>
+      <button class="sm ghost" onclick="showDetail('${f.id}')">详情</button>
+      <button class="sm ghost" onclick="doRename('${f.id}','${f.username}')">改名</button>
+      <button class="sm ghost" onclick="doResetPw('${f.id}','${f.username}')">重置密码</button>
+      <button class="sm danger" onclick="doDelete('${f.id}','${f.username}')">删除</button>
+    </td>
+  </tr>`).join('') || '<tr><td colspan="6" class="muted">无匹配</td></tr>';
+}
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+async function showDetail(id) {
+  const d = await api('/api/admin/family', { familyId: id });
+  if (d.error) return alert(d.error);
+  const f = d.family;
+  $('#detail').style.display = '';
+  $('#detail').innerHTML = `<div class="bar"><b>家庭详情：${esc(f.username)}（${esc(f.familyName)}）</b>
+    <button class="sm ghost" onclick="$('#detail').style.display='none'">收起</button></div>
+    <div class="muted" style="margin-bottom:6px">配置：初始亲密度 ${f.config.initialIntimacy} · 基础零花钱 ${f.config.baseAllowance} · 1分=${f.config.pointsToYuan}元</div>
+    <table><thead><tr><th>孩子</th><th>等级</th><th>亲密度</th><th>积分</th><th>图鉴(毕业/击杀/遭遇)</th></tr></thead><tbody>
+    ${f.children.map(c => `<tr><td>${esc(c.name)}</td><td>Lv${c.level}</td><td>${c.intimacy}</td><td>${c.points}</td><td>${c.pokedex}/${c.pokedexKills}/${c.pokedexSeen}</td></tr>`).join('')}
+    </tbody></table>
+    <div style="margin-top:8px" class="muted">账本尾部 ${f.ledgerTail.length} 条：</div>
+    <pre>${esc(JSON.stringify(f.ledgerTail, null, 1))}</pre>`;
+}
+async function doRename(id, username) {
+  const un = prompt(`修改账号名（当前 ${username}），留空则不改：`, username);
+  if (un === null) return;
+  const fn = prompt('修改家庭名，留空则不改：', '');
+  if (fn === null) return;
+  const d = await api('/api/admin/rename', { familyId: id, username: un === username ? undefined : un, familyName: fn || undefined });
+  alert(d.ok ? '已保存' : (d.error || '失败'));
+  loadList();
+}
+async function doResetPw(id, username) {
+  const pw = prompt(`为账号「${username}」设置新密码（至少6位）：`);
+  if (!pw) return;
+  const d = await api('/api/admin/setpassword', { familyId: id, newPassword: pw });
+  alert(d.ok ? '密码已重置，请通知家长用新密码登录' : (d.error || '失败'));
+}
+async function doDelete(id, username) {
+  if (!confirm(`⚠️ 将永久删除家庭「${username}」的全部数据！\\n删除前会自动做一次备份。\\n确认继续？`)) return;
+  const c = prompt(`请输入账号名「${username}」以确认删除：`);
+  if (c !== username) return alert('输入不一致，已取消');
+  const d = await api('/api/admin/delete', { familyId: id, confirm: c });
+  alert(d.ok ? '已删除（删除前备份已生成）' : (d.error || '失败'));
+  loadList(); loadBackups();
+}
+async function doBackup() {
+  const d = await api('/api/admin/backup');
+  msg('#bkList', d.ok ? `备份完成：${d.file}` : (d.error || '失败'), !d.ok);
+  loadBackups();
+}
+async function loadBackups() {
+  const r = await fetch('/api/admin/backups', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: KEY }) });
+  const d = await r.json();
+  if (d.error) return msg('#bkList', d.error, true);
+  $('#bkList').innerHTML = d.backups.length ? d.backups.map(b =>
+    `<div style="margin:3px 0">${esc(b.file)} <span class="muted">(${(b.size / 1024).toFixed(0)}KB · ${b.mtime.slice(0, 16).replace('T', ' ')})</span>
+     <a href="/api/admin/backup/download?key=${encodeURIComponent(KEY)}&file=${encodeURIComponent(b.file)}" style="margin-left:8px;color:#8ab4ff">下载</a></div>`).join('')
+    : '暂无备份';
+}
+$('#search').addEventListener('input', renderRows);
+
+// —— 灵汐云同步面板 ————————————————————————————
+async function lxStatusLoad() {
+  const d = await api('/api/admin/lingxi/status');
+  if (d.error) return msg('#lxStatus', d.error, true);
+  const c = d.config, s = d.state || {}, l = d.latest;
+  $('#lxStatus').innerHTML = `
+    <div>灵汐云：<code>${esc(c.url)}</code> · 账号${c.userSet ? '已配置' : '<span class="err">未配置</span>'} · 密码${c.passSet ? '已配置' : '<span class="err">未配置</span>'}</div>
+    <div>最近拉取：${s.lastPull ? String(s.lastPull).slice(0, 19).replace('T', ' ') : '从未'} ${s.lastError ? `<span class="err">（上次错误：${esc(s.lastError)}）</span>` : ''} · 快照 ${d.snapshots.length} 份</div>
+    ${l ? `<div>快照内容：<b>${esc(l.familyName)}</b>（${esc(l.username)}）· 孩子：${l.children.map(x => esc(x.name) + '(Lv' + x.level + ')').join('、')} · 账本 ${l.ledgerLen} 条 · 照片 ${l.photos} 张 · 拉取于 ${String(l.pulledAt).slice(0, 19).replace('T', ' ')}</div>` : '<div class="muted">尚无快照，点「立即拉取灵汐云」。</div>'}`;
+  const fams = window.FAMS || [];
+  $('#lxTarget').innerHTML = fams.map(f => `<option value="${f.id}">${esc(f.familyName)}（${esc(f.username)}）</option>`).join('');
+}
+async function lxPull() {
+  msg('#lxMsg', '拉取中…');
+  const d = await api('/api/admin/lingxi/pull');
+  msg('#lxMsg', d.ok ? `拉取成功：${esc(d.familyName)} · ${d.children.length}娃 · ${d.ledgerLen}条账本 · ${d.photos}张照片` : (d.error || '失败'), !d.ok);
+  lxStatusLoad();
+}
+async function lxApply() {
+  const sel = $('#lxTarget');
+  if (!sel.value) return msg('#lxMsg', '请先登录后台以加载家庭列表', true);
+  if (!confirm('确认把灵汐云数据迁移进选中的家庭？\\n（绝不删除现有数据，只并入；迁移前自动备份）')) return;
+  msg('#lxMsg', '迁移中…');
+  const d = await api('/api/admin/lingxi/apply', { familyId: sel.value, fresh: $('#lxFresh').checked });
+  if (!d.ok) return msg('#lxMsg', d.error || '失败', true);
+  const s = d.summary;
+  msg('#lxMsg', `✅ 完成：新建 ${s.created.join('、') || '无'} · 并入 ${s.merged.join('、') || '无'} · 账本+${s.ledgerAdded}条 · 照片${s.photosCopied}张`);
+  lxStatusLoad(); loadList();
+}
+</script>
+</body>
+</html>

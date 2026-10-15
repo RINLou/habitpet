@@ -1,13 +1,22 @@
 package com.habitpet.app;
 
 import android.app.Activity;
+import android.app.DownloadManager;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.Rect;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.Settings;
 import android.util.DisplayMetrics;
 import android.view.Display;
 import android.view.Window;
@@ -19,6 +28,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import org.json.JSONObject;
+import java.io.File;
 
 // v10.1 本地优先：加载 APK 内嵌的 assets/www（断网可开、图片秒加载），
 // 云端仅作为数据同步与跨端互动服务（file:// 页面跨域 fetch 需 universal access）。
@@ -74,7 +84,78 @@ public class MainActivity extends Activity {
     public static class EnvBridge {
         private final Activity act;
         private final WebView wv;
+        private long dlId = -1;                       // 当前更新包下载任务 id
+        private BroadcastReceiver dlReceiver = null;  // 下载完成广播（只注册一次）
         EnvBridge(Activity a, WebView w) { act = a; wv = w; }
+
+        // v7 应用内更新：把当前安装的版本号暴露给页面，前端与云端 /api/appversion 对比
+        @JavascriptInterface
+        public String appInfo() {
+            try {
+                PackageInfo pi = act.getPackageManager().getPackageInfo(act.getPackageName(), 0);
+                JSONObject o = new JSONObject();
+                o.put("versionCode", pi.versionCode);
+                o.put("versionName", pi.versionName);
+                return o.toString();
+            } catch (Throwable t) {
+                return "{}";
+            }
+        }
+
+        // v7 应用内更新：下载云端 APK（仅 HTTPS），完成后拉起系统安装器。
+        // 首次使用 Android 8+ 需允许「安装未知应用」，无权限时直接跳系统设置页，用户开启后再点一次更新。
+        @JavascriptInterface
+        public void downloadAndInstall(String url) {
+            try {
+                if (url == null || !url.startsWith("https://")) return;   // manifest 禁明文，只允许 HTTPS
+                final Activity a = act;
+                if (Build.VERSION.SDK_INT >= 26 && !a.getPackageManager().canRequestPackageInstalls()) {
+                    a.startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                            Uri.parse("package:" + a.getPackageName())));
+                    return;
+                }
+                DownloadManager dm = (DownloadManager) a.getSystemService(Context.DOWNLOAD_SERVICE);
+                if (dm == null) return;
+                if (dlId != -1) { try { dm.remove(dlId); } catch (Throwable ignored) {} }
+                File dst = new File(a.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "habitpet-update.apk");
+                if (dst.exists()) dst.delete();
+                DownloadManager.Request req = new DownloadManager.Request(Uri.parse(url));
+                req.setTitle("养成好习惯 更新包");
+                req.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+                req.setDestinationUri(Uri.fromFile(dst));
+                req.setMimeType("application/vnd.android.package-archive");
+                dlId = dm.enqueue(req);
+                if (dlReceiver == null) {
+                    dlReceiver = new DlReceiver(this);
+                    IntentFilter filter = new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);
+                    if (Build.VERSION.SDK_INT >= 33) a.registerReceiver(dlReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+                    else a.registerReceiver(dlReceiver, filter);
+                }
+            } catch (Throwable t) { /* 更新失败静默，不影响 App 正常使用 */ }
+        }
+
+        // v7 下载完成广播。注意：必须是 static + 显式 public 构造器——
+        // d8 3.3 对 javac 生成的「哨兵参数合成构造器 (Outer, $1)」会 NPE，非 static 内部类默认构造器正是这种形态。
+        public static final class DlReceiver extends BroadcastReceiver {
+            private final EnvBridge eb;
+            public DlReceiver(EnvBridge eb) { this.eb = eb; }
+            @Override public void onReceive(Context ctx, Intent intent) {
+                try {
+                    long id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1);
+                    if (id != eb.dlId) return;
+                    File f = new File(eb.act.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "habitpet-update.apk");
+                    if (!f.exists() || f.length() == 0) return;
+                    // DownloadManager 的 content:// URI 可直接授予安装器读权限（无需 androidx FileProvider）
+                    DownloadManager edm = (DownloadManager) eb.act.getSystemService(Context.DOWNLOAD_SERVICE);
+                    Uri uri = edm == null ? null : edm.getUriForDownloadedFile(id);
+                    if (uri == null) return;
+                    Intent i = new Intent(Intent.ACTION_VIEW);
+                    i.setDataAndType(uri, "application/vnd.android.package-archive");
+                    i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+                    eb.act.startActivity(i);
+                } catch (Throwable ignored) {}
+            }
+        }
 
         @JavascriptInterface
         public String env() {

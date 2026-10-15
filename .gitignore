@@ -18,3 +18,9 @@ webview-apk/build/
 
 # Playwright CLI 会话快照（本地验收临时产物）
 .playwright-cli/
+
+# v7 升级包二进制不入库（云端下载位，随发布同步）
+public/apk/
+
+# 管理后台密钥与本地环境（绝不提交）
+.env

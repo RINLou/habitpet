@@ -4,6 +4,38 @@
 
 ---
 
+## 2026-10-15：v12 合并版 —— 灵汐玩法为主 + 开发线工程（双线合一）
+
+实施人：小虾米。老板裁决：合并以灵汐版本为主（被全家真实玩过、动画/世界观/温和缺席/Boss 重标定都经校验），把开发线（v7 试用反馈、第四章、v9 玩法深化、v10 管理后台、v11 灵汐同步迁移）移植上去。两条线在 GitHub 上无共同祖先，按文件逐个裁决。
+
+### 裁决规则（冲突时）
+
+- 世界观与玩法机制 → 灵汐为主：灵伴/心光/羁绊用语、温和缺席模式（唤醒免费）、Boss 难度重标定（BOSS_TUNE 分段倍率，防 Lv5+ 必败）、逐帧动画 + player、runtime-config 云地址通道、PWA/sw 缓存清单。
+- 工程与运营功能 → 开发线移植：v7（上月月报/账本 after 结余/经验随等级封顶/APK 检测升级）、v8 第四章《说谎的结晶》、v9（Boss 赛季轮换+首杀图鉴+出战 4 选 3+每日任务板+遭遇图鉴+兄妹动态流+五维说明）、v10（admin 路由+admin.html+备份）、v11（lingxi_sync 每日同步+一键迁移+凭据通道）。
+- 新移植文案统一改用灵汐术语（心光/羁绊/灵伴）。
+
+### 关键合并点
+
+- species.js：保留 BOSS_TUNE 标定公式，叠加 bossDef 参数 + BOSS_ROSTER + currentBoss（赛季 Boss 数值仍走标定，只换物种皮/技能组）。
+- engine.js：缺席/唤醒整块保留灵汐温和版；叠加 monthSummary/月报存档/每日任务板。
+- store.js：保留灵汐星图冒险 schema v7-v9 全部清洗；叠加月报字段 + v9 图鉴/出战/任务板字段 + v10 管理函数。
+- server.js：灵汐为底 + admin/lingxi/appversion/recover 端点 + .env 加载 + 同步定时器；absenceMode 保留。
+- 前端：app.js 灵汐底 + 任务板/动态卡/赛季 Boss/4 选 3/遭遇图鉴/月报/升级条；local.js 灵汐底（runtime-config 云地址）+ v9 离线投影；sw 缓存 hp-v21。
+- 测试：test_smoke 采用开发线全量断言，16a 节恢复灵汐温和模式组；adventure-mvp 断言改四章 28 天动态口径；UMD 重新生成。
+- 壳：MainActivity 取开发版（含 appInfo/downloadAndInstall 升级桥，灵汐版为其子集）；manifest versionCode 8 / versionName v12；应用名保留「灵汐大陆」。
+
+### 验证
+
+- npm test：295 + 星图 73 + 灵汐同步 19 + admin 21 = 408 断言全绿。
+- npm run test:anim：68 断言全绿（动画资产/缓存清单完整）。
+- APK：灵汐大陆-v12.apk（15.2MB，185 项动画资产入包），已放 public/apk/habitpet-latest.apk 作升级包。
+
+### 遗留
+
+- 部署后需线上验证 /api/appversion 返回 v12；全家换装 v12 稳定后再废灵汐旧库（每日同步持续镜像中）。
+
+---
+
 ## 2026-09-13：三章 21 日主线与试玩就绪整合
 
 实施人：Codex。以 `main` 的温和缺席与 Boss 修复为基线，叠加第一章叙事分支；未部署、未重打 APK、未合入 main，等待集中试玩。

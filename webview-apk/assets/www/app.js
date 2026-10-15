@@ -428,6 +428,55 @@ async function boot() {
     if (r.id) { fam = r; if (window.LSDB) { try { await LSDB.kvSet('family_snapshot', r); } catch (e) {} } renderParent(); }
     else if (!cachedFam) renderAuth();
   } else renderAuth();
+  checkAppUpdate();   // v7: APK 壳内检查新版本（非壳环境静默跳过）
+}
+
+// —— v7: 历史月报（跨月自动结算存档；孩子端查自己、家长端查全家）——
+async function openMonthly() {
+  openModal('<div class="card"><h3>📊 历史月报</h3><div class="muted-line">加载中…</div></div>');
+  const r = await api('/api/monthly', {});
+  if (r.error) { openModal(`<div class="card"><h3>📊 历史月报</h3><div class="muted-line">${esc(r.error)}</div><button class="btn ghost" style="margin-top:10px" onclick="closeModal()">关闭</button></div>`); return; }
+  const html = `<div class="card">
+    <h3>📊 历史月报</h3>
+    <div class="muted-line">每月跨月时自动结算上月存档；无投诉奖励计入上月最终结余，不再叠进新月初始羁绊。</div>
+    ${(r.children || []).map(k => `
+      <div style="margin-top:10px"><b>${esc(k.childName)}</b> <span class="s">${k.currentMonth} 当前羁绊 ${k.currentIntimacy}</span></div>
+      ${(k.reports || []).map(rp => `
+        <div class="item">
+          <div class="t">
+            <div class="n">📅 ${esc(rp.monthKey)}</div>
+            <div class="s">结余 ${rp.endIntimacy}${rp.noComplaintBonus ? ' + 无投诉奖 ' + rp.noComplaintBonus : ''} → 最终 <b>${rp.finalIntimacy}</b> · Lv${rp.level} · 连击 ${rp.feedStreak} 天${rp.complained ? ' · ⚠️ 上月有投诉' : ''}</div>
+            ${rp.summary ? `<div class="s">收支：羁绊 ${rp.summary.intimacyDelta >= 0 ? '+' : ''}${rp.summary.intimacyDelta}，心光 ${rp.summary.xpDelta >= 0 ? '+' : ''}${rp.summary.xpDelta}（${rp.summary.entries} 笔）</div>` : ''}
+          </div>
+        </div>`).join('') || '<div class="muted-line">还没有历史月报（从下个自然月首次进入时生成）</div>'}
+    `).join('') || '<div class="muted-line">还没有数据</div>'}
+    <button class="btn ghost" style="margin-top:10px" onclick="closeModal()">关闭</button>
+  </div>`;
+  openModal(html);
+}
+
+// —— v7: APK 壳内检测升级（Android 桥由壳层提供；浏览器/PWA 环境无 Android 对象自动跳过）——
+async function checkAppUpdate() {
+  try {
+    if (!(window.Android && typeof Android.appInfo === 'function')) return;
+    let cur; try { cur = JSON.parse(Android.appInfo()); } catch (e) { return; }
+    const r = await getJSON('/api/appversion');
+    if (!r || !r.ok || !r.versionCode || r.versionCode <= (cur.versionCode || 0)) return;
+    if ($('#upd-bar')) return;
+    const bar = document.createElement('div');
+    bar.id = 'upd-bar';
+    bar.style.cssText = 'position:fixed;left:10px;right:10px;bottom:14px;z-index:999;display:flex;gap:10px;align-items:center;border-radius:12px;padding:10px 12px;font-size:14px;background:rgba(15,22,46,.96);color:#fff;border:1px solid rgba(255,255,255,.15);box-shadow:0 6px 20px rgba(0,0,0,.35)';
+    bar.innerHTML = `<div style="flex:1">🔄 发现新版本 ${esc(String(r.versionName || ''))}，快去更新吧</div>
+      <button class="btn sm" id="upd-go">更新</button><button class="btn sm ghost" id="upd-no">稍后</button>`;
+    document.body.appendChild(bar);
+    $('#upd-no').onclick = () => bar.remove();
+    $('#upd-go').onclick = () => {
+      const base = (window.LocalRT && LocalRT.API_BASE) ? LocalRT.API_BASE : location.origin;
+      toast('开始下载新版本，完成后会弹出安装提示…', false, true);
+      try { Android.downloadAndInstall(base + r.apkUrl); }
+      catch (e) { toast('下载失败：' + e.message, true); }
+    };
+  } catch (e) { /* 更新检查失败不影响使用 */ }
 }
 
 // ============================================================
@@ -592,7 +641,7 @@ function renderChild() {
   $('#app').innerHTML = `
     <div class="topbar">
       <div class="title">${esc(me.name)}${me.holidayMode ? ' 🏖️' : ''}</div>
-      <div class="who">${paused ? '⏸️ 暂停计中' : '❤️ 羁绊 ' + me.intimacy} · 下月零花钱 ¥${me.nextAllowance}<br><span class="mute-btn" style="cursor:pointer" onclick="toggleMute()">${Sfx.muted ? '🔇' : '🔊'}</span> · ${installLink()}<a href="#" onclick="openGuide();return false">📖 玩法</a> · <a href="#" onclick="refreshMe().then(renderChild);return false">刷新</a> · <a href="#" style="color:#6b7280" onclick="doLogout();return false">退出</a></div>
+      <div class="who">${paused ? '⏸️ 暂停计中' : '❤️ 羁绊 ' + me.intimacy} · 下月零花钱 ¥${me.nextAllowance}<br><span class="mute-btn" style="cursor:pointer" onclick="toggleMute()">${Sfx.muted ? '🔇' : '🔊'}</span> · ${installLink()}<a href="#" onclick="openMonthly();return false">📊 月报</a> · <a href="#" onclick="openGuide();return false">📖 玩法</a> · <a href="#" onclick="refreshMe().then(renderChild);return false">刷新</a> · <a href="#" style="color:#6b7280" onclick="doLogout();return false">退出</a></div>
     </div>
     ${paused ? `<div class="warnbox">暂停计期间：不重置、不计连击、不扣分，好好休息 💤</div>` : ''}
     ${me.fainted ? `<div class="warnbox">💤 灵伴在休眠茧里休息，去「宠物」页免费唤醒它就能继续对战和领心光</div>` : ''}
@@ -885,6 +934,38 @@ function maybeShowReturnNudge() {
   api('/api/return-nudge/ack', { gapKey: n.gapKey });
 }
 
+// —— v9: 每日任务板 + 兄妹动态卡 ————————————————————————
+function questBoardCard() {
+  const dq = me.dailyQuests;
+  if (!dq || !Array.isArray(dq.quests) || !dq.quests.length) return '';
+  const doneCount = dq.quests.filter(q => q.done).length;
+  const allDone = doneCount >= dq.quests.length;
+  const rows = dq.quests.map(q => `
+    <div class="item q-row ${q.done ? 'q-done' : ''}">
+      <div class="t"><div class="n">${q.done ? '✅' : '⬜'} ${esc(q.label)}</div><div class="s">${esc(q.hint || '')}</div></div>
+      ${q.done ? '<span class="badge g">完成</span>' : ''}
+    </div>`).join('');
+  return `<div class="card quest-board">
+    <h3>📋 今日任务板 <span class="badge ${dq.rewarded ? 'g' : 'r'}">${doneCount}/${dq.quests.length}${dq.rewarded ? ' · 活跃奖已领' : ' · 完成 2 个领 +5 羁绊'}</span></h3>
+    ${rows}
+    <div class="muted-line">${dq.rewarded ? '今天干得漂亮，明天换个新组合！' : allDone ? '' : '任意完成 2 个就能领今日活跃奖，每天 0 点刷新'}</div>
+  </div>`;
+}
+function siblingFeedCard() {
+  const feed = me.siblingFeed || [];
+  if (!feed.length) return '';
+  const ago = ts => {
+    const m = Math.floor((Date.now() - new Date(ts).getTime()) / 60000);
+    if (m < 60) return m + ' 分钟前';
+    if (m < 1440) return Math.floor(m / 60) + ' 小时前';
+    return Math.floor(m / 1440) + ' 天前';
+  };
+  return `<div class="card sibling-feed">
+    <h3>🏠 家里动态 <span class="badge">近 7 天</span></h3>
+    ${feed.map(f => `<div class="item"><div class="t"><div class="n">${esc(f.childName)}：${esc(f.text)}</div><div class="s">${ago(f.ts)}</div></div></div>`).join('')}
+  </div>`;
+}
+
 function childPetTab() {
   const p = me.pet;
   const xpPct = Math.min(100, Math.round((p.xp - p.xpCur) / Math.max(1, p.xpNext - p.xpCur) * 100));
@@ -933,6 +1014,8 @@ function childPetTab() {
       ${adventureCard()}
       ${pending.length ? `<div class="today-pending" role="status">⏳ 有 ${pending.length} 个成就正在等家长查看：${pending.slice(0, 2).map(e => esc(e.label)).join('、')}${pending.length > 2 ? '…' : ''}</div>` : '<div class="today-pending calm">✨ 今天没有待审核的事，按自己的节奏来。</div>'}
     </section>
+    ${questBoardCard()}
+    ${siblingFeedCard()}
     <div class="card pet-hero">
       ${petArtHero(p, me.fainted)}
       <div class="name">${esc(p.nickname)} <span class="stage">Lv${p.level} · ${p.stage}</span></div>
@@ -948,6 +1031,12 @@ function childPetTab() {
     <div class="card">
       <h3>📊 五维能力</h3>
       <div class="radar">${radarSVG(p.stats)}</div>
+      <div class="stat-sense">
+        <div class="s-line">⚡ 敏捷 ${p.stats.spd}：${p.stats.spd >= 10 ? '好友对战里你多半先出手' : '好友对战里你可能后出手'}；对手的攻击约有 <b>${Math.min(15, Math.max(0, (p.stats.spd - 10) * 2))}%</b> 被你闪开</div>
+        <div class="s-line">⚔️ 攻击 ${p.stats.atk}：普通招式威力约为标准伙伴的 <b>${Math.round(p.stats.atk / 10 * 100)}%</b></div>
+        <div class="s-line">🛡️ 防御 ${p.stats.def}：受到的普通伤害约为标准伙伴的 <b>${Math.round(1000 / Math.max(1, p.stats.def)) / 10}%</b></div>
+        <div class="s-line">🔮 智慧 ${p.stats.wis}：念系招式威力约 <b>${Math.round(p.stats.wis / 10 * 100)}%</b>，同时是你的法术护盾</div>
+      </div>
       ${p.freePoints > 0 ? `
         <div class="okbox">有 ${p.freePoints} 点自由加点！</div>
         <div class="row">
@@ -1084,7 +1173,16 @@ function renderChildBattleTab(b) {
     <div class="card">
       <h3>⚔️ 对战大厅</h3>
       <div class="lead">对战心光随对手等级浮动：赢 = +6+对方等级，输 = +2+对方等级÷2（每天最多 ${me.battleDailyLimit} 场，今天已打 ${me.battlesToday} 场）。心光只升灵伴，绝不花羁绊！</div>
-      <div class="item"><div class="t"><div class="n">🌲 挑战荒野 Boss</div><div class="s">单人闯关，首战友好，等级越高越强</div></div><button class="btn sm" onclick="startBattle('boss')">出发</button></div>
+      ${me.boss ? `
+      <div class="boss-season">
+        <div class="t"><div class="n">${me.boss.emoji} 本赛季荒野 Boss：${esc(me.boss.name)}<span class="badge">${me.boss.elementName}系</span></div><div class="s">${esc(me.boss.lore)}</div></div>
+        <div class="s mt8">🔁 还有 <b>${me.boss.daysLeft}</b> 天轮换 · 首次击败点亮图鉴并获奖励 · 用克制 ${me.boss.elementName} 系的技能打它效果绝佳！</div>
+      </div>` : ''}
+      <div class="item loadout-item">
+        <div class="t"><div class="n">🎒 出战技能（最多带 3 个）</div><div class="s" id="loadout_text">${loadoutText()}</div></div>
+        <button class="btn sm ghost" onclick="openLoadout()">编辑</button>
+      </div>
+      <div class="item"><div class="t"><div class="n">🌲 挑战荒野 Boss</div><div class="s">单人闯关，Boss 等级随你</div></div><button class="btn sm" onclick="startBattle('boss')">出发</button></div>
       ${others.map(o => `
         <div class="item"><div class="t"><div class="n">🤝 与 ${esc(o.name)} 联手打 Boss</div><div class="s">TA 的分身 AI 帮你打，不用等 TA 在线</div></div><button class="btn sm ok" onclick="startBattle('coop','${o.id}')">组队</button></div>
         <div class="item"><div class="t"><div class="n">⚔️ 与 ${esc(o.name)} 切磋</div><div class="s">打 TA 宠物的 AI 分身（他 ${o.petEmoji} Lv${o.level}），单挑即打即结算</div></div><button class="btn sm bad" onclick="startBattle('sibling','${o.id}')">开打</button></div>`).join('') || '<div class="muted-line">还没有兄弟姐妹可以约战（等家长添加）</div>'}
@@ -1110,6 +1208,41 @@ function renderChildBattleTab(b) {
         </div>`).join('') : '<div class="muted-line">还没有好友，输入同学的对战码加一个吧</div>'}
       <div class="muted-line">好友对战是真人对决：轮流出招，对方要在线应战。家长可在家长端查看好友列表。</div>
     </div>`;
+}
+// —— v9: 出战技能配置（4 选 3）——————————————————————
+let loPick = [];
+function loadoutText() {
+  if (!me.battleLoadout) return '默认全带';
+  const names = (me.pet.skills || []).filter(s => me.battleLoadout.includes(s.id)).map(s => s.name);
+  return names.length ? '出战：' + names.join('、') : '默认全带';
+}
+function openLoadout() {
+  loPick = (me.battleLoadout || []).slice();
+  const unlocked = (me.pet.skills || []).filter(s => s.unlocked);
+  openModal(`
+    <h3>🎒 选择出战技能（最多 3 个）</h3>
+    <div class="muted-line">上场的技能才能在对战里用——遇到不同 Boss，带上克制它的技能！</div>
+    ${unlocked.map(s => `
+      <div class="item lo-row" id="lo_${s.id}" style="cursor:pointer" onclick="toggleLo('${s.id}')">
+        <div class="t"><div class="n">${esc(s.name)} <small>${s.power}威力</small></div><div class="s">${s.element}</div></div>
+        <span class="badge ${loPick.includes(s.id) ? 'g' : ''}" id="lo_badge_${s.id}">${loPick.includes(s.id) ? '✓ 出战' : '休息'}</span>
+      </div>`).join('')}
+    <div class="row mt8"><button class="btn ok" onclick="doSaveLoadout()">保存</button><button class="btn ghost" onclick="closeModal()">取消</button></div>`);
+}
+function toggleLo(id) {
+  const i = loPick.indexOf(id);
+  if (i >= 0) loPick.splice(i, 1);
+  else {
+    if (loPick.length >= 3) return toast('最多带 3 个技能', true);
+    loPick.push(id);
+  }
+  const badge = $('#lo_badge_' + id);
+  if (badge) { badge.textContent = loPick.includes(id) ? '✓ 出战' : '休息'; badge.className = 'badge ' + (loPick.includes(id) ? 'g' : ''); }
+}
+async function doSaveLoadout() {
+  const r = await api('/api/battle/loadout', { loadout: loPick.length ? loPick : null });
+  if (r.error) return toast(r.error, true);
+  me = r.state; closeModal(); toast('出战技能已更新！'); renderChild();
 }
 async function doAddFriend() {
   const code = $('#fr_code').value.trim();
@@ -1295,11 +1428,37 @@ async function doRedeem(id) {
 
 // —— 图鉴 Tab ————————————————————————————————
 function childBookTab() {
+  // v9: 遭遇图鉴——三态（毕业拥有 / 遭遇过剪影 / 未遭遇？？？）+ 收集称号
+  const seenMap = me.pokedexSeen || {};
+  const killMap = me.pokedexKills || {};
+  const graduatedNames = new Set((me.pokedex || []).map(p => p.speciesName));
+  const wild = (window.SpeciesMod ? window.SpeciesMod.SPECIES : []).filter(s => !s.hidden);
+  const dexRows = wild.map(sp => {
+    if (graduatedNames.has(sp.name)) return `<div class="dex-slot own"><div class="dex-emoji">${sp.emoji}</div><div class="dex-name">${esc(sp.name)}</div><div class="badge g">毕业伙伴</div></div>`;
+    if (seenMap[sp.id]) return `<div class="dex-slot seen"><div class="dex-emoji sil">${sp.emoji}</div><div class="dex-name">？？？</div><div class="badge">遭遇过</div></div>`;
+    return `<div class="dex-slot unknown"><div class="dex-emoji">❔</div><div class="dex-name">？？？</div></div>`;
+  }).join('');
+  const bossTotal = window.SpeciesMod ? window.SpeciesMod.BOSS_ROSTER.length : 0;
+  const killCount = Object.keys(killMap).length;
+  const seenCount = Object.keys(seenMap).length;
+  const gradCount = (me.pokedex || []).length;
+  const titles = [];
+  if (killCount >= 1) titles.push('🏅 首杀者');
+  if (bossTotal && killCount >= bossTotal) titles.push('👑 荒野制霸');
+  if (seenCount >= wild.length) titles.push('🔭 星海见习家');
+  if (gradCount >= 3) titles.push('💎 星海收藏家');
   return `
     <div class="card">
       <h3>🏆 兄弟姐妹榜 <span class="badge">规则各自独立·娱乐为主</span></h3>
       ${me.siblings.slice().sort((a, b) => b.intimacy - a.intimacy).map((s, i) => `
         <div class="item"><div class="t"><div class="n">${['🥇', '🥈', '🥉'][i] || (i + 1) + '.'} ${s.petEmoji} ${esc(s.name)}</div></div><div class="s">羁绊 ${s.intimacy} · Lv${s.level}</div></div>`).join('')}
+    </div>
+    <div class="card">
+      <h3>🗺️ 遭遇图鉴（${seenCount + gradCount}/${wild.length}）</h3>
+      <div class="dex-grid">${dexRows}</div>
+      <div class="muted-line">对战遇到的灵伴会点亮剪影，自己毕业的伙伴会永远留在这页。赛季 Boss 首杀还会发奖励！</div>
+      ${titles.length ? `<div class="okbox">已获称号：${titles.join(' · ')}</div>` : ''}
+      <div class="muted-line">图鉴进度：Boss 首杀 ${killCount}/${bossTotal} · 毕业伙伴 ${gradCount} 只</div>
     </div>
     <div class="card">
       <h3>📖 我的图鉴（${me.pokedex.length}）</h3>
@@ -1710,14 +1869,17 @@ function parentLedger() {
   const mk = curMonthKey();
   return `<div class="card">
     <h3>📒 账本（每笔留痕，当月可撤销）</h3>
-    <div class="muted-line">撤销会反向调整羁绊/心光并留下对冲记录；心光可回退，但宠物五维成长点不回收。系统结算与跨月账目不可撤销。</div>
+    <div class="muted-line" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span>撤销会反向调整羁绊/心光并留下对冲记录；心光可回退，但宠物五维成长点不回收。系统结算与跨月账目不可撤销。</span><button class="btn sm ghost" onclick="openMonthly()">📊 历史月报</button></div>
     ${fam.ledger.slice(0, 100).map(l => {
       const canUndo = !l.reversed && l.by !== 'system' && l.ts && l.ts.startsWith(mk) && l.childName;
       return `
       <div class="item">
         <div class="t"><div class="n">${l.childName ? esc(l.childName) + ' · ' : ''}${esc(l.reason)}</div><div class="s">${fmt(l.ts)} · ${l.by === 'parent' ? '家长' : l.by === 'child' ? '孩子' : '系统'}</div></div>
         ${canUndo ? `<button class="btn sm ghost" onclick="undoLedger('${l.id}')">撤销</button>` : l.reversed ? '<span class="badge r">已撤销</span>' : ''}
-        <div style="font-weight:700;color:${l.delta > 0 ? 'var(--ok)' : l.delta < 0 ? 'var(--bad)' : 'var(--muted)'}">${l.delta > 0 ? '+' + l.delta : l.delta === 0 ? '·' : l.delta}</div>
+        <div style="text-align:right">
+          <div style="font-weight:700;color:${l.delta > 0 ? 'var(--ok)' : l.delta < 0 ? 'var(--bad)' : 'var(--muted)'}">${l.delta > 0 ? '+' + l.delta : l.delta === 0 ? '·' : l.delta}</div>
+          ${typeof l.after === 'number' ? `<div class="s">余 ${l.after}</div>` : ''}
+        </div>
       </div>`;
     }).join('') || '<div class="muted-line">还没有记录</div>'}
   </div>`;

@@ -29,6 +29,7 @@ async function api(path, body, token) {
 (async () => {
   console.log('== 1 注册/孩子/绑定（绑定码 8 位 30 分钟） ==');
   const reg = await api('/api/register', { username: 'testboss' + RND, password: 'pass123', familyName: '测试家', securityQ: '我的小学叫什么', securityA: '新华小学' });
+  await api('/api/config', { dailyQuestReward: false }, reg.token);   // v9: 关任务板活跃奖，早期硬编码亲密度链不受 +5 干扰（第23节专测）
   ok('注册家庭(含密保)', reg.ok && reg.token);
   const PT = reg.token;
   const dup = await api('/api/register', { username: 'testboss' + RND, password: 'xxxxxx' });
@@ -283,9 +284,15 @@ async function api(path, body, token) {
   ok('月度结算无 PIN 被拒', !!smNoPin.error);
   const sm = await api('/api/settle/month', { pin: '1234' }, PT);
   ok('月度结算完成', sm.ok);
-  // 娃A当月有 active 投诉（爷爷奶奶那条）→ 无投诉奖不发 → 100；娃B无投诉 → 100+100=200
+  // v7: 新月亲密度重置为纯初始值；无投诉奖计入上月月报结余，不再 100+100 叠加
   const c1v = sm.family.children.find(c => c.id === C1), c2v = sm.family.children.find(c => c.id === C2);
-  ok('有投诉者不加 / 无投诉者+100', c1v.intimacy === 100 && c2v.intimacy === 200, { 娃A: c1v.intimacy, 娃B: c2v.intimacy });
+  ok('跨月重置为纯初始（有投诉无奖 / 无投诉也不叠加）', c1v.intimacy === 100 && c2v.intimacy === 100, { 娃A: c1v.intimacy, 娃B: c2v.intimacy });
+  const mr = await api('/api/monthly', {}, PT);
+  const mr1 = mr.children.find(x => x.childId === C1), mr2 = mr.children.find(x => x.childId === C2);
+  ok('上月月报已生成', mr.ok && mr1.reports.length === 1 && mr2.reports.length === 1);
+  ok('月报：有投诉者 bonus=0', mr1.reports[0].noComplaintBonus === 0 && mr1.reports[0].complained === true);
+  ok('月报：无投诉奖计入上月结余', mr2.reports[0].noComplaintBonus === 100 && mr2.reports[0].finalIntimacy === mr2.reports[0].endIntimacy + 100);
+  ok('月报收支摘要存在', mr2.reports[0].summary && typeof mr2.reports[0].summary.intimacyDelta === 'number');
   const ssNoPin = await api('/api/settle/semester', {}, PT);
   ok('学期结算无 PIN 被拒', !!ssNoPin.error);
   const ss = await api('/api/settle/semester', { pin: '1234' }, PT);
@@ -301,8 +308,9 @@ async function api(path, body, token) {
   ok('设周上限50', cap.ok && cap.family.config.weeklyCap === 50);
   const over = await api('/api/manual', { childId: C2, delta: 100, reason: '超上限测试' }, PT);
   ok('超周上限加分被拦截', !!over.error, over.error);
+  // v7: 跨月重置为纯初始 100（无投诉奖归上月月报），不再是 200 → +30 = 130
   const within = await api('/api/manual', { childId: C2, delta: 30, reason: '范围内加分' }, PT);
-  ok('未超上限加分通过 → 230', within.ok && within.family.children.find(c=>c.id===C2).intimacy === 230);
+  ok('未超上限加分通过 → 130', within.ok && within.family.children.find(c=>c.id===C2).intimacy === 130, within.family && within.family.children.find(c=>c.id===C2).intimacy);
 
   console.log('== 13 月报（投诉统计改记录数组） ==');
   const rep = await api('/api/report', {}, PT);
@@ -493,6 +501,12 @@ async function api(path, body, token) {
   ok('账本 id 集不变', ledgerIds(snap1) === ledgerIds(snap2));
   ok('兑换状态集不变', redStatus(snap1) === redStatus(snap2));
   const v5fields = d => Object.values(d.families || {}).flatMap(f => Object.values(f.children || {}));
+  ok('迁移补齐 v9 图鉴/出战/任务板字段（不动毕业 pokedex）', v5fields(snap2).every(c =>
+    c.pokedexKills && typeof c.pokedexKills === 'object' && !Array.isArray(c.pokedexKills)
+    && c.pokedexSeen && typeof c.pokedexSeen === 'object' && !Array.isArray(c.pokedexSeen)
+    && (c.battleLoadout === null || Array.isArray(c.battleLoadout))
+    && (c.dailyQuests === null || (typeof c.dailyQuests.date === 'string' && Array.isArray(c.dailyQuests.quests)))
+    && Array.isArray(c.pokedex)));
   ok('迁移补齐 onboarding/returnNudge', v5fields(snap2).every(c =>
     c.onboarding && ['not_started', 'active', 'completed', 'expired'].includes(c.onboarding.status)
     && Array.isArray(c.onboarding.completedOn) && Array.isArray(c.onboarding.history)
@@ -511,7 +525,7 @@ async function api(path, body, token) {
   const snap3 = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
   const legacyChild = snap3.families[lfam].children[lchild];
   ok('遗留 idle 显式映射 not_started', legacyChild.onboarding.status === 'not_started');
-  ok('迁移补 pendingGapKey/schema v9 章节结语历史', legacyChild.returnNudge.pendingGapKey === null && legacyChild.adventure && Array.isArray(legacyChild.adventure.visited) && Array.isArray(legacyChild.adventure.chapterEndings));
+  ok('迁移补 pendingGapKey(schema v8)', legacyChild.returnNudge.pendingGapKey === null);
 
   console.log('== 17 随机灵汐事件（心光雨；服务端以 HABITPET_NO_RANDOM=1 启动 → RNG 固定 0.99，chance=1 必触发） ==');
   {
@@ -554,8 +568,8 @@ async function api(path, body, token) {
     const badMode = await api('/api/battle/finish', { battleId: 'x', mode: 'friend', oppLevel: 5, win: true }, TX);
     ok('好友对战不走本地结算通道', !!badMode.error);
     const badLv = await api('/api/battle/finish', { battleId: 'y', mode: 'boss', oppLevel: 9999, win: true }, TX);
-    // 9999 钳到 80 → 名义 86，但每日经验上限 30，首场已发 16 → 实发 14
-    ok('异常等级被钳制 + 每日经验上限生效', badLv.ok && badLv.xp === 14 && badLv.capped, badLv.xp);
+    // 9999 钳到 80 → 名义 86；首场已发 16 经验 → Lv2，v7 等级封顶 cap=30+(2-1)×3=33 → 实发 17
+    ok('异常等级被钳制 + 每日经验上限生效', badLv.ok && badLv.xp === 17 && badLv.capped, badLv.xp);
   }
 
   console.log('== 18 P1 微习惯计划 + 温和回归（子进程时间旅行，规格验收） ==');
@@ -653,11 +667,245 @@ async function api(path, body, token) {
     // —— 修正单新增测试组 ④：本地缓存包含 onboarding/returnNudge；离线重启不丢计划卡 ——
     ok('本地缓存:updateFromState 缓存 onboarding/returnNudge', lc.cachedViews === true, lc.crash);
     ok('本地缓存:lastState 完整视图落盘', lc.lastStatePersisted === true);
-    ok('本地缓存:星图剧情投影含第一章标题/分支/收藏字段', lc.adventureStoryProjection === true);
     ok('本地缓存:家长快照本地投影字段齐全', lc.projectedViewFields === true);
     ok('本地缓存:离线重启(无family快照)回退 lastState 不丢计划卡', lc.offlineBootKeptCard === true);
     ok('本地缓存:重启后缓存视图优先于 raw 投影', lc.offlineCachePriority === true);
+    ok('本地缓存:v9 字段投影(任务板/赛季Boss/出战/遭遇图鉴)', lc.v9Projection === true, lc.crash);
+    ok('本地缓存:任务板离线确定性出题', lc.questDeterminism === true);
     try { fs.unlinkSync(famFile); } catch (e2) {}
+  }
+
+  console.log('== 20 v7 改进：升级检测接口 + 账本结余 + 对战经验随等级封顶 ==');
+  {
+    // ① 云端版本接口（无鉴权 GET，APK 启动检查更新用）
+    const av = await fetch(B + '/api/appversion').then(r => r.json()).catch(() => ({}));
+    ok('云端版本接口可用', av.ok && av.versionCode >= 6 && !!av.versionName && !!av.apkUrl, av);
+
+    // ② 账本每笔记录变动后结余 after
+    const reg2 = await api('/api/register', { username: 'v7boss' + RND, password: 'pass123', familyName: '结余家', securityQ: 'Q', securityA: 'A' });
+    ok('注册结余家', !!reg2.token);
+    const P2 = reg2.token;
+    const add2 = await api('/api/child', { name: '结余娃', grade: 'G3' }, P2);
+    const bc2 = await api('/api/child/bindcode', { childId: add2.childId }, P2);
+    const T2 = (await api('/api/bind', { code: bc2.code })).token;
+    await api('/api/pet/select', { speciesId: 'volt' }, T2);
+    // ③ 对战经验上限随等级提升：家长设置 Lv1 基础=0 → Lv1 cap 0、Lv2 cap 3
+    // （注意：手动加分同步加经验，因此封顶测试必须在任何手动加分之前跑）
+    await api('/api/config', { battleXpDailyCap: 0 }, P2);
+    const bf0 = await api('/api/battle/finish', { mode: 'boss', oppLevel: 1, win: true }, T2);
+    ok('Lv1 时每日经验 cap=0 不发', bf0.ok && bf0.xp === 0, { xp: bf0.xp });
+    const man13 = await api('/api/manual', { childId: add2.childId, delta: 13, reason: '升级到Lv2' }, P2);   // 手动同步加13经验，xpForLevel(2)=13
+    ok('手动+13升到Lv2', man13.ok && man13.family.children.find(c => c.id === add2.childId).level === 2, man13.family && man13.family.children.find(c => c.id === add2.childId).level);
+    const bf2 = await api('/api/battle/finish', { mode: 'boss', oppLevel: 1, win: true }, T2);
+    ok('Lv2 时 cap=3 随等级提升', bf2.ok && bf2.xp === 3 && bf2.capped === true, { xp: bf2.xp, capped: bf2.capped });
+    // ② 账本每笔记录变动后结余 after
+    const man2 = await api('/api/manual', { childId: add2.childId, delta: 30, reason: 'v7 结余验证' }, P2);
+    ok('家长手动加分 30', man2.ok);
+    const fam2 = await api('/api/family', {}, P2);
+    const led2 = fam2.ledger.find(l => l.reason && l.reason.indexOf('v7 结余验证') >= 0);
+    const kid2 = fam2.children.find(c => c.id === add2.childId);
+    ok('账本记录含变动后结余 after=亲密度', typeof led2.after === 'number' && led2.after === kid2.intimacy, { after: led2 && led2.after, now: kid2.intimacy });
+  }
+
+  console.log('== 21 v7 单元直测：跨月自动结算生成月报 ==');
+  {
+    const EN = require('./lib/engine');
+    const mkPet = () => ({ speciesId: 'volt', nickname: '小电', stats: { str: 1, agi: 1, int: 1, vit: 1, luk: 1 }, freePoints: 0, skills: [], maxHpBonus: 0 });
+    const mkChild = (over) => Object.assign({ id: 'cx', name: '月报娃', intimacy: 250, xp: 40, level: 3, pet: mkPet(), monthKey: '2026-09', complaints: [], feedStreak: 5, monthlyReports: [] }, over);
+    const mkFam = (children) => ({ config: { initialIntimacy: 100 }, rules: { noComplaint: 100 }, ledger: [], children });
+    // 场景A：上月无投诉 → 月报 bonus=100，新月=纯初始100，XP 照发
+    const cA = mkChild();
+    const fA = mkFam({ cx: cA });
+    fA.ledger.unshift({ id: 'l1', ts: '2026-09-10T08:00:00.000Z', childId: 'cx', delta: 20, xp: 5, reason: '上月投喂' });
+    fA.ledger.unshift({ id: 'l2', ts: '2026-10-02T08:00:00.000Z', childId: 'cx', delta: -5, xp: 0, reason: '当月记录不统计' });
+    EN.ensureMonth(fA, cA, new Date('2026-10-15T10:00:00'));
+    ok('跨月:新月亲密度=纯初始100', cA.intimacy === 100, cA.intimacy);
+    ok('跨月:无投诉XP照发(+100)', cA.xp === 140, cA.xp);
+    ok('跨月:月报生成且月份=2026-09', cA.monthlyReports.length === 1 && cA.monthlyReports[0].monthKey === '2026-09');
+    ok('跨月:月报结余250+奖100=350', cA.monthlyReports[0].endIntimacy === 250 && cA.monthlyReports[0].noComplaintBonus === 100 && cA.monthlyReports[0].finalIntimacy === 350);
+    ok('跨月:收支摘要只统计上月(20/-0)', cA.monthlyReports[0].summary.intimacyDelta === 20 && cA.monthlyReports[0].summary.xpDelta === 5, cA.monthlyReports[0].summary);
+    ok('跨月:月报快照为上月末等级', cA.monthlyReports[0].level === 3, cA.monthlyReports[0].level);
+    // 场景B：上月有 active 投诉 → 无奖、XP 不加、投诉归档
+    const cB = mkChild({ complaints: [{ id: 'cp1', src: 'teacher', delta: 50, ts: '2026-09-05T08:00:00.000Z', monthKey: '2026-09', status: 'active' }] });
+    const fB = mkFam({ cx: cB });
+    EN.ensureMonth(fB, cB, new Date('2026-10-15T10:00:00'));
+    ok('跨月:有投诉无奖新月=100', cB.intimacy === 100);
+    ok('跨月:有投诉XP不加', cB.xp === 40, cB.xp);
+    ok('跨月:上月投诉归档', cB.complaints[0].status === 'archived');
+    ok('跨月:月报bonus=0且标记有投诉', cB.monthlyReports[0].noComplaintBonus === 0 && cB.monthlyReports[0].complained === true);
+    // 场景C：同月幂等不重复结算
+    EN.ensureMonth(fA, cA, new Date('2026-10-20T10:00:00'));
+    ok('跨月:同月幂等不重复生成月报', cA.monthlyReports.length === 1);
+    // 场景D：手动结算（monthKey=null）按当前自然月结清
+    const cD = mkChild({ monthKey: null, intimacy: 80, xp: 10, complaints: [{ id: 'cp2', src: 'teacher', delta: 30, ts: '2026-10-05T08:00:00.000Z', monthKey: '2026-10', status: 'active' }] });
+    const fD = mkFam({ cx: cD });
+    EN.ensureMonth(fD, cD, new Date('2026-10-15T10:00:00'));
+    ok('手动结算:月报月份=当前自然月', cD.monthlyReports[0].monthKey === '2026-10');
+    ok('手动结算:当月投诉拦截奖励', cD.monthlyReports[0].noComplaintBonus === 0 && cD.intimacy === 100);
+  }
+
+  // == 22 星图冒险：三章移植 + 第四章《说谎的结晶》 ==
+  {
+    const ADV = require('./lib/adventure');
+    ok('冒险模块:共四章且第四章为诚实主题', ADV.CHAPTERS.length === 4 && ADV.CHAPTERS[3].id === 'honest-crystal' && ADV.CHAPTERS[3].title.includes('说谎的结晶'));
+    const c4n = ADV.CHAPTERS[3].nodes;
+    ok('第四章:7节点/选择结构/3结语', c4n.length === 7 && c4n.slice(0, 6).every(n => n.choices.length === 2) && c4n[6].choices.length === 3 && c4n[6].choices.filter(x => x.ending).length === 3);
+    ok('第四章:D7结语=真话收藏家/坦白小勇士/本亮鉴定师', ['真话收藏家', '坦白小勇士', '本亮鉴定师'].every(t => c4n[6].choices.some(x => x.ending && x.ending.title === t)));
+    const allIds = ADV.CHAPTERS.flatMap(c => c.nodes.map(n => n.id));
+    ok('四章节点ID全局唯一', new Set(allIds).size === allIds.length);
+
+    // API 层：新家庭走 投喂前拦截 → 投喂 → 探索 → 非数值不变
+    const ar = await api('/api/register', { username: 'advboss' + RND, password: 'pass123', familyName: '冒险家', securityQ: 'q', securityA: 'a' });
+    await api('/api/config', { dailyQuestReward: false }, ar.token);   // v9: 关任务板活跃奖（探索本身非数值红线在此节验证）
+    const PTa = ar.token;
+    const addA = await api('/api/child', { name: '探险娃', grade: 'G4' }, PTa);
+    const bcA = await api('/api/child/bindcode', { childId: addA.childId }, PTa);
+    const Ta = (await api('/api/bind', { code: bcA.code })).token;
+    await api('/api/pet/select', { speciesId: 'volt' }, Ta);
+    const meA0 = await api('/api/me', {}, Ta);
+    ok('me含冒险视图:4章主线/第一章当前', meA0.adventure && meA0.adventure.campaign.totalChapters === 4 && meA0.adventure.chapter.id === 'first-starlight' && meA0.adventure.nodes.length === 7);
+    const blocked = await api('/api/adventure/explore', { nodeId: 'starlight-gate', choiceId: 'record-promise' }, Ta);
+    ok('未投喂拦截探索(409)', blocked.error && blocked.error.includes('先照顾灵伴'));
+    await api('/api/config', { holidayMode: true }, PTa);
+    await api('/api/feed', {}, Ta);
+    const before = await api('/api/me', {}, Ta);
+    const ex = await api('/api/adventure/explore', { nodeId: 'starlight-gate', choiceId: 'record-promise' }, Ta);
+    ok('投喂后探索成功且非数值(亲密度/经验不变)', ex.ok && ex.result.story && before.intimacy === ex.state.intimacy && before.xp === ex.state.xp, { i0: before.intimacy, i1: ex.state.intimacy });
+    ok('探索记录:选择+星历残页入收藏', ex.state.adventure.story.choices.length === 1 && ex.state.adventure.story.choices[0].choiceId === 'record-promise' && ex.state.adventure.story.lorePages.length === 1);
+    const ex2 = await api('/api/adventure/explore', { nodeId: 'ember-trail', choiceId: 'escort-messenger' }, Ta);
+    ok('同日重复探索返回缓存结果', ex2.ok && ex2.repeated === true);
+    const st = await api('/api/adventure/state', {}, Ta);
+    ok('state端点:第1日完成/明日推进到D2', st.ok && st.state.completedDays.includes(1) && st.state.chapterDay === 2);
+
+    // 单元层：走完四章全流程（引擎直接驱动，绕过每日投喂限制）
+    const fakeChild = { id: 'u1', pet: { speciesId: 'volt' }, fainted: false, pausedAt: null, feedDate: 'd1', adventure: null };
+    for (let ci = 0; ci < 4; ci++) {
+      const chap = ADV.CHAPTERS[ci];
+      for (let d = 1; d <= 7; d++) {
+        const today = new Date(Date.UTC(2027, 0, ci * 7 + d)).toISOString().slice(0, 10);   // 必须是合法 ISO 日期（周任务会 weekKey(playedOn)）
+        fakeChild.feedDate = today;
+        const view = ADV.adventureView(fakeChild, today);
+        const node = view.nodes.find(n => n.status === 'current');
+        const r = ADV.explore(fakeChild, node.id, today, node.choices[0].id);
+        if (!r.ok) { ok(`四章全流程 ${chap.title} D${d}`, false, r.error); break; }
+      }
+      if (ci < 3) {
+        const adv = ADV.advanceChapter(fakeChild, `adv${ci}`);
+        if (!adv.ok) { ok(`推进到第${ci + 2}章`, false, adv.error); break; }
+      }
+    }
+    const endState = ADV.ensureState(fakeChild);
+    ok('四章全流程:4条章节结语全收', endState.chapterEndings.length === 4, endState.chapterEndings.map(e => e.title));
+    ok('四章全流程:回访模式解锁(全图visited)', endState.visited.length === 28 && endState.chapterCompletions.length === 4);
+    const viewDone = ADV.adventureView(fakeChild, '2026-12-25');
+    ok('全通关后周任务解锁', !!viewDone.weeklyQuest && viewDone.weeklyQuest.total === 3);
+    ok('第四章专属:结语含「真话收藏家」', endState.chapterEndings.some(e => e.title === '真话收藏家'));
+  }
+
+  // == 23 v9 P0/P1：Boss赛季轮换 + 首杀图鉴 + 出战4选3 + 每日任务板 + 遭遇图鉴 + 兄妹动态流 ==
+  {
+    const SP = require('./lib/species');
+    const BT = require('./lib/battle');
+    const EN = require('./lib/engine');
+
+    // —— 单元层：Boss 赛季确定性轮换（无随机种子，全端一致） ——
+    const b1 = SP.currentBoss(new Date('2026-10-01T00:00:00Z'));
+    const b1b = SP.currentBoss(new Date('2026-10-05T12:00:00Z'));
+    const b2 = SP.currentBoss(new Date('2026-10-15T00:00:00Z'));
+    ok('Boss轮换:同赛季两次推导一致(确定性)', b1.id === b1b.id);
+    ok('Boss轮换:两周后换下一只', b2.id !== b1.id && SP.BOSS_ROSTER.some(r => r.id === b2.id));
+    ok('Boss轮换:字段就位(name/daysLeft/元素名)', !!b1.name && typeof b1.daysLeft === 'number' && b1.daysLeft >= 1 && b1.daysLeft <= 14 && !!b1.elementName && !!b1.lore);
+
+    // —— 单元层：首杀图鉴（+5 只发一次，幂等） ——
+    const mkPetK = () => ({ speciesId: 'volt', nickname: '小电', stats: { str: 1, agi: 1, int: 1, vit: 1, luk: 1 }, freePoints: 0, skills: [], maxHpBonus: 0 });
+    const kidK = { id: 'k1', name: '首杀娃', intimacy: 100, xp: 0, level: 1, pet: mkPetK(), pokedexKills: {}, pokedexSeen: {}, battleLoadout: null, fainted: false, feedDate: 'd1' };
+    const famK = { config: {}, ledger: [], children: { k1: kidK } };
+    const bossDef = SP.BOSS_ROSTER[0];
+    const kr = BT.recordBossKill(famK, kidK, bossDef.id, bossDef.name);
+    ok('Boss首杀:+5亲密度并记图鉴', kr.reward === 5 && !!kidK.pokedexKills[bossDef.id] && kidK.intimacy === 105, kr);
+    ok('Boss首杀:账本记录含after结余', famK.ledger.length === 1 && famK.ledger[0].after === 105 && famK.ledger[0].reason.includes('首杀'));
+    BT.recordBossKill(famK, kidK, bossDef.id, bossDef.name);
+    ok('Boss首杀:幂等不重复发奖', kidK.intimacy === 105 && famK.ledger.length === 1 && Object.keys(kidK.pokedexKills).length === 1);
+    ok('首杀奖励常量=5', BT.FIRST_KILL_REWARD === 5 && BT.bossDefById(bossDef.id).id === bossDef.id && BT.bossDefById('ghost-boss') === null);
+
+    // —— 单元层：每日任务板（确定性出题 + 2/3 发奖一次） ——
+    const qk = { id: 'kq1', name: '任务娃', intimacy: 100, xp: 0, level: 1, dailyQuests: null };
+    const q1 = EN.ensureDailyQuests(qk, new Date('2026-10-05T01:00:00'));   // 本地时间（dateKey 按本地日切）
+    const q1b = EN.ensureDailyQuests(qk, new Date('2026-10-05T22:00:00'));
+    ok('任务板:同日惰性一致且3题', q1 === q1b && q1.quests.length === 3 && q1.rewarded === false);
+    ok('任务板:题目是池子4选3且不重复', q1.quests.every(x => EN.QUEST_POOL.some(p => p.id === x.id)) && new Set(q1.quests.map(x => x.id)).size === 3);
+    const qk2 = { id: 'kq1', name: '任务娃', dailyQuests: null };
+    const q2 = EN.ensureDailyQuests(qk2, new Date('2026-10-05T02:00:00'));
+    ok('任务板:seed=日期+孩子id 两人同题(全端一致)', JSON.stringify(q2.quests.map(x => x.id)) === JSON.stringify(q1.quests.map(x => x.id)));
+    const q3 = EN.ensureDailyQuests(qk, new Date('2026-10-06T08:00:00Z'));
+    ok('任务板:换日重置(新题/全未做/未发奖)', q3 !== q1 && q3.date === '2026-10-06' && q3.quests.every(x => !x.done) && q3.rewarded === false);
+    const famQ = { config: {}, ledger: [], children: { kq1: qk } };
+    const baseI = qk.intimacy;
+    EN.markDailyQuest(famQ, qk, q3.quests[0].id, new Date('2026-10-06T08:00:00Z'));
+    ok('任务板:完成1个不发奖', qk.intimacy === baseI && q3.rewarded === false);
+    const rw = EN.markDailyQuest(famQ, qk, q3.quests[1].id, new Date('2026-10-06T08:00:00Z'));
+    ok('任务板:完成2个发活跃奖+5', rw.justRewarded === true && qk.intimacy === baseI + 5 && q3.rewarded === true);
+    EN.markDailyQuest(famQ, qk, q3.quests[2].id, new Date('2026-10-06T08:00:00Z'));
+    EN.markDailyQuest(famQ, qk, q3.quests[0].id, new Date('2026-10-06T08:00:00Z'));
+    ok('任务板:奖励每日一次(重复打钩不重复发)', qk.intimacy === baseI + 5 && famQ.ledger.length === 1);
+    const rw2 = EN.markDailyQuest(famQ, qk, 'feed', new Date('2026-10-06T09:00:00Z'));
+    ok('任务板:已完成任务再打钩静默', rw2.justRewarded === false && qk.intimacy === baseI + 5);
+    // 家长可关活跃奖：config.dailyQuestReward=false → 打钩照常，奖励不发
+    const qk3 = { id: 'kq3', name: '关奖娃', intimacy: 50, dailyQuests: null };
+    const famQT = { config: { dailyQuestReward: false }, ledger: [], children: { kq3: qk3 } };
+    const q5 = EN.ensureDailyQuests(qk3, new Date('2026-10-06T09:00:00Z'));
+    EN.markDailyQuest(famQT, qk3, q5.quests[0].id, new Date('2026-10-06T09:00:00Z'));
+    EN.markDailyQuest(famQT, qk3, q5.quests[1].id, new Date('2026-10-06T09:00:00Z'));
+    ok('任务板:家长关闭活跃奖开关则只打钩不发奖', qk3.intimacy === 50 && q5.quests.filter(x => x.done).length === 2 && q5.rewarded === false && famQT.ledger.length === 0);
+
+    // —— API 层：双娃家庭 → v9 视图字段 / 出战配置 / 任务打钩 / 遭遇图鉴 / 兄妹动态 ——
+    const r9 = await api('/api/register', { username: 'v9boss' + RND, password: 'pass123', familyName: '图鉴家', securityQ: 'q', securityA: 'a' });
+    const P9 = r9.token;
+    const b9 = await api('/api/child', { name: '二娃', grade: 'G2' }, P9);
+    const TB9 = (await api('/api/bind', { code: (await api('/api/child/bindcode', { childId: b9.childId }, P9)).code })).token;
+    await api('/api/pet/select', { speciesId: 'firam' }, TB9);
+    // 出题是 4 选 3：为确定性验证「凑满2个发奖」，挑一个今天题面同时含 feed+battle 的孩子（每次约50%，最多试10个）
+    let TA9 = null, meA = null;
+    for (let att = 0; att < 10 && !TA9; att++) {
+      const c9 = await api('/api/child', { name: '大娃' + att, grade: 'G3' }, P9);
+      const t9 = (await api('/api/bind', { code: (await api('/api/child/bindcode', { childId: c9.childId }, P9)).code })).token;
+      await api('/api/pet/select', { speciesId: 'volt' }, t9);
+      const m9 = await api('/api/me', {}, t9);
+      if (!m9.dailyQuests) { console.log('  [dbg] me异常响应:', JSON.stringify(m9).slice(0, 200)); continue; }
+      const ids = m9.dailyQuests.quests.map(q => q.id);
+      if (ids.includes('feed') && ids.includes('battle')) { TA9 = t9; meA = m9; }
+    }
+    ok('找到题面含feed+battle的孩子(确定性验证前提)', !!TA9);
+    ok('me含v9字段:赛季Boss/任务板3题/出战null/遭遇图鉴', !!meA.boss && !!meA.boss.id && meA.dailyQuests && meA.dailyQuests.quests.length === 3 && meA.dailyQuests.reward === 5 && meA.battleLoadout === null && meA.pokedexKills && meA.pokedexSeen);
+    ok('任务板:date=服务端今日', meA.dailyQuests.date === EN.dateKey(new Date()));
+    ok('兄妹动态流字段就位(初始空)', Array.isArray(meA.siblingFeed) && meA.siblingFeed.length === 0);
+
+    // 出战配置 4 选 3：非本宠技能被拒 → 合法保存 → null 恢复默认
+    const mySkills = meA.pet.skills.map(s => s.id);
+    const badLo = await api('/api/battle/loadout', { loadout: ['ghost-skill-x'] }, TA9);
+    ok('出战配置:非本宠技能被拒', !!badLo.error);
+    const badCnt = await api('/api/battle/loadout', { loadout: ['a', 'b', 'c', 'd'] }, TA9);
+    ok('出战配置:超过3个被拒', !!badCnt.error);
+    const okLo = await api('/api/battle/loadout', { loadout: mySkills.slice(0, 2) }, TA9);
+    ok('出战配置:保存2个出战技能', okLo.ok && okLo.state.battleLoadout && okLo.state.battleLoadout.length === 2, okLo.state && okLo.state.battleLoadout);
+    const resetLo = await api('/api/battle/loadout', { loadout: null }, TA9);
+    ok('出战配置:null恢复默认全带', resetLo.ok && resetLo.state.battleLoadout === null);
+
+    // 任务打钩链路（题面必含 feed+battle）：投喂打钩feed → 兄妹对战打钩battle → 2/3 发活跃奖 → 二娃动态流出现任务板事件
+    // 注：默认投喂窗 19-21 点，测试随时段运行 → 先开假期模式（全天可投喂，与 22 节做法一致）
+    await api('/api/config', { holidayMode: true }, P9);
+    const fd9 = await api('/api/feed', {}, TA9);
+    const meF1 = await api('/api/me', {}, TA9);
+    ok('投喂打钩feed任务', fd9.ok && meF1.dailyQuests.quests.find(q => q.id === 'feed').done === true);
+    const bs9 = await api('/api/battle/start', { mode: 'sibling', opponentId: b9.childId }, TA9);
+    ok('兄妹对战开打成功', bs9.ok && !!bs9.battleId, bs9.error);
+    const meA2 = await api('/api/me', {}, TA9);
+    const doneCnt = meA2.dailyQuests.quests.filter(q => q.done).length;
+    ok('对战打钩battle任务且至少完成2个', doneCnt >= 2 && meA2.dailyQuests.quests.find(q => q.id === 'battle').done === true);
+    ok('任务板活跃奖已发(+5,投喂本身+1另计)', meA2.dailyQuests.rewarded === true && meA2.intimacy === meF1.intimacy + 5, { intimacy: meA2.intimacy, base: meF1.intimacy, rewarded: meA2.dailyQuests.rewarded });
+    ok('遭遇图鉴:对战点亮对手剪影(firam)', !!meA2.pokedexSeen.firam, Object.keys(meA2.pokedexSeen));
+    const meB = await api('/api/me', {}, TB9);
+    ok('兄妹动态流:二娃看到大娃任务板事件', meB.siblingFeed.some(x => (x.text || '').includes('任务板') && x.childName.startsWith('大娃')), meB.siblingFeed);
   }
 
   console.log(`\n========== 结果：${pass} 通过 / ${fail} 失败 ==========`);

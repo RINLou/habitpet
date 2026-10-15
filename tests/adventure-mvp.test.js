@@ -67,13 +67,16 @@ async function api(path, body, token) {
       ok(`${chapter.title} 可显式点亮下一章`, advanced.ok && advanced.chapter.id === adventure.CHAPTERS[chapterIndex + 1].id);
     }
   });
+  const nCh = adventure.CHAPTERS.length;   // v12 合并版：四章 28 天
+  const nDays = nCh * 7;
+  const nextDay = `2026-03-01`;   // 主线最后一天 2026-02-28 的次日
   const view = adventure.adventureView(child, `2026-02-${String(dayNo + 1).padStart(2, '0')}`);
-  ok('三章二十一日主线全部完成', view.campaign.completed && view.campaign.completedChapters.length === 3 && view.story.lorePages.length === 21 && view.story.chapterEndings.length === 3);
-  ok('终章后不再允许点亮下一章', !!adventure.advanceChapter(child, '2026-02-22').error);
-  const revisitDay = '2026-02-22';
+  ok(`四章${nDays}日主线全部完成`, view.campaign.completed && view.campaign.completedChapters.length === nCh && view.story.lorePages.length === nDays && view.story.chapterEndings.length === nCh);
+  ok('终章后不再允许点亮下一章', !!adventure.advanceChapter(child, nextDay).error);
+  const revisitDay = nextDay;
   child.feedDate = revisitDay;
   const beforeRevisit = adventure.adventureView(child, revisitDay);
-  ok('终章后星图展示全部 21 个已访问节点', beforeRevisit.nodes.length === 21 && beforeRevisit.nodes.every(n => n.status === 'revisit'));
+  ok(`终章后星图展示全部 ${nDays} 个已访问节点`, beforeRevisit.nodes.length === nDays && beforeRevisit.nodes.every(n => n.status === 'revisit'));
   const signatureNodeId = adventure.SIGNATURE_BY_SPECIES.volt.nodeId;
   const revisit = adventure.explore(child, signatureNodeId, revisitDay, undefined);
   const afterRevisit = adventure.adventureView(child, revisitDay);

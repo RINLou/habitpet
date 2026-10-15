@@ -7,11 +7,25 @@ const store = require('./lib/store');
 const engine = require('./lib/engine');
 const battle = require('./lib/battle');
 const adventure = require('./lib/adventure');
-const { SPECIES, speciesById, skillById, ELEMENT_NAMES, CHART } = require('./lib/species');
+const { SPECIES, speciesById, skillById, ELEMENT_NAMES, CHART, currentBoss } = require('./lib/species');
+const lingxiSync = require('./lib/lingxi_sync');   // v11: 灵汐云每日同步 + 一键迁移
 
 const PORT = process.env.PORT || 3000;
+// v10: 轻量 .env 加载（不覆盖已存在的环境变量；不引入 dotenv 依赖）
+try {
+  const envFile = path.join(__dirname, '.env');
+  if (fs.existsSync(envFile)) {
+    for (const line of fs.readFileSync(envFile, 'utf8').split('\n')) {
+      const m = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$/);
+      if (m && process.env[m[1]] === undefined) process.env[m[1]] = m[2].replace(/^["']|["']$/g, '');
+    }
+  }
+} catch (e) { /* .env 读取失败不阻塞启动 */ }
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const PHOTO_DIR = path.join(__dirname, 'data', 'photos');
+
+// v7: 手机端检测升级 —— 云端最新 APK 版本（每次发新 APK 时同步更新这三项；apkUrl 指向云端静态文件）
+const APP_VERSION = { versionCode: 8, versionName: 'v12', apkUrl: '/apk/habitpet-latest.apk' };   // v12 合并版：灵汐玩法 + 开发线工程
 
 store.load();
 fs.mkdirSync(PHOTO_DIR, { recursive: true });
@@ -49,7 +63,8 @@ function ledger(family, child, delta, reason, by, xp) {
   family.ledger.unshift({
     id: store.newId('l'), ts: new Date().toISOString(),
     childId: child ? child.id : null, childName: child ? child.name : null,
-    delta, xp: xp || 0, reason, by, reversed: false
+    delta, xp: xp || 0, reason, by, reversed: false,
+    after: child ? child.intimacy : null   // v7: 变动后亲密度结余（对账用；调用处均先改分后记账）
   });
   if (family.ledger.length > 2000) family.ledger.length = 2000;
 }
@@ -177,6 +192,26 @@ function childMe(family, child) {
   child.lastSeenAt = now.toISOString();          // 对战大厅"最近活跃"
   rollOnboardingIfDue(child, today);
   const pausedDays = child.pausedAt ? Math.floor((Date.now() - child.pausedAt) / 86400000) : 0;
+  // v9: 每日任务板（惰性换日）+ 兄妹动态流（近 7 天兄弟姐妹的有趣事件）
+  engine.ensureDailyQuests(child, now);
+  const questLabels = Object.fromEntries(engine.QUEST_POOL.map(q => [q.id, q]));
+  const questView = {
+    date: child.dailyQuests.date,
+    rewarded: child.dailyQuests.rewarded,
+    reward: engine.QUEST_REWARD,
+    quests: child.dailyQuests.quests.map(q => ({ id: q.id, done: q.done, label: questLabels[q.id] ? questLabels[q.id].label : q.id, hint: questLabels[q.id] ? questLabels[q.id].hint : '' }))
+  };
+  const siblingsAll = Object.values(family.children).filter(c => c.id !== child.id);
+  const weekAgo = Date.now() - 7 * 86400000;
+  const FEED_INTERESTING = /升级|进化|觉醒|首杀|无投诉|月度结算|毕业|任务板|图鉴/;
+  const siblingFeed = siblingsAll.length
+    ? family.ledger
+        .filter(l => l.childId && l.childId !== child.id && siblingsAll.some(s => s.id === l.childId)
+          && !l.reversed && (l.delta > 0 || l.xp > 0) && FEED_INTERESTING.test(l.reason || '')
+          && (new Date(l.ts).getTime() > weekAgo))
+        .slice(0, 8)
+        .map(l => ({ ts: l.ts, childId: l.childId, childName: l.childName, text: (l.reason || '').replace(/\s*\+.*$/, '') }))
+    : [];
   return {
     id: child.id, name: child.name, grade: child.grade,
     intimacy: child.intimacy, xp: child.xp, level: child.level,
@@ -207,7 +242,14 @@ function childMe(family, child) {
     onboarding: onboardingView(child, today),
     returnNudge: returnNudgeView(child, previousLastSeenAt, now),
     adventure: adventure.adventureView(child, today),
-    siblings: Object.values(family.children).map(c => ({ id: c.id, name: c.name, intimacy: c.intimacy, level: c.level, petEmoji: c.pet ? (speciesById(c.pet.speciesId) || {}).emoji : '⚪' }))
+    siblings: Object.values(family.children).map(c => ({ id: c.id, name: c.name, intimacy: c.intimacy, level: c.level, petEmoji: c.pet ? (speciesById(c.pet.speciesId) || {}).emoji : '⚪' })),
+    // v9: 每日任务板 / 赛季 Boss / 出战配置 / 兄妹动态 / 遭遇图鉴
+    dailyQuests: questView,
+    boss: currentBoss(now),
+    battleLoadout: Array.isArray(child.battleLoadout) ? child.battleLoadout : null,
+    pokedexKills: child.pokedexKills || {},
+    pokedexSeen: child.pokedexSeen || {},
+    siblingFeed
   };
 }
 function ensureChild(family, childId) { return family.children[childId] || null; }
@@ -357,12 +399,10 @@ const routes = {
     if (!c) return { code: 404, body: { error: '孩子不存在' } };
     const today = engine.dateKey();
     const result = adventure.explore(c, p.nodeId, today, p.choiceId);
-    if (result.error) {
-      const state = childMe(f, c); store.saveNow();
-      return { code: result.error === '星图节点不存在' ? 400 : 409, body: { error: result.error, state } };
-    }
+    if (!result.error) engine.markDailyQuest(f, c, 'adventure');   // v9: 每日任务板
     const state = childMe(f, c);
     store.saveNow();
+    if (result.error) return { code: result.error === '星图节点不存在' ? 400 : 409, body: { error: result.error, state } };
     return { code: 200, body: { ok: true, repeated: !!result.repeated, result: result.result, state } };
   },
   // 章节切换是孩子端显式确认动作：保留已完成章节回访，且同日不能连开下一章。
@@ -370,12 +410,10 @@ const routes = {
     const f = store.familyById(sess.familyId); const c = ensureChild(f, sess.childId);
     if (!c) return { code: 404, body: { error: '孩子不存在' } };
     const result = adventure.advanceChapter(c, engine.dateKey());
-    if (result.error) {
-      const state = childMe(f, c); store.saveNow();
-      return { code: 409, body: { error: result.error, state } };
-    }
-    const state = childMe(f, c); store.saveNow();
-    return { code: 200, body: { ok: true, chapter: result.chapter, state } };
+    const state = childMe(f, c);
+    store.saveNow();
+    if (result.error) return { code: 409, body: { error: result.error, state } };
+    return { code: 200, body: { ok: true, chapter: result.chapter, advancedAt: result.advancedAt, state } };
   },
   async feed(sess) {
     const f = store.familyById(sess.familyId); const c = ensureChild(f, sess.childId);
@@ -391,6 +429,7 @@ const routes = {
     c.feedDate = today;
     engine.addIntimacy(c, pts); engine.addXP(c, pts); engine.noteWeekEarn(c, pts);
     ledger(f, c, pts, `每日作业投喂（连续第${c.feedStreak}天）`, 'auto');
+    engine.markDailyQuest(f, c, 'feed');   // v9: 每日任务板
     let bonus = 0;
     if (c.feedStreak > 0 && c.feedStreak % 7 === 0) {
       bonus = (c.rules && c.rules.streak !== undefined) ? c.rules.streak : f.rules.streak;
@@ -425,6 +464,7 @@ const routes = {
     }
     c.pending.push(ev);
     if (p.type === 'pride' || p.type === 'holiday') c.prideWeekKey = engine.weekKey();
+    engine.markDailyQuest(f, c, 'report');   // v9: 每日任务板
     const __st5 = childMe(f, c);
     store.save();
     return { code: 200, body: { ok: true, eventId: ev.id, state: __st5 } };
@@ -508,10 +548,29 @@ const routes = {
     } else if (mode !== 'boss') return { code: 400, body: { error: '未知模式' } };
     if (!battle.canBattleToday(me, f.config.battleDailyLimit)) return { code: 400, body: { error: `今日对战次数已满（上限${f.config.battleDailyLimit}场）` } };
     battle.noteBattle(me);
+    engine.markDailyQuest(f, me, 'battle');   // v9: 每日任务板（参与即算）
     const r = battle.startBattle(f, mode, me, opp);
     if (r.error) return { code: 400, body: r };
     store.save();
     return { code: 200, body: { ok: true, battleId: r.battleId, battle: r.state } };
+  },
+  // v9: 技能出战配置（4 选 3）——必须是本宠物的技能，1~3 个；null 恢复默认全带
+  async battleLoadout(sess, p) {
+    const f = store.familyById(sess.familyId); const c = ensureChild(f, sess.childId);
+    if (!c.pet) return { code: 400, body: { error: '先选宠物才能配置出战技能' } };
+    if (p.loadout === null) {
+      c.battleLoadout = null;
+    } else {
+      const ids = Array.isArray(p.loadout) ? p.loadout.map(x => String(x)) : [];
+      const uniq = [...new Set(ids)];
+      if (uniq.length < 1 || uniq.length > 3) return { code: 400, body: { error: '出战技能需选 1~3 个' } };
+      const owned = c.pet.skills || [];
+      if (!uniq.every(id => owned.includes(id))) return { code: 400, body: { error: '出战技能必须是你的伙伴学会的技能' } };
+      c.battleLoadout = uniq;
+    }
+    const __stLo = childMe(f, c);
+    store.save();
+    return { code: 200, body: { ok: true, state: __stLo } };
   },
   // —— v4: 好友对战 ————————————————————————————————
   async battleInvite(sess, p) {
@@ -639,15 +698,18 @@ const routes = {
     const oppLevel = Math.max(1, Math.min(80, Math.floor(Number(p.oppLevel) || 1)));
     const win = !!p.win;
     if (!c.pausedAt) battle.noteBattle(c);
+    engine.markDailyQuest(f, c, 'battle');   // v9: 每日任务板（离线补结算路径也打钩）
     let actual = 0, capped = false;
     if (c.pausedAt) {
       // 暂停期对战不发心光，但仍记录场次与流水
-      f.ledger.unshift({ id: store.newId('l'), ts: new Date().toISOString(), childId: c.id, childName: c.name, delta: 0, xp: 0, reason: `对战（暂停计分期间，未发心光）`, by: 'system' });
+      f.ledger.unshift({ id: store.newId('l'), ts: new Date().toISOString(), childId: c.id, childName: c.name, delta: 0, xp: 0, reason: `对战（暂停计分期间，未发心光）`, by: 'system', after: c.intimacy });
     } else if (!battle.canBattleToday(c, f.config.battleDailyLimit)) {
       capped = true;   // 场次超限（多设备漂移）：只记数不发心光
     } else {
       const xp = win ? 6 + oppLevel : 2 + Math.floor(oppLevel / 2);
-      const cap = (f.config && f.config.battleXpDailyCap !== undefined) ? f.config.battleXpDailyCap : 30;
+      // v7: 上限随等级提升（与 lib/battle.js 同公式），家长设置值为 Lv1 基础
+      const baseCap = (f.config && f.config.battleXpDailyCap !== undefined) ? f.config.battleXpDailyCap : 30;
+      const cap = baseCap + Math.max(0, c.level - 1) * 3;
       const today = engine.dateKey();
       if (!c.battleXp || c.battleXp.date !== today) c.battleXp = { date: today, amount: 0 };
       const remaining = Math.max(0, cap - (c.battleXp.amount || 0));
@@ -659,8 +721,13 @@ const routes = {
         id: store.newId('l'), ts: new Date().toISOString(),
         childId: c.id, childName: c.name, delta: 0, xp: actual,
         reason: `对战${win ? '胜利' : '失败'}（${mode === 'sibling' ? '兄妹切磋' : 'Boss挑战'} vs Lv${oppLevel}，+${xp} 心光${capped ? `，今日对战心光已达上限 ${cap}，实发 ${actual}` : ''}）`,
-        by: 'system'
+        by: 'system', after: c.intimacy
       });
+      // v9: 首杀图鉴（离线/快速结算路径）——校验 bossId 合法后记一次
+      if (win && mode === 'boss' && p.bossId && battle.bossDefById(String(p.bossId))) {
+        const def = battle.bossDefById(String(p.bossId));
+        battle.recordBossKill(f, c, def.id, def.name);
+      }
     }
     const __st13 = childMe(f, c);
     store.save();
@@ -877,6 +944,7 @@ const routes = {
     if (p.randomEventChance !== undefined) f.config.randomEventChance = Math.max(0, Math.min(1, Number(p.randomEventChance) || 0));   // v5
     if (p.holidayMode !== undefined) f.config.holidayMode = !!p.holidayMode;
     if (p.absenceMode !== undefined) f.config.absenceMode = p.absenceMode === 'strict' ? 'strict' : 'mercy';   // 惩罚需家长显式开启
+    if (p.dailyQuestReward !== undefined) f.config.dailyQuestReward = !!p.dailyQuestReward;   // v9: 任务板活跃奖开关（默认开）
     if (p.feedWindow) f.config.feedWindow = { startHour: Math.max(0, Math.min(23, Math.round(Number(p.feedWindow.startHour) || 0))), endHour: Math.max(1, Math.min(24, Math.round(Number(p.feedWindow.endHour) || 24))) };
     if (p.semesterStartDate !== undefined) { f.config.semester.startDate = p.semesterStartDate || null; f.config.semester.autoDone = false; }
     if (p.semesterName !== undefined) f.config.semester.name = String(p.semesterName).slice(0, 30);
@@ -969,6 +1037,23 @@ const routes = {
     lines.push(`\n生成时间：${new Date().toLocaleString('zh-CN')}`);
     return { code: 200, body: { ok: true, text: lines.join('\n') } };
   },
+  // v7: 历史月报（跨月自动结算生成的存档；孩子端查自己，家长端查全部或指定孩子）
+  async monthlyReports(sess, p) {
+    const f = store.familyById(sess.familyId);
+    let kids;
+    if (sess.role === 'child') {
+      kids = [ensureChild(f, sess.childId)].filter(Boolean);
+    } else {
+      for (const c of Object.values(f.children)) engine.ensureMonth(f, c);   // 家长查看时先补跨月结算
+      kids = p.childId ? [f.children[p.childId]].filter(Boolean) : Object.values(f.children);
+    }
+    const out = kids.map(c => ({
+      childId: c.id, childName: c.name,
+      currentIntimacy: c.intimacy, currentMonth: engine.monthKey(),
+      reports: (c.monthlyReports || []).slice(0, 12)
+    }));
+    return { code: 200, body: { ok: true, children: out } };
+  },
   async milestoneApprove(sess, p) {
     const f = store.familyById(sess.familyId); const c = ensureChild(f, p.childId);
     if (!c) return { code: 400, body: { error: '孩子不存在' } };
@@ -997,8 +1082,113 @@ function familyView(f) {
 
 // —— 路由表 & 鉴权 ————————————————————————————
 const PUBLIC = { '/api/register': 'register', '/api/login': 'login', '/api/bind': 'bind', '/api/species': null, '/api/forgot/question': 'forgotQuestion', '/api/forgot/reset': 'forgotReset' };
-const CHILD = { '/api/me': 'me', '/api/feed': 'feed', '/api/submit': 'submit', '/api/redeem': 'redeem', '/api/redeem/request': 'redeemRequest', '/api/pet/select': 'selectPet', '/api/pet/nickname': 'nickname', '/api/pet/allocate': 'allocate', '/api/pet/revive': 'petRevive', '/api/battle/start': 'battleStart', '/api/battle/move': 'battleMove', '/api/battle/state': 'battleState', '/api/battle/finish': 'battleFinish', '/api/battle/invite': 'battleInvite', '/api/battle/invite/accept': 'battleInviteAccept', '/api/battle/invite/decline': 'battleInviteDecline', '/api/friend/code': 'friendCode', '/api/friend/add': 'friendAdd', '/api/friend/del': 'friendDel', '/api/milestone/apply': 'milestoneApply', '/api/sync/full': 'syncFull', '/api/onboarding/start': 'onboardingStart', '/api/onboarding/complete': 'onboardingComplete', '/api/onboarding/dismiss': 'onboardingDismiss', '/api/return-nudge/ack': 'returnNudgeAck', '/api/adventure/state': 'adventureState', '/api/adventure/explore': 'adventureExplore', '/api/adventure/advance': 'adventureAdvance' };
-const PARENT = { '/api/family': 'family', '/api/sync/full': 'syncFull', '/api/pin/verify': 'pinVerify', '/api/pin/change': 'pinChange', '/api/security': 'securitySet', '/api/child': 'addChild', '/api/child/edit': 'childEdit', '/api/child/delete': 'childDelete', '/api/child/bindcode': 'bindcode', '/api/child/unbind': 'unbind', '/api/approve': 'approve', '/api/manual': 'manual', '/api/complaint': 'complaint', '/api/complaint/edit': 'complaintEdit', '/api/complaint/cancel': 'complaintCancel', '/api/complaint/delete': 'complaintDelete', '/api/ledger/undo': 'ledgerUndo', '/api/rules': 'rules', '/api/config': 'config', '/api/reward': 'reward', '/api/fulfill': 'fulfill', '/api/pause': 'pause', '/api/settle/month': 'settleMonth', '/api/settle/semester': 'settleSemester', '/api/report': 'report', '/api/milestone/approve': 'milestoneApprove' };
+const CHILD = { '/api/me': 'me', '/api/feed': 'feed', '/api/submit': 'submit', '/api/redeem': 'redeem', '/api/redeem/request': 'redeemRequest', '/api/pet/select': 'selectPet', '/api/pet/nickname': 'nickname', '/api/pet/allocate': 'allocate', '/api/pet/revive': 'petRevive', '/api/battle/start': 'battleStart', '/api/battle/move': 'battleMove', '/api/battle/state': 'battleState', '/api/battle/finish': 'battleFinish', '/api/battle/loadout': 'battleLoadout', '/api/battle/invite': 'battleInvite', '/api/battle/invite/accept': 'battleInviteAccept', '/api/battle/invite/decline': 'battleInviteDecline', '/api/friend/code': 'friendCode', '/api/friend/add': 'friendAdd', '/api/friend/del': 'friendDel', '/api/milestone/apply': 'milestoneApply', '/api/sync/full': 'syncFull', '/api/onboarding/start': 'onboardingStart', '/api/onboarding/complete': 'onboardingComplete', '/api/onboarding/dismiss': 'onboardingDismiss', '/api/return-nudge/ack': 'returnNudgeAck', '/api/monthly': 'monthlyReports', '/api/adventure/state': 'adventureState', '/api/adventure/explore': 'adventureExplore', '/api/adventure/advance': 'adventureAdvance' };
+const PARENT = { '/api/family': 'family', '/api/sync/full': 'syncFull', '/api/pin/verify': 'pinVerify', '/api/pin/change': 'pinChange', '/api/security': 'securitySet', '/api/child': 'addChild', '/api/child/edit': 'childEdit', '/api/child/delete': 'childDelete', '/api/child/bindcode': 'bindcode', '/api/child/unbind': 'unbind', '/api/approve': 'approve', '/api/manual': 'manual', '/api/complaint': 'complaint', '/api/complaint/edit': 'complaintEdit', '/api/complaint/cancel': 'complaintCancel', '/api/complaint/delete': 'complaintDelete', '/api/ledger/undo': 'ledgerUndo', '/api/rules': 'rules', '/api/config': 'config', '/api/reward': 'reward', '/api/fulfill': 'fulfill', '/api/pause': 'pause', '/api/settle/month': 'settleMonth', '/api/settle/semester': 'settleSemester', '/api/report': 'report', '/api/milestone/approve': 'milestoneApprove', '/api/monthly': 'monthlyReports' };
+
+// —— v10 管理后台：账号增删改查 + 备份管理（ADMIN_KEY 鉴权）————————————————
+const ADMIN_KEY = process.env.ADMIN_KEY || '';
+function adminSummary(f) {
+  const kids = Object.values(f.children || {});
+  const ledger = f.ledger || [];
+  const lastLedger = ledger.length ? ledger[ledger.length - 1] : null;
+  return {
+    id: f.id, username: f.parent.username, familyName: f.name, createdAt: f.createdAt,
+    childCount: kids.length, children: kids.map(k => ({ id: k.id, name: k.name, grade: k.grade })),
+    lastActive: lastLedger ? (lastLedger.ts || lastLedger.at || null) : null,
+    ledgerCount: ledger.length, hasSecurityQ: !!(f.parent.securityQ || f.parent.securityAH)
+  };
+}
+async function adminRoutes(req, res, pathname, url) {
+  const p = req.method === 'GET' ? Object.fromEntries(url.searchParams) : await readBody(req);
+  if (!ADMIN_KEY || String(p.key || '') !== ADMIN_KEY) return json(res, 403, { error: '管理密钥错误或未配置 ADMIN_KEY' });
+  try {
+    if (pathname === '/api/admin/list') {
+      const fams = store.allFamilies().map(adminSummary).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+      return json(res, 200, { ok: true, total: fams.length, families: fams });
+    }
+    if (pathname === '/api/admin/family') {
+      const f = store.familyById(String(p.familyId || ''));
+      if (!f) return json(res, 404, { error: '家庭不存在' });
+      const detail = { ...adminSummary(f), config: f.config, ledgerTail: (f.ledger || []).slice(-20),
+        children: Object.values(f.children || {}).map(k => ({ id: k.id, name: k.name, grade: k.grade, level: k.level, intimacy: k.intimacy, xp: k.xp, points: k.points, feedStreak: k.feedStreak, speciesId: k.speciesId, pokedex: (k.pokedex || []).length, pokedexKills: Object.keys(k.pokedexKills || {}).length, pokedexSeen: Object.keys(k.pokedexSeen || {}).length })) };
+      return json(res, 200, { ok: true, family: detail });
+    }
+    if (pathname === '/api/admin/setpassword') {
+      const out = store.resetPassword(String(p.familyId || ''), String(p.newPassword || ''));
+      return json(res, out.error ? 400 : 200, out);
+    }
+    if (pathname === '/api/admin/rename') {
+      const out = store.renameFamily(String(p.familyId || ''), p.username, p.familyName);
+      return json(res, out.error ? 400 : 200, out.error ? out : { ok: true });
+    }
+    if (pathname === '/api/admin/delete') {
+      const f = store.familyById(String(p.familyId || ''));
+      if (!f) return json(res, 404, { error: '家庭不存在' });
+      if (String(p.confirm || '') !== f.parent.username) return json(res, 400, { error: `二次确认失败：需输入该家庭账号名「${f.parent.username}」` });
+      store.manualBackup();   // 删前强制留一份全量快照
+      const out = store.deleteFamily(String(p.familyId));
+      return json(res, 200, out);
+    }
+    if (pathname === '/api/admin/backup') {
+      const out = store.manualBackup();
+      return json(res, out.error ? 500 : 200, out);
+    }
+    if (pathname === '/api/admin/backups') {
+      return json(res, 200, { ok: true, backups: store.backupFiles() });
+    }
+    if (pathname === '/api/admin/backup/download') {
+      const name = path.basename(String(p.file || ''));
+      if (!/^habitpet.*\.json$/.test(name)) return json(res, 400, { error: '文件名不合法' });
+      const full = path.join(store.DATA_DIR, 'backups', name);
+      if (!fs.existsSync(full)) return json(res, 404, { error: '备份不存在' });
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Content-Disposition': `attachment; filename="${name}"` });
+      return fs.createReadStream(full).pipe(res);
+    }
+    // —— v11 灵汐云同步 / 一键迁移 ————————————————————————————
+    if (pathname === '/api/admin/lingxi/status') {
+      const snap = lingxiSync.readLatest();
+      const creds = lingxiSync.loadCreds();
+      return json(res, 200, {
+        ok: true,
+        config: { url: lingxiSync.LINGXI_URL, userSet: !!(creds && creds.user), passSet: !!(creds && creds.pass), credsUser: creds ? creds.user : null },
+        state: lingxiSync.readState(),
+        snapshots: lingxiSync.listSnapshots(),
+        latest: snap ? { pulledAt: snap.pulledAt, familyName: snap.family.name, username: (snap.family.parent || {}).username, children: Object.values(snap.family.children || {}).map(c => ({ name: c.name, grade: c.grade, level: c.level, intimacy: c.intimacy, points: c.points, ledgerLen: (snap.family.ledger || []).length, pokedex: (c.pokedex || []).length })), photos: Object.keys(snap.photos || {}).length } : null
+      });
+    }
+    if (pathname === '/api/admin/lingxi/config') {
+      if (!p.user || !p.pass) return json(res, 400, { error: 'user/pass 必填' });
+      return json(res, 200, lingxiSync.saveCreds(p.user, p.pass));
+    }
+    if (pathname === '/api/admin/lingxi/pull') {
+      const snap = await lingxiSync.pullSnapshot();
+      return json(res, 200, { ok: true, pulledAt: snap.pulledAt, familyName: snap.family.name, children: Object.keys(snap.family.children || {}), ledgerLen: (snap.family.ledger || []).length, photos: Object.keys(snap.photos || {}).length });
+    }
+    if (pathname === '/api/admin/lingxi/apply') {
+      let snap = lingxiSync.readLatest();
+      if (p.fresh || !snap) snap = await lingxiSync.pullSnapshot();   // 可选先拉最新
+      if (!snap) return json(res, 400, { error: '还没有灵汐云快照，先调 /api/admin/lingxi/pull' });
+      let target = store.familyById(String(p.familyId || ''));
+      if (!target && p.username) {
+        target = store.allFamilies().find(f => f.parent.username.toLowerCase() === String(p.username).toLowerCase()) || null;
+      }
+      if (!target && p.create) {
+        const r = store.createFamily(p.username, p.password, p.familyName || '柚子柠檬部落', p.securityQ || 'q', p.securityA || 'a');
+        if (r.error) return json(res, 400, r);
+        target = r.family;
+      }
+      if (!target) return json(res, 404, { error: '目标家庭不存在（传 familyId / username，或 create:true+username+password 新建）' });
+      store.manualBackup();   // 迁移前强制留底
+      const summary = lingxiSync.applyMigration(store, target, snap);
+      store.save();
+      return json(res, 200, { ok: true, target: { familyId: target.id, username: target.parent.username, familyName: target.name }, summary });
+    }
+    return json(res, 404, { error: 'not found' });
+  } catch (e) {
+    console.error('[admin]', e.message);
+    return json(res, 500, { error: '服务器内部错误: ' + String(e.message || e).slice(0, 300) });
+  }
+}
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
@@ -1007,6 +1197,22 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && pathname === '/api/species') {
       return json(res, 200, { ok: true, species: SPECIES.map(s => ({ ...s, elementName: ELEMENT_NAMES[s.element] })), chart: CHART, elementNames: ELEMENT_NAMES });
     }
+    if (req.method === 'GET' && pathname === '/api/appversion') {   // v7: 无鉴权，APK 启动时检查更新用
+      return json(res, 200, { ok: true, ...APP_VERSION });
+    }
+    // —— v10.1 本地数据救援通道（无鉴权接收，仅存档不并入主库；防滥用：限大小+限频）——
+    if (req.method === 'POST' && pathname === '/api/recover') {
+      const p2 = await readBody(req, 6 * 1024 * 1024);
+      if (!p2 || typeof p2.payload !== 'string' || p2.payload.length < 10) return json(res, 400, { error: 'payload 缺失' });
+      const rdir = path.join(store.DATA_DIR, 'recovery');
+      fs.mkdirSync(rdir, { recursive: true });
+      const rid = store.newId() + '-' + Date.now();
+      fs.writeFileSync(path.join(rdir, rid + '.json'), JSON.stringify({ receivedAt: new Date().toISOString(), ua: String(req.headers['user-agent'] || ''), payload: p2.payload }, null, 1));
+      console.log('[recover] 收到救援包', rid, p2.payload.length, '字节');
+      return json(res, 200, { ok: true, recoveryId: rid });
+    }
+    // —— v10 管理后台 API（ADMIN_KEY 鉴权；未配置密钥一律 403）————————————————
+    if (pathname.startsWith('/api/admin/')) return adminRoutes(req, res, pathname, url);
     if (req.method === 'GET' && pathname === '/api/photo') {
       const sess = auth(req);
       if (!sess || sess.role !== 'parent') return json(res, 401, { error: 'unauthorized' });
@@ -1034,6 +1240,7 @@ const server = http.createServer(async (req, res) => {
       const sess = authFlex(req, p, url);
       let role = PUBLIC[pathname] !== undefined ? 'public' : CHILD[pathname] !== undefined ? 'child' : PARENT[pathname] !== undefined ? 'parent' : null;
       if (pathname === '/api/sync/full' && sess) role = sess.role;   // 双端共享：按会话角色分派
+      if (pathname === '/api/monthly' && sess) role = sess.role;     // v7 月报双端共享：按会话角色分派
       if (!role) return json(res, 404, { error: 'not found' });
       if (role === 'child' && (!sess || sess.role !== 'child')) return json(res, 401, { error: 'unauthorized' });
       if (role === 'parent' && (!sess || sess.role !== 'parent')) return json(res, 401, { error: 'unauthorized' });
@@ -1084,3 +1291,7 @@ if (!process.env.HABITPET_NO_TIMER) setInterval(() => {
 process.on('SIGINT', () => { store.saveNow(); console.log('已保存退出'); process.exit(0); });
 
 server.listen(PORT, () => console.log(`habitpet 正式版已启动: http://localhost:${PORT}`));
+
+// —— v11 灵汐云每日同步：每 6 小时唤起一次，dailyPull 内部按日期去重（一天最多拉一次）———
+setInterval(() => { lingxiSync.dailyPull().then(r => { if (r && !r.skipped) console.log('[lingxi-sync] 每日同步完成', JSON.stringify(r)); }).catch(e => console.error('[lingxi-sync]', e.message)); }, 6 * 3600 * 1000).unref();
+setTimeout(() => { lingxiSync.dailyPull().then(r => { if (r && !r.skipped) console.log('[lingxi-sync] 启动同步完成', JSON.stringify(r)); }).catch(e => console.error('[lingxi-sync]', e.message)); }, 30 * 1000).unref();

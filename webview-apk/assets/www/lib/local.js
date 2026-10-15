@@ -151,6 +151,21 @@
     EN.ensureSemester(family);
     EN.ensureMonth(family, child, now);
     var pausedDays = child.pausedAt ? Math.floor((Date.now() - child.pausedAt) / 86400000) : 0;
+    // v9: 每日任务板 + 兄妹动态（离线镜像，与服务端同源 engine/species）
+    EN.ensureDailyQuests(child, now);
+    var questLabels = {}; EN.QUEST_POOL.forEach(function (q) { questLabels[q.id] = q; });
+    var dq = child.dailyQuests;
+    var siblingsAll = Object.values(family.children).filter(function (c) { return c.id !== child.id; });
+    var weekAgo = Date.now() - 7 * 86400000;
+    var FEED_RE = /升级|进化|觉醒|首杀|无投诉|月度结算|毕业|任务板|图鉴/;
+    var siblingFeed = siblingsAll.length
+      ? (family.ledger || []).filter(function (l) {
+          return l.childId && l.childId !== child.id && siblingsAll.some(function (s) { return s.id === l.childId; })
+            && !l.reversed && (l.delta > 0 || l.xp > 0) && FEED_RE.test(l.reason || '') && (new Date(l.ts).getTime() > weekAgo);
+        }).slice(0, 8).map(function (l) {
+          return { ts: l.ts, childId: l.childId, childName: l.childName, text: (l.reason || '').replace(/\s*\+.*$/, '') };
+        })
+      : [];
     return {
       id: child.id, name: child.name, grade: child.grade,
       intimacy: child.intimacy, xp: child.xp, level: child.level,
@@ -188,7 +203,17 @@
         return { show: false, gapDays: 0, gapKey: null };   // 回归提示的展示/确认永远由服务端裁决
       })(),
       adventure: adventureLocalView(child),
-      siblings: Object.values(family.children).map(function (c) { return { id: c.id, name: c.name, intimacy: c.intimacy, level: c.level, petEmoji: c.pet ? (speciesById(c.pet.speciesId) || {}).emoji : '⚪' }; })
+      siblings: Object.values(family.children).map(function (c) { return { id: c.id, name: c.name, intimacy: c.intimacy, level: c.level, petEmoji: c.pet ? (speciesById(c.pet.speciesId) || {}).emoji : '⚪' }; }),
+      // v9: 任务板 / 赛季 Boss / 出战配置 / 兄妹动态
+      dailyQuests: {
+        date: dq.date, rewarded: dq.rewarded, reward: EN.QUEST_REWARD,
+        quests: dq.quests.map(function (q) { return { id: q.id, done: q.done, label: questLabels[q.id] ? questLabels[q.id].label : q.id, hint: questLabels[q.id] ? questLabels[q.id].hint : '' }; })
+      },
+      boss: (function () { try { return SP.currentBoss(now); } catch (e) { return null; } })(),
+      battleLoadout: Array.isArray(child.battleLoadout) ? child.battleLoadout : null,
+      pokedexKills: child.pokedexKills || {},
+      pokedexSeen: child.pokedexSeen || {},
+      siblingFeed: siblingFeed
     };
   }
   function localFriendCode(child) {
@@ -201,7 +226,8 @@
     family.ledger.unshift({
       id: window.LocalStore.newId('l'), ts: new Date().toISOString(),
       childId: child ? child.id : null, childName: child ? child.name : null,
-      delta: delta, xp: xp || 0, reason: reason, by: by, reversed: false
+      delta: delta, xp: xp || 0, reason: reason, by: by, reversed: false,
+      after: child ? child.intimacy : null   // v7: 变动后亲密度结余（调用处均先改分后记账）
     });
     if (family.ledger.length > 400) family.ledger.length = 400;
   }
@@ -211,7 +237,7 @@
   var localHandlers = {
     '/api/feed': function (f, c) {
       if (!c.pet) return err('先选一只宠物吧！');
-      if (c.fainted) return err('宠物饿晕了，先复活再投喂');
+      if (c.fainted) return err('灵伴在休眠茧里，先唤醒再投喂');
       if (c.pausedAt) return err('暂停计期间休息养病，不扣分不计连击');
       if (!EN.inFeedWindow(f)) return err('投喂时间：' + f.config.feedWindow.startHour + ':00-' + f.config.feedWindow.endHour + ':00');
       var today = EN.dateKey();
@@ -222,6 +248,7 @@
       c.feedDate = today;
       EN.addIntimacy(c, pts); EN.addXP(c, pts); EN.noteWeekEarn(c, pts);
       ledger(f, c, pts, '每日作业投喂（连续第' + c.feedStreak + '天）', 'auto');
+      EN.markDailyQuest(f, c, 'feed');   // v9: 每日任务板（离线同源）
       var bonus = 0;
       if (c.feedStreak > 0 && c.feedStreak % 7 === 0) {
         bonus = (c.rules && c.rules.streak !== undefined) ? c.rules.streak : f.rules.streak;
@@ -258,14 +285,14 @@
     },
     '/api/pet/revive': function (f, c, p) {
       if (!c.pet) return err('还没有宠物');
-      var r = EN.revivePet(f, c, p.mode === 'intimacy' ? 'intimacy' : 'level');
+      var r = EN.revivePet(f, c, 'free');   // v12: 唤醒一律免费（温和缺席模式）
       if (r.error) return r;
       return { ok: true, state: childMe(f, c) };
     },
     '/api/redeem': function (f, c, p) {
       var r = f.rewards.find(function (x) { return x.id === p.rewardId; });
       if (!r) return err('奖励不存在');
-      if (c.intimacy < r.cost) return err('亲密度不够，还差 ' + (r.cost - c.intimacy) + ' 分');
+      if (c.intimacy < r.cost) return err('羁绊不够，还差 ' + (r.cost - c.intimacy) + ' 分');
       if (r.type === 'cash') {
         var mk = EN.monthKey();
         if (c.allowanceLocked && c.allowanceLocked.monthKey === mk) return err('本月已锁定过一次零花钱加成');

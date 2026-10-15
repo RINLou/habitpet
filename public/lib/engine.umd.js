@@ -163,12 +163,28 @@ function canEarnWeek(child, weeklyCap, amount) {
 function noteWeekEarn(child, amount) { if (amount > 0) child.weekEarned = (child.weekEarned || 0) + amount; }
 
 // —— 月度懒结算（首次访问新月时触发；暂停计期间冻结）——————
+// v7: 跨月即生成「上月月报」存档（老板需求：1号发零花钱时上月亲密度要能看到）。
+//     无投诉奖亲密度记入上月月报结余，不再混入新月初始亲密度；+心光奖励保留实际发放。
+function monthSummary(family, child, lastMk, curMk) {
+  // 上月收支摘要：按账本现有记录统计（账本截断 2000 条前的老记录不计入）
+  const from = lastMk + '-01', to = curMk + '-01';
+  let dSum = 0, xSum = 0, n = 0;
+  for (const l of family.ledger) {
+    if (!l || l.childId !== child.id || !l.ts) continue;
+    const day = String(l.ts).slice(0, 10);
+    if (day < from || day >= to) continue;
+    if (l.reversed) continue;                    // 已撤销的记录不计收支
+    dSum += l.delta || 0; xSum += l.xp || 0; n++;
+  }
+  return { entries: n, intimacyDelta: dSum, xpDelta: xSum };
+}
 function ensureMonth(family, child, now = new Date()) {
   if (child.pausedAt) return;                    // 暂停计：不重置不计连击不扣分
   const mk = monthKey(now);
   if (child.monthKey === mk) return;
-  const lastMk = child.monthKey;                          // 尚未更新，即"上月"
+  const lastMk = child.monthKey || mk;                    // 尚未更新，即"上月"（手动结算 monthKey=null 时按当前自然月结清）
   const complained = activeComplaints(child, lastMk).length > 0;
+  const prevIntimacy = child.intimacy;                    // 上月账面结余（重置前快照）
   child.monthKey = mk;
   // 归档上月投诉：保留历史可查，但不再计入新月
   if (Array.isArray(child.complaints)) {
@@ -178,13 +194,26 @@ function ensureMonth(family, child, now = new Date()) {
   }
   child.weekEarned = 0;
   const rule = (child.rules && child.rules.noComplaint !== undefined) ? child.rules.noComplaint : family.rules.noComplaint;   // v4: 每孩子独立规则
-  child.intimacy = family.config.initialIntimacy; // 先重置
-  if (!complained) {                              // 再发上月无投诉奖 → 新月 100+100
-    addIntimacy(child, rule);
-    addXP(child, rule);
-    family.ledger.unshift({ id: newId('l'), ts: now.toISOString(), childId: child.id, childName: child.name, delta: rule, xp: rule, reason: '上月无投诉奖励', by: 'system' });
+  // v7: 生成上月月报并存档（最近 24 个月）
+  const bonus = complained ? 0 : rule;
+  const report = {
+    monthKey: lastMk, settledAt: now.toISOString(),
+    endIntimacy: prevIntimacy,                   // 上月账面结余
+    noComplaintBonus: bonus,                     // 无投诉奖（记入上月月报）
+    finalIntimacy: prevIntimacy + bonus,         // 上月最终亲密度 = 结余 + 奖励
+    complained, level: child.level, xp: child.xp, feedStreak: child.feedStreak || 0,
+    summary: monthSummary(family, child, lastMk, mk)
+  };
+  if (!Array.isArray(child.monthlyReports)) child.monthlyReports = [];
+  child.monthlyReports.unshift(report);
+  if (child.monthlyReports.length > 24) child.monthlyReports.length = 24;
+  // 新月亲密度重置为纯初始值（无投诉奖只进月报，不再叠加）
+  child.intimacy = family.config.initialIntimacy;
+  if (!complained) {
+    addXP(child, rule);                          // 心光奖励照发（成长线不动）
+    family.ledger.unshift({ id: newId('l'), ts: now.toISOString(), childId: child.id, childName: child.name, delta: 0, xp: rule, reason: `上月无投诉奖励：+${rule} 心光（亲密度 +${rule} 已计入上月月报结余）`, by: 'system', after: child.intimacy });
   }
-  family.ledger.unshift({ id: newId('l'), ts: now.toISOString(), childId: child.id, childName: child.name, delta: 0, xp: 0, reason: `月度结算：进入 ${mk}，亲密度重置为 ${family.config.initialIntimacy}${complained ? '（上月有投诉，无奖励）' : '（含无投诉+' + rule + '）'}`, by: 'system' });
+  family.ledger.unshift({ id: newId('l'), ts: now.toISOString(), childId: child.id, childName: child.name, delta: 0, xp: 0, reason: `月度结算：进入 ${mk}，亲密度重置为 ${family.config.initialIntimacy}${complained ? '（上月有投诉，无奖励，上月结余 ' + prevIntimacy + '）' : '（上月结余 ' + prevIntimacy + ' + 无投诉奖 ' + rule + '，见上月月报）'}`, by: 'system', after: child.intimacy });
 }
 
 // —— 学期懒结算（到开学日期自动；或家长手动）————————————
@@ -252,11 +281,63 @@ function rollFeedEvent(family, child, now = new Date()) {
     id: newId('l'), ts: now.toISOString(), childId: child.id, childName: child.name,
     delta: ev.intimacy, xp: ev.xp,
     reason: `灵汐奇遇：${ev.name}（投喂时随机降临${ev.xp ? '，+' + ev.xp + ' 经验' : ''}${ev.intimacy ? '，+' + ev.intimacy + ' 亲密度' : ''}）`,
-    by: 'system'
+    by: 'system', after: child.intimacy
   });
   return ev;
 }
 
-return { levelFromXp, xpForLevel, stageOf, addXP, subXP, addIntimacy, intimacyMult, activeComplaints, monthKey, dateKey, weekKey, yesterdayKey, canEarnWeek, noteWeekEarn, ensureMonth, settleSemester, ensureSemester, inFeedWindow, STAGES, daysSince, absenceMode, hungerCheck, revivePet, hiddenPetEligibility, setRng, rollFeedEvent, FEED_EVENTS };
+// —— v9: 每日 3 选 2 任务板 ——————————————————————————————
+// 对冲「不来会饿死」的负向钩子：每天从行为池确定性随机出 3 个任务，完成 ≥2 个发活跃奖。
+// 池子只用已有行为（投喂/申报/对战/星图冒险），零新增系统；seed=日期+孩子id，全端一致。
+const QUEST_POOL = [
+  { id: 'feed',      label: '今天投喂灵伴',       hint: '去灵伴页喂一次饭' },
+  { id: 'report',    label: '提交 1 次申报',      hint: '考试/默写/自豪的事都算' },
+  { id: 'battle',    label: '打一场对战',         hint: 'Boss / 兄妹 / 好友都算' },
+  { id: 'adventure', label: '探索今日星图',       hint: '投喂后即可出发' }
+];
+const QUEST_REWARD = 5;   // 活跃奖（亲密度），每天一次
+
+function questSeed(str) {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+// 确定性出题：seed=日期+孩子id，4 选 3（只跳过 1 个，其余按池序）
+function pickDailyQuests(child, dk) {
+  const seed = questSeed(dk + '|' + child.id);
+  const skip = seed % QUEST_POOL.length;
+  return QUEST_POOL.filter((_, i) => i !== skip);
+}
+// 惰性初始化/换日：保证 child.dailyQuests 是今天的题
+function ensureDailyQuests(child, now = new Date()) {
+  const dk = dateKey(now);
+  if (child.dailyQuests && child.dailyQuests.date === dk) return child.dailyQuests;
+  child.dailyQuests = { date: dk, quests: pickDailyQuests(child, dk).map(q => ({ id: q.id, done: false })), rewarded: false };
+  return child.dailyQuests;
+}
+// 行为发生时打钩（feed/submit/battle/adventure 各端点调用）；≥2 完成且未发奖 → 发活跃奖
+// 返回 { justRewarded: bool }；family 可空（纯打钩不发奖，用于本地镜像）
+function markDailyQuest(family, child, type, now = new Date()) {
+  const dq = ensureDailyQuests(child, now);
+  const q = dq.quests.find(x => x.id === type);
+  if (!q || q.done) return { justRewarded: false };
+  q.done = true;
+  const doneCount = dq.quests.filter(x => x.done).length;
+  if (!dq.rewarded && doneCount >= 2 && family && !(family.config && family.config.dailyQuestReward === false)) {
+    dq.rewarded = true;
+    addIntimacy(child, QUEST_REWARD);
+    family.ledger.unshift({
+      id: newId('l'),
+      ts: new Date().toISOString(), childId: child.id, childName: child.name,
+      delta: QUEST_REWARD, xp: 0,
+      reason: `📋 每日任务板：今日任务完成 ${doneCount} 个（活跃奖 +${QUEST_REWARD} 亲密度）`,
+      by: 'system', after: child.intimacy
+    });
+    return { justRewarded: true };
+  }
+  return { justRewarded: false };
+}
+
+return { levelFromXp, xpForLevel, stageOf, addXP, subXP, addIntimacy, intimacyMult, activeComplaints, monthKey, dateKey, weekKey, yesterdayKey, canEarnWeek, noteWeekEarn, ensureMonth, settleSemester, ensureSemester, inFeedWindow, STAGES, daysSince, absenceMode, hungerCheck, revivePet, hiddenPetEligibility, setRng, rollFeedEvent, FEED_EVENTS, QUEST_POOL, ensureDailyQuests, markDailyQuest, QUEST_REWARD };
 
 });
