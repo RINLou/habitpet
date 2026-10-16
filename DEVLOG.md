@@ -249,3 +249,8 @@
 - 网络坑：github.com:443 被间歇性重置（直连/代理均时通时断）；全局 git config 里的死代理 127.0.0.1:7890 是首次推送失败主因，已置空（直连）。api.github.com 全程稳定。
 - 新增工具 scripts/gh-api-push.js（commit 96c66eb）：经 GitHub REST API 推送的备用通道，按本地提交逐字节复刻（tree/parents/author/committer/message 含时区偏移），**SHA 与本地一致**；token 从 GH_PAT 或 git credential manager 读取，绝不硬编码。含 Windows cmd.exe 不支持 VAR=value 前缀的规避（env 选项）。
 - 分支收敛：main 快进至生产 tip（原落后 9 个提交）；删除已完全合并的 codex/story-release-ready；本地删除 codex/p0-habit-experience（提交已含于 p1）。远端终态：main / merge/lingxi-base 同指生产 tip 96c66eb + codex/p1-correction-review（v11.1 dev 线，26 个未合并提交，独有内容仅旧 APK 二进制与 1 个 .class，去留待老板定）。
+
+### 分支终态（老板批准删除 p1 后）
+- 远端仅剩：`main` 与 `merge/lingxi-base`，同指生产 tip `a35e883`（v12.3 + 数据保护 + API 推送工具 + 本记录）。
+- `codex/p1-correction-review`（ffc9bff，v11.1）远端+本地均已删；独有内容仅旧 APK 二进制与 1 个 .class，已被 v12 主线取代；SHA 记录在本日志，本地对象 90 天内可恢复。
+- 新增 scripts/gh-delete-branch.js（REST API 删分支）。
