@@ -1,0 +1,4772 @@
+{
+ "seed": 20261016,
+ "days": [
+  "2026-10-23",
+  "2026-10-24",
+  "2026-10-25",
+  "2026-10-26",
+  "2026-10-27",
+  "2026-10-28",
+  "2026-10-29",
+  "2026-10-30",
+  "2026-10-31",
+  "2026-11-01"
+ ],
+ "dayRows": [
+  {
+   "day": "2026-10-23",
+   "family": "F01",
+   "kids": [
+    {
+     "day": "2026-10-23",
+     "hour": 10,
+     "level": 1,
+     "xp": 0,
+     "intimacy": 100,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    },
+    {
+     "day": "2026-10-23",
+     "hour": 12,
+     "level": 1,
+     "xp": 0,
+     "intimacy": 100,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    },
+    {
+     "day": "2026-10-23",
+     "hour": 22,
+     "level": 1,
+     "xp": 2,
+     "intimacy": 100,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "sibling",
+      "win": false,
+      "moves": 9
+     },
+     "submitted": {
+      "eventId": "e179280900000016",
+      "type": "exam"
+     },
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-23",
+   "family": "F02",
+   "kids": [
+    {
+     "day": "2026-10-23",
+     "hour": 16,
+     "level": 1,
+     "xp": 1,
+     "intimacy": 101,
+     "feedStreak": 1,
+     "feedOk": true,
+     "explores": 2,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-23",
+   "family": "F03",
+   "kids": [
+    {
+     "day": "2026-10-23",
+     "hour": 21,
+     "level": 1,
+     "xp": 0,
+     "intimacy": 100,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    },
+    {
+     "day": "2026-10-23",
+     "hour": 10,
+     "level": 1,
+     "xp": 2,
+     "intimacy": 100,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "sibling",
+      "win": false,
+      "moves": 16
+     },
+     "submitted": {
+      "eventId": "e179276580000049",
+      "type": "quiz"
+     },
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-23",
+   "family": "F04",
+   "kids": [
+    {
+     "day": "2026-10-23",
+     "hour": 10,
+     "level": 1,
+     "xp": 0,
+     "intimacy": 100,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-23",
+   "family": "F05",
+   "kids": [
+    {
+     "day": "2026-10-23",
+     "hour": 9,
+     "level": 1,
+     "xp": 8,
+     "intimacy": 106,
+     "feedStreak": 1,
+     "feedOk": true,
+     "explores": 2,
+     "battle": {
+      "mode": "sibling",
+      "win": true,
+      "moves": 13
+     },
+     "submitted": {
+      "eventId": "e179276220000057",
+      "type": "pride"
+     },
+     "questsDone": 3,
+     "questsTotal": 3,
+     "questRewarded": true
+    },
+    {
+     "day": "2026-10-23",
+     "hour": 20,
+     "level": 1,
+     "xp": 2,
+     "intimacy": 105,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "sibling",
+      "win": false,
+      "moves": 11
+     },
+     "submitted": {
+      "eventId": "e179280180000048",
+      "type": "pride"
+     },
+     "questsDone": 2,
+     "questsTotal": 3,
+     "questRewarded": true
+    }
+   ]
+  },
+  {
+   "day": "2026-10-23",
+   "family": "F06",
+   "kids": [
+    {
+     "day": "2026-10-23",
+     "hour": 14,
+     "level": 1,
+     "xp": 8,
+     "intimacy": 106,
+     "feedStreak": 1,
+     "feedOk": true,
+     "explores": 3,
+     "battle": {
+      "mode": "boss",
+      "win": false,
+      "moves": 6
+     },
+     "submitted": null,
+     "questsDone": 2,
+     "questsTotal": 3,
+     "questRewarded": true
+    }
+   ]
+  },
+  {
+   "day": "2026-10-23",
+   "family": "F07",
+   "kids": [
+    {
+     "day": "2026-10-23",
+     "hour": 16,
+     "level": 1,
+     "xp": 0,
+     "intimacy": 100,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": {
+      "eventId": "e179278740000057",
+      "type": "quiz"
+     },
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-23",
+   "family": "F08",
+   "kids": [
+    {
+     "day": "2026-10-23",
+     "hour": 21,
+     "level": 1,
+     "xp": 0,
+     "intimacy": 100,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-23",
+   "family": "F09",
+   "kids": [
+    {
+     "day": "2026-10-23",
+     "hour": 11,
+     "level": 1,
+     "xp": 0,
+     "intimacy": 100,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": {
+      "eventId": "e179276940000012",
+      "type": "pride"
+     },
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-23",
+   "family": "F10",
+   "kids": [
+    {
+     "day": "2026-10-23",
+     "hour": 17,
+     "level": 1,
+     "xp": 0,
+     "intimacy": 100,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-24",
+   "family": "F01",
+   "kids": [
+    {
+     "day": "2026-10-24",
+     "hour": 13,
+     "level": 1,
+     "xp": 7,
+     "intimacy": 100,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "sibling",
+      "win": true,
+      "moves": 5
+     },
+     "submitted": {
+      "eventId": "e179286300000041",
+      "type": "pride"
+     },
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    },
+    {
+     "day": "2026-10-24",
+     "hour": 12,
+     "level": 1,
+     "xp": 7,
+     "intimacy": 100,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "sibling",
+      "win": true,
+      "moves": 5
+     },
+     "submitted": {
+      "eventId": "e179285940000087",
+      "type": "quiz"
+     },
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    },
+    {
+     "day": "2026-10-24",
+     "hour": 8,
+     "level": 4,
+     "xp": 59,
+     "intimacy": 155,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "sibling",
+      "win": true,
+      "moves": 9
+     },
+     "submitted": {
+      "eventId": "e179284500000094",
+      "type": "pride"
+     },
+     "questsDone": 2,
+     "questsTotal": 3,
+     "questRewarded": true
+    }
+   ]
+  },
+  {
+   "day": "2026-10-24",
+   "family": "F02",
+   "kids": [
+    {
+     "day": "2026-10-24",
+     "hour": 21,
+     "level": 1,
+     "xp": 4,
+     "intimacy": 105,
+     "feedStreak": 2,
+     "feedOk": true,
+     "explores": 3,
+     "battle": {
+      "mode": "boss",
+      "win": false,
+      "moves": 7
+     },
+     "submitted": {
+      "eventId": "e179289180000026",
+      "type": "pride"
+     },
+     "questsDone": 3,
+     "questsTotal": 3,
+     "questRewarded": true
+    }
+   ]
+  },
+  {
+   "day": "2026-10-24",
+   "family": "F03",
+   "kids": [
+    {
+     "day": "2026-10-24",
+     "hour": 8,
+     "level": 2,
+     "xp": 13,
+     "intimacy": 111,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "boss",
+      "win": true,
+      "moves": 20
+     },
+     "submitted": null,
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    },
+    {
+     "day": "2026-10-24",
+     "hour": 13,
+     "level": 1,
+     "xp": 2,
+     "intimacy": 100,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-24",
+   "family": "F04",
+   "kids": [
+    {
+     "day": "2026-10-24",
+     "hour": 12,
+     "level": 1,
+     "xp": 0,
+     "intimacy": 100,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": {
+      "eventId": "e179285940000015",
+      "type": "quiz"
+     },
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-24",
+   "family": "F05",
+   "kids": [
+    {
+     "day": "2026-10-24",
+     "hour": 12,
+     "level": 2,
+     "xp": 27,
+     "intimacy": 127,
+     "feedStreak": 2,
+     "feedOk": true,
+     "explores": 3,
+     "battle": {
+      "mode": "boss",
+      "win": true,
+      "moves": 5
+     },
+     "submitted": null,
+     "questsDone": 2,
+     "questsTotal": 3,
+     "questRewarded": true
+    },
+    {
+     "day": "2026-10-24",
+     "hour": 12,
+     "level": 2,
+     "xp": 17,
+     "intimacy": 121,
+     "feedStreak": 1,
+     "feedOk": true,
+     "explores": 3,
+     "battle": null,
+     "submitted": {
+      "eventId": "e179285940000064",
+      "type": "quiz"
+     },
+     "questsDone": 3,
+     "questsTotal": 3,
+     "questRewarded": true
+    }
+   ]
+  },
+  {
+   "day": "2026-10-24",
+   "family": "F06",
+   "kids": [
+    {
+     "day": "2026-10-24",
+     "hour": 17,
+     "level": 1,
+     "xp": 9,
+     "intimacy": 112,
+     "feedStreak": 2,
+     "feedOk": true,
+     "explores": 2,
+     "battle": null,
+     "submitted": {
+      "eventId": "e179287740000080",
+      "type": "quiz"
+     },
+     "questsDone": 2,
+     "questsTotal": 3,
+     "questRewarded": true
+    }
+   ]
+  },
+  {
+   "day": "2026-10-24",
+   "family": "F07",
+   "kids": [
+    {
+     "day": "2026-10-24",
+     "hour": 9,
+     "level": 2,
+     "xp": 19,
+     "intimacy": 116,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "boss",
+      "win": false,
+      "moves": 5
+     },
+     "submitted": null,
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-24",
+   "family": "F08",
+   "kids": [
+    {
+     "day": "2026-10-24",
+     "hour": 13,
+     "level": 1,
+     "xp": 9,
+     "intimacy": 107,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "boss",
+      "win": true,
+      "moves": 20
+     },
+     "submitted": null,
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-24",
+   "family": "F09",
+   "kids": [
+    {
+     "day": "2026-10-24",
+     "hour": 11,
+     "level": 1,
+     "xp": 12,
+     "intimacy": 110,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "boss",
+      "win": false,
+      "moves": 6
+     },
+     "submitted": null,
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-24",
+   "family": "F10",
+   "kids": [
+    {
+     "day": "2026-10-24",
+     "hour": 14,
+     "level": 1,
+     "xp": 9,
+     "intimacy": 105,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "boss",
+      "win": true,
+      "moves": 4
+     },
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-25",
+   "family": "F01",
+   "kids": [
+    {
+     "day": "2026-10-25",
+     "hour": 16,
+     "level": 2,
+     "xp": 22,
+     "intimacy": 112,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "boss",
+      "win": false,
+      "moves": 7
+     },
+     "submitted": null,
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    },
+    {
+     "day": "2026-10-25",
+     "hour": 20,
+     "level": 2,
+     "xp": 26,
+     "intimacy": 116,
+     "feedStreak": 1,
+     "feedOk": true,
+     "explores": 1,
+     "battle": {
+      "mode": "sibling",
+      "win": true,
+      "moves": 5
+     },
+     "submitted": {
+      "eventId": "e179297460000079",
+      "type": "pride"
+     },
+     "questsDone": 3,
+     "questsTotal": 3,
+     "questRewarded": true
+    },
+    {
+     "day": "2026-10-25",
+     "hour": 19,
+     "level": 6,
+     "xp": 128,
+     "intimacy": 221,
+     "feedStreak": 1,
+     "feedOk": true,
+     "explores": 1,
+     "battle": {
+      "mode": "sibling",
+      "win": true,
+      "moves": 9
+     },
+     "submitted": null,
+     "questsDone": 2,
+     "questsTotal": 3,
+     "questRewarded": true
+    }
+   ]
+  },
+  {
+   "day": "2026-10-25",
+   "family": "F02",
+   "kids": [
+    {
+     "day": "2026-10-25",
+     "hour": 18,
+     "level": 2,
+     "xp": 18,
+     "intimacy": 121,
+     "feedStreak": 3,
+     "feedOk": true,
+     "explores": 3,
+     "battle": {
+      "mode": "boss",
+      "win": false,
+      "moves": 7
+     },
+     "submitted": null,
+     "questsDone": 3,
+     "questsTotal": 3,
+     "questRewarded": true
+    }
+   ]
+  },
+  {
+   "day": "2026-10-25",
+   "family": "F03",
+   "kids": [
+    {
+     "day": "2026-10-25",
+     "hour": 12,
+     "level": 2,
+     "xp": 21,
+     "intimacy": 111,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "boss",
+      "win": true,
+      "moves": 24
+     },
+     "submitted": null,
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    },
+    {
+     "day": "2026-10-25",
+     "hour": 13,
+     "level": 1,
+     "xp": 12,
+     "intimacy": 110,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-25",
+   "family": "F04",
+   "kids": [
+    {
+     "day": "2026-10-25",
+     "hour": 17,
+     "level": 1,
+     "xp": 10,
+     "intimacy": 110,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-25",
+   "family": "F05",
+   "kids": [
+    {
+     "day": "2026-10-25",
+     "hour": 11,
+     "level": 3,
+     "xp": 44,
+     "intimacy": 146,
+     "feedStreak": 3,
+     "feedOk": true,
+     "explores": 1,
+     "battle": null,
+     "submitted": {
+      "eventId": "e179294220000046",
+      "type": "exam"
+     },
+     "questsDone": 2,
+     "questsTotal": 3,
+     "questRewarded": true
+    },
+    {
+     "day": "2026-10-25",
+     "hour": 16,
+     "level": 3,
+     "xp": 41,
+     "intimacy": 147,
+     "feedStreak": 2,
+     "feedOk": true,
+     "explores": 2,
+     "battle": {
+      "mode": "boss",
+      "win": false,
+      "moves": 7
+     },
+     "submitted": null,
+     "questsDone": 3,
+     "questsTotal": 3,
+     "questRewarded": true
+    }
+   ]
+  },
+  {
+   "day": "2026-10-25",
+   "family": "F06",
+   "kids": [
+    {
+     "day": "2026-10-25",
+     "hour": 19,
+     "level": 2,
+     "xp": 22,
+     "intimacy": 122,
+     "feedStreak": 2,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "boss",
+      "win": false,
+      "moves": 7
+     },
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-25",
+   "family": "F07",
+   "kids": [
+    {
+     "day": "2026-10-25",
+     "hour": 14,
+     "level": 2,
+     "xp": 19,
+     "intimacy": 116,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": {
+      "eventId": "e179295300000090",
+      "type": "quiz"
+     },
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-25",
+   "family": "F08",
+   "kids": [
+    {
+     "day": "2026-10-25",
+     "hour": 8,
+     "level": 2,
+     "xp": 16,
+     "intimacy": 107,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "boss",
+      "win": true,
+      "moves": 20
+     },
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-25",
+   "family": "F09",
+   "kids": [
+    {
+     "day": "2026-10-25",
+     "hour": 18,
+     "level": 3,
+     "xp": 29,
+     "intimacy": 132,
+     "feedStreak": 1,
+     "feedOk": true,
+     "explores": 3,
+     "battle": null,
+     "submitted": {
+      "eventId": "e179296740000073",
+      "type": "exam"
+     },
+     "questsDone": 3,
+     "questsTotal": 3,
+     "questRewarded": true
+    }
+   ]
+  },
+  {
+   "day": "2026-10-25",
+   "family": "F10",
+   "kids": [
+    {
+     "day": "2026-10-25",
+     "hour": 12,
+     "level": 1,
+     "xp": 9,
+     "intimacy": 105,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": {
+      "eventId": "e179294580000064",
+      "type": "pride"
+     },
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-26",
+   "family": "F01",
+   "kids": [
+    {
+     "day": "2026-10-26",
+     "hour": 14,
+     "level": 3,
+     "xp": 32,
+     "intimacy": 122,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    },
+    {
+     "day": "2026-10-26",
+     "hour": 13,
+     "level": 3,
+     "xp": 49,
+     "intimacy": 136,
+     "feedStreak": 1,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "boss",
+      "win": false,
+      "moves": 7
+     },
+     "submitted": null,
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    },
+    {
+     "day": "2026-10-26",
+     "hour": 17,
+     "level": 6,
+     "xp": 138,
+     "intimacy": 31,
+     "feedStreak": 1,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-26",
+   "family": "F02",
+   "kids": [
+    {
+     "day": "2026-10-26",
+     "hour": 19,
+     "level": 3,
+     "xp": 34,
+     "intimacy": 139,
+     "feedStreak": 4,
+     "feedOk": true,
+     "explores": 3,
+     "battle": {
+      "mode": "boss",
+      "win": false,
+      "moves": 8
+     },
+     "submitted": null,
+     "questsDone": 2,
+     "questsTotal": 3,
+     "questRewarded": true
+    }
+   ]
+  },
+  {
+   "day": "2026-10-26",
+   "family": "F03",
+   "kids": [
+    {
+     "day": "2026-10-26",
+     "hour": 15,
+     "level": 2,
+     "xp": 21,
+     "intimacy": 109,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    },
+    {
+     "day": "2026-10-26",
+     "hour": 22,
+     "level": 2,
+     "xp": 25,
+     "intimacy": 120,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "boss",
+      "win": false,
+      "moves": 8
+     },
+     "submitted": {
+      "eventId": "e179306820000090",
+      "type": "quiz"
+     },
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-26",
+   "family": "F04",
+   "kids": [
+    {
+     "day": "2026-10-26",
+     "hour": 18,
+     "level": 2,
+     "xp": 20,
+     "intimacy": 120,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-26",
+   "family": "F05",
+   "kids": [
+    {
+     "day": "2026-10-26",
+     "hour": 15,
+     "level": 5,
+     "xp": 109,
+     "intimacy": 202,
+     "feedStreak": 4,
+     "feedOk": true,
+     "explores": 3,
+     "battle": {
+      "mode": "boss",
+      "win": true,
+      "moves": 6
+     },
+     "submitted": null,
+     "questsDone": 2,
+     "questsTotal": 3,
+     "questRewarded": true
+    },
+    {
+     "day": "2026-10-26",
+     "hour": 17,
+     "level": 4,
+     "xp": 52,
+     "intimacy": 161,
+     "feedStreak": 3,
+     "feedOk": true,
+     "explores": 3,
+     "battle": null,
+     "submitted": {
+      "eventId": "e179305020000096",
+      "type": "pride"
+     },
+     "questsDone": 2,
+     "questsTotal": 3,
+     "questRewarded": true
+    }
+   ]
+  },
+  {
+   "day": "2026-10-26",
+   "family": "F06",
+   "kids": [
+    {
+     "day": "2026-10-26",
+     "hour": 16,
+     "level": 3,
+     "xp": 42,
+     "intimacy": 143,
+     "feedStreak": 1,
+     "feedOk": true,
+     "explores": 2,
+     "battle": {
+      "mode": "boss",
+      "win": true,
+      "moves": 8
+     },
+     "submitted": {
+      "eventId": "e179304660000024",
+      "type": "pride"
+     },
+     "questsDone": 3,
+     "questsTotal": 3,
+     "questRewarded": true
+    }
+   ]
+  },
+  {
+   "day": "2026-10-26",
+   "family": "F07",
+   "kids": [
+    {
+     "day": "2026-10-26",
+     "hour": 21,
+     "level": 3,
+     "xp": 39,
+     "intimacy": 136,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-26",
+   "family": "F08",
+   "kids": [
+    {
+     "day": "2026-10-26",
+     "hour": 14,
+     "level": 2,
+     "xp": 16,
+     "intimacy": 107,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-26",
+   "family": "F09",
+   "kids": [
+    {
+     "day": "2026-10-26",
+     "hour": 9,
+     "level": 4,
+     "xp": 79,
+     "intimacy": 182,
+     "feedStreak": 1,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": {
+      "eventId": "e17930214000006",
+      "type": "pride"
+     },
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-26",
+   "family": "F10",
+   "kids": [
+    {
+     "day": "2026-10-26",
+     "hour": 19,
+     "level": 2,
+     "xp": 20,
+     "intimacy": 116,
+     "feedStreak": 1,
+     "feedOk": true,
+     "explores": 1,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-27",
+   "family": "F01",
+   "kids": [
+    {
+     "day": "2026-10-27",
+     "hour": 10,
+     "level": 3,
+     "xp": 45,
+     "intimacy": 137,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "boss",
+      "win": false,
+      "moves": 6
+     },
+     "submitted": {
+      "eventId": "e179311140000047",
+      "type": "pride"
+     },
+     "questsDone": 2,
+     "questsTotal": 3,
+     "questRewarded": true
+    },
+    {
+     "day": "2026-10-27",
+     "hour": 11,
+     "level": 4,
+     "xp": 63,
+     "intimacy": 151,
+     "feedStreak": 1,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "boss",
+      "win": false,
+      "moves": 7
+     },
+     "submitted": {
+      "eventId": "e179311500000041",
+      "type": "exam"
+     },
+     "questsDone": 2,
+     "questsTotal": 3,
+     "questRewarded": true
+    },
+    {
+     "day": "2026-10-27",
+     "hour": 16,
+     "level": 8,
+     "xp": 207,
+     "intimacy": 91,
+     "feedStreak": 1,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "sibling",
+      "win": true,
+      "moves": 9
+     },
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-27",
+   "family": "F02",
+   "kids": [
+    {
+     "day": "2026-10-27",
+     "hour": 20,
+     "level": 3,
+     "xp": 45,
+     "intimacy": 150,
+     "feedStreak": 5,
+     "feedOk": true,
+     "explores": 2,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-27",
+   "family": "F03",
+   "kids": [
+    {
+     "day": "2026-10-27",
+     "hour": 20,
+     "level": 2,
+     "xp": 21,
+     "intimacy": 109,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    },
+    {
+     "day": "2026-10-27",
+     "hour": 17,
+     "level": 3,
+     "xp": 45,
+     "intimacy": 140,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-27",
+   "family": "F04",
+   "kids": [
+    {
+     "day": "2026-10-27",
+     "hour": 21,
+     "level": 3,
+     "xp": 33,
+     "intimacy": 130,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "boss",
+      "win": false,
+      "moves": 5
+     },
+     "submitted": {
+      "eventId": "e179315100000062",
+      "type": "exam"
+     },
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-27",
+   "family": "F05",
+   "kids": [
+    {
+     "day": "2026-10-27",
+     "hour": 17,
+     "level": 7,
+     "xp": 173,
+     "intimacy": 271,
+     "feedStreak": 5,
+     "feedOk": true,
+     "explores": 2,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 2,
+     "questsTotal": 3,
+     "questRewarded": true
+    },
+    {
+     "day": "2026-10-27",
+     "hour": 11,
+     "level": 4,
+     "xp": 73,
+     "intimacy": 182,
+     "feedStreak": 4,
+     "feedOk": true,
+     "explores": 1,
+     "battle": {
+      "mode": "boss",
+      "win": true,
+      "moves": 8
+     },
+     "submitted": null,
+     "questsDone": 2,
+     "questsTotal": 3,
+     "questRewarded": true
+    }
+   ]
+  },
+  {
+   "day": "2026-10-27",
+   "family": "F06",
+   "kids": [
+    {
+     "day": "2026-10-27",
+     "hour": 12,
+     "level": 4,
+     "xp": 67,
+     "intimacy": 169,
+     "feedStreak": 2,
+     "feedOk": true,
+     "explores": 3,
+     "battle": {
+      "mode": "boss",
+      "win": false,
+      "moves": 7
+     },
+     "submitted": null,
+     "questsDone": 2,
+     "questsTotal": 3,
+     "questRewarded": true
+    }
+   ]
+  },
+  {
+   "day": "2026-10-27",
+   "family": "F07",
+   "kids": [
+    {
+     "day": "2026-10-27",
+     "hour": 11,
+     "level": 4,
+     "xp": 59,
+     "intimacy": 154,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-27",
+   "family": "F08",
+   "kids": [
+    {
+     "day": "2026-10-27",
+     "hour": 22,
+     "level": 2,
+     "xp": 24,
+     "intimacy": 107,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "boss",
+      "win": true,
+      "moves": 22
+     },
+     "submitted": null,
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-27",
+   "family": "F09",
+   "kids": [
+    {
+     "day": "2026-10-27",
+     "hour": 9,
+     "level": 6,
+     "xp": 134,
+     "intimacy": 32,
+     "feedStreak": 1,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "boss",
+      "win": false,
+      "moves": 6
+     },
+     "submitted": null,
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-27",
+   "family": "F10",
+   "kids": [
+    {
+     "day": "2026-10-27",
+     "hour": 21,
+     "level": 3,
+     "xp": 39,
+     "intimacy": 131,
+     "feedStreak": 1,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "boss",
+      "win": true,
+      "moves": 5
+     },
+     "submitted": {
+      "eventId": "e179315100000047",
+      "type": "pride"
+     },
+     "questsDone": 2,
+     "questsTotal": 3,
+     "questRewarded": true
+    }
+   ]
+  },
+  {
+   "day": "2026-10-28",
+   "family": "F01",
+   "kids": [
+    {
+     "day": "2026-10-28",
+     "hour": 10,
+     "level": 4,
+     "xp": 75,
+     "intimacy": 162,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "boss",
+      "win": true,
+      "moves": 8
+     },
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    },
+    {
+     "day": "2026-10-28",
+     "hour": 9,
+     "level": 5,
+     "xp": 87,
+     "intimacy": 171,
+     "feedStreak": 1,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "boss",
+      "win": false,
+      "moves": 7
+     },
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    },
+    {
+     "day": "2026-10-28",
+     "hour": 18,
+     "level": 9,
+     "xp": 267,
+     "intimacy": 151,
+     "feedStreak": 1,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": {
+      "eventId": "e179322660000094",
+      "type": "quiz"
+     },
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-28",
+   "family": "F02",
+   "kids": [
+    {
+     "day": "2026-10-28",
+     "hour": 18,
+     "level": 4,
+     "xp": 59,
+     "intimacy": 160,
+     "feedStreak": 5,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "boss",
+      "win": false,
+      "moves": 7
+     },
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-28",
+   "family": "F03",
+   "kids": [
+    {
+     "day": "2026-10-28",
+     "hour": 13,
+     "level": 2,
+     "xp": 21,
+     "intimacy": 106,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": {
+      "eventId": "e179320860000051",
+      "type": "quiz"
+     },
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    },
+    {
+     "day": "2026-10-28",
+     "hour": 18,
+     "level": 4,
+     "xp": 69,
+     "intimacy": 165,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "boss",
+      "win": false,
+      "moves": 8
+     },
+     "submitted": {
+      "eventId": "e179322660000012",
+      "type": "pride"
+     },
+     "questsDone": 2,
+     "questsTotal": 3,
+     "questRewarded": true
+    }
+   ]
+  },
+  {
+   "day": "2026-10-28",
+   "family": "F04",
+   "kids": [
+    {
+     "day": "2026-10-28",
+     "hour": 15,
+     "level": 5,
+     "xp": 93,
+     "intimacy": 190,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-28",
+   "family": "F05",
+   "kids": [
+    {
+     "day": "2026-10-28",
+     "hour": 16,
+     "level": 8,
+     "xp": 238,
+     "intimacy": 136,
+     "feedStreak": 5,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    },
+    {
+     "day": "2026-10-28",
+     "hour": 13,
+     "level": 5,
+     "xp": 112,
+     "intimacy": 218,
+     "feedStreak": 5,
+     "feedOk": true,
+     "explores": 3,
+     "battle": {
+      "mode": "boss",
+      "win": false,
+      "moves": 7
+     },
+     "submitted": null,
+     "questsDone": 2,
+     "questsTotal": 3,
+     "questRewarded": true
+    }
+   ]
+  },
+  {
+   "day": "2026-10-28",
+   "family": "F06",
+   "kids": [
+    {
+     "day": "2026-10-28",
+     "hour": 10,
+     "level": 5,
+     "xp": 88,
+     "intimacy": 195,
+     "feedStreak": 3,
+     "feedOk": true,
+     "explores": 1,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 2,
+     "questsTotal": 3,
+     "questRewarded": true
+    }
+   ]
+  },
+  {
+   "day": "2026-10-28",
+   "family": "F07",
+   "kids": [
+    {
+     "day": "2026-10-28",
+     "hour": 12,
+     "level": 5,
+     "xp": 83,
+     "intimacy": 179,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "boss",
+      "win": false,
+      "moves": 4
+     },
+     "submitted": {
+      "eventId": "e17932050000001",
+      "type": "pride"
+     },
+     "questsDone": 2,
+     "questsTotal": 3,
+     "questRewarded": true
+    }
+   ]
+  },
+  {
+   "day": "2026-10-28",
+   "family": "F08",
+   "kids": [
+    {
+     "day": "2026-10-28",
+     "hour": 17,
+     "level": 2,
+     "xp": 24,
+     "intimacy": 107,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": {
+      "eventId": "e17932230000005",
+      "type": "pride"
+     },
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-28",
+   "family": "F09",
+   "kids": [
+    {
+     "day": "2026-10-28",
+     "hour": 16,
+     "level": 6,
+     "xp": 154,
+     "intimacy": 50,
+     "feedStreak": 1,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-28",
+   "family": "F10",
+   "kids": [
+    {
+     "day": "2026-10-28",
+     "hour": 18,
+     "level": 4,
+     "xp": 60,
+     "intimacy": 157,
+     "feedStreak": 1,
+     "feedOk": true,
+     "explores": 2,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 2,
+     "questsTotal": 3,
+     "questRewarded": true
+    }
+   ]
+  },
+  {
+   "day": "2026-10-29",
+   "family": "F01",
+   "kids": [
+    {
+     "day": "2026-10-29",
+     "hour": 9,
+     "level": 5,
+     "xp": 90,
+     "intimacy": 172,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "sibling",
+      "win": false,
+      "moves": 4
+     },
+     "submitted": null,
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    },
+    {
+     "day": "2026-10-29",
+     "hour": 19,
+     "level": 7,
+     "xp": 169,
+     "intimacy": 247,
+     "feedStreak": 1,
+     "feedOk": true,
+     "explores": 1,
+     "battle": {
+      "mode": "sibling",
+      "win": true,
+      "moves": 5
+     },
+     "submitted": null,
+     "questsDone": 3,
+     "questsTotal": 3,
+     "questRewarded": true
+    },
+    {
+     "day": "2026-10-29",
+     "hour": 18,
+     "level": 9,
+     "xp": 287,
+     "intimacy": 171,
+     "feedStreak": 1,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-29",
+   "family": "F02",
+   "kids": [
+    {
+     "day": "2026-10-29",
+     "hour": 18,
+     "level": 4,
+     "xp": 70,
+     "intimacy": 176,
+     "feedStreak": 1,
+     "feedOk": true,
+     "explores": 1,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 2,
+     "questsTotal": 3,
+     "questRewarded": true
+    }
+   ]
+  },
+  {
+   "day": "2026-10-29",
+   "family": "F03",
+   "kids": [
+    {
+     "day": "2026-10-29",
+     "hour": 20,
+     "level": 3,
+     "xp": 40,
+     "intimacy": 116,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "boss",
+      "win": true,
+      "moves": 26
+     },
+     "submitted": null,
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    },
+    {
+     "day": "2026-10-29",
+     "hour": 21,
+     "level": 5,
+     "xp": 103,
+     "intimacy": 198,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "boss",
+      "win": false,
+      "moves": 8
+     },
+     "submitted": {
+      "eventId": "e179332380000078",
+      "type": "exam"
+     },
+     "questsDone": 2,
+     "questsTotal": 3,
+     "questRewarded": true
+    }
+   ]
+  },
+  {
+   "day": "2026-10-29",
+   "family": "F04",
+   "kids": [
+    {
+     "day": "2026-10-29",
+     "hour": 12,
+     "level": 7,
+     "xp": 159,
+     "intimacy": 256,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-29",
+   "family": "F05",
+   "kids": [
+    {
+     "day": "2026-10-29",
+     "hour": 20,
+     "level": 9,
+     "xp": 316,
+     "intimacy": 207,
+     "feedStreak": 1,
+     "feedOk": true,
+     "explores": 3,
+     "battle": {
+      "mode": "sibling",
+      "win": true,
+      "moves": 9
+     },
+     "submitted": null,
+     "questsDone": 2,
+     "questsTotal": 3,
+     "questRewarded": true
+    },
+    {
+     "day": "2026-10-29",
+     "hour": 19,
+     "level": 6,
+     "xp": 148,
+     "intimacy": 254,
+     "feedStreak": 6,
+     "feedOk": true,
+     "explores": 3,
+     "battle": {
+      "mode": "boss",
+      "win": false,
+      "moves": 7
+     },
+     "submitted": {
+      "eventId": "e179331660000052",
+      "type": "quiz"
+     },
+     "questsDone": 3,
+     "questsTotal": 3,
+     "questRewarded": true
+    }
+   ]
+  },
+  {
+   "day": "2026-10-29",
+   "family": "F06",
+   "kids": [
+    {
+     "day": "2026-10-29",
+     "hour": 13,
+     "level": 5,
+     "xp": 109,
+     "intimacy": 18,
+     "feedStreak": 4,
+     "feedOk": true,
+     "explores": 1,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 2,
+     "questsTotal": 3,
+     "questRewarded": true
+    }
+   ]
+  },
+  {
+   "day": "2026-10-29",
+   "family": "F07",
+   "kids": [
+    {
+     "day": "2026-10-29",
+     "hour": 20,
+     "level": 5,
+     "xp": 109,
+     "intimacy": 1,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "boss",
+      "win": false,
+      "moves": 5
+     },
+     "submitted": null,
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-29",
+   "family": "F08",
+   "kids": [
+    {
+     "day": "2026-10-29",
+     "hour": 8,
+     "level": 3,
+     "xp": 43,
+     "intimacy": 117,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "boss",
+      "win": true,
+      "moves": 24
+     },
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-29",
+   "family": "F09",
+   "kids": [
+    {
+     "day": "2026-10-29",
+     "hour": 15,
+     "level": 8,
+     "xp": 230,
+     "intimacy": 120,
+     "feedStreak": 1,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "boss",
+      "win": false,
+      "moves": 7
+     },
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-29",
+   "family": "F10",
+   "kids": [
+    {
+     "day": "2026-10-29",
+     "hour": 11,
+     "level": 5,
+     "xp": 80,
+     "intimacy": 177,
+     "feedStreak": 1,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-30",
+   "family": "F01",
+   "kids": [
+    {
+     "day": "2026-10-30",
+     "hour": 12,
+     "level": 5,
+     "xp": 110,
+     "intimacy": 192,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    },
+    {
+     "day": "2026-10-30",
+     "hour": 22,
+     "level": 7,
+     "xp": 189,
+     "intimacy": 267,
+     "feedStreak": 1,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": {
+      "eventId": "e179341380000055",
+      "type": "exam"
+     },
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    },
+    {
+     "day": "2026-10-30",
+     "hour": 18,
+     "level": 10,
+     "xp": 364,
+     "intimacy": 241,
+     "feedStreak": 1,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "boss",
+      "win": false,
+      "moves": 5
+     },
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-30",
+   "family": "F02",
+   "kids": [
+    {
+     "day": "2026-10-30",
+     "hour": 10,
+     "level": 5,
+     "xp": 84,
+     "intimacy": 184,
+     "feedStreak": 1,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "boss",
+      "win": false,
+      "moves": 8
+     },
+     "submitted": null,
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-30",
+   "family": "F03",
+   "kids": [
+    {
+     "day": "2026-10-30",
+     "hour": 17,
+     "level": 3,
+     "xp": 50,
+     "intimacy": 126,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": {
+      "eventId": "e179339580000043",
+      "type": "pride"
+     },
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    },
+    {
+     "day": "2026-10-30",
+     "hour": 11,
+     "level": 7,
+     "xp": 192,
+     "intimacy": 278,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "sibling",
+      "win": true,
+      "moves": 20
+     },
+     "submitted": null,
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-30",
+   "family": "F04",
+   "kids": [
+    {
+     "day": "2026-10-30",
+     "hour": 12,
+     "level": 8,
+     "xp": 225,
+     "intimacy": 314,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "boss",
+      "win": false,
+      "moves": 3
+     },
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-30",
+   "family": "F05",
+   "kids": [
+    {
+     "day": "2026-10-30",
+     "hour": 11,
+     "level": 11,
+     "xp": 393,
+     "intimacy": 273,
+     "feedStreak": 2,
+     "feedOk": true,
+     "explores": 2,
+     "battle": {
+      "mode": "boss",
+      "win": true,
+      "moves": 8
+     },
+     "submitted": null,
+     "questsDone": 3,
+     "questsTotal": 3,
+     "questRewarded": true
+    },
+    {
+     "day": "2026-10-30",
+     "hour": 11,
+     "level": 7,
+     "xp": 199,
+     "intimacy": 305,
+     "feedStreak": 7,
+     "feedOk": true,
+     "explores": 3,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-30",
+   "family": "F06",
+   "kids": [
+    {
+     "day": "2026-10-30",
+     "hour": 22,
+     "level": 6,
+     "xp": 141,
+     "intimacy": 38,
+     "feedStreak": 4,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "boss",
+      "win": true,
+      "moves": 8
+     },
+     "submitted": null,
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-30",
+   "family": "F07",
+   "kids": [
+    {
+     "day": "2026-10-30",
+     "hour": 15,
+     "level": 6,
+     "xp": 144,
+     "intimacy": 31,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "boss",
+      "win": false,
+      "moves": 6
+     },
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-30",
+   "family": "F08",
+   "kids": [
+    {
+     "day": "2026-10-30",
+     "hour": 10,
+     "level": 4,
+     "xp": 53,
+     "intimacy": 127,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-30",
+   "family": "F09",
+   "kids": [
+    {
+     "day": "2026-10-30",
+     "hour": 15,
+     "level": 9,
+     "xp": 306,
+     "intimacy": 195,
+     "feedStreak": 1,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "boss",
+      "win": false,
+      "moves": 8
+     },
+     "submitted": {
+      "eventId": "e179338860000055",
+      "type": "quiz"
+     },
+     "questsDone": 2,
+     "questsTotal": 3,
+     "questRewarded": true
+    }
+   ]
+  },
+  {
+   "day": "2026-10-30",
+   "family": "F10",
+   "kids": [
+    {
+     "day": "2026-10-30",
+     "hour": 16,
+     "level": 5,
+     "xp": 100,
+     "intimacy": 197,
+     "feedStreak": 1,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-31",
+   "family": "F01",
+   "kids": [
+    {
+     "day": "2026-10-31",
+     "hour": 9,
+     "level": 6,
+     "xp": 136,
+     "intimacy": 217,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "sibling",
+      "win": false,
+      "moves": 2
+     },
+     "submitted": {
+      "eventId": "e179345340000015",
+      "type": "quiz"
+     },
+     "questsDone": 2,
+     "questsTotal": 3,
+     "questRewarded": true
+    },
+    {
+     "day": "2026-10-31",
+     "hour": 10,
+     "level": 9,
+     "xp": 315,
+     "intimacy": 387,
+     "feedStreak": 1,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "boss",
+      "win": false,
+      "moves": 7
+     },
+     "submitted": null,
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    },
+    {
+     "day": "2026-10-31",
+     "hour": 13,
+     "level": 11,
+     "xp": 451,
+     "intimacy": 316,
+     "feedStreak": 1,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "boss",
+      "win": true,
+      "moves": 6
+     },
+     "submitted": {
+      "eventId": "e179346780000025",
+      "type": "quiz"
+     },
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-31",
+   "family": "F02",
+   "kids": [
+    {
+     "day": "2026-10-31",
+     "hour": 10,
+     "level": 5,
+     "xp": 101,
+     "intimacy": 1,
+     "feedStreak": 1,
+     "feedOk": true,
+     "explores": 1,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-31",
+   "family": "F03",
+   "kids": [
+    {
+     "day": "2026-10-31",
+     "hour": 13,
+     "level": 4,
+     "xp": 76,
+     "intimacy": 146,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "sibling",
+      "win": false,
+      "moves": 17
+     },
+     "submitted": null,
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    },
+    {
+     "day": "2026-10-31",
+     "hour": 10,
+     "level": 9,
+     "xp": 278,
+     "intimacy": 356,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "boss",
+      "win": false,
+      "moves": 6
+     },
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-31",
+   "family": "F04",
+   "kids": [
+    {
+     "day": "2026-10-31",
+     "hour": 16,
+     "level": 9,
+     "xp": 285,
+     "intimacy": 371,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-31",
+   "family": "F05",
+   "kids": [
+    {
+     "day": "2026-10-31",
+     "hour": 18,
+     "level": 11,
+     "xp": 454,
+     "intimacy": 339,
+     "feedStreak": 3,
+     "feedOk": true,
+     "explores": 0,
+     "battle": null,
+     "submitted": {
+      "eventId": "e179348580000040",
+      "type": "exam"
+     },
+     "questsDone": 2,
+     "questsTotal": 3,
+     "questRewarded": true
+    },
+    {
+     "day": "2026-10-31",
+     "hour": 18,
+     "level": 8,
+     "xp": 220,
+     "intimacy": 326,
+     "feedStreak": 8,
+     "feedOk": true,
+     "explores": 0,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-31",
+   "family": "F06",
+   "kids": [
+    {
+     "day": "2026-10-31",
+     "hour": 16,
+     "level": 7,
+     "xp": 168,
+     "intimacy": 65,
+     "feedStreak": 1,
+     "feedOk": true,
+     "explores": 3,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-31",
+   "family": "F07",
+   "kids": [
+    {
+     "day": "2026-10-31",
+     "hour": 10,
+     "level": 7,
+     "xp": 179,
+     "intimacy": 59,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "boss",
+      "win": false,
+      "moves": 4
+     },
+     "submitted": null,
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-31",
+   "family": "F08",
+   "kids": [
+    {
+     "day": "2026-10-31",
+     "hour": 20,
+     "level": 4,
+     "xp": 78,
+     "intimacy": 147,
+     "feedStreak": 1,
+     "feedOk": true,
+     "explores": 2,
+     "battle": {
+      "mode": "boss",
+      "win": true,
+      "moves": 29
+     },
+     "submitted": null,
+     "questsDone": 2,
+     "questsTotal": 3,
+     "questRewarded": true
+    }
+   ]
+  },
+  {
+   "day": "2026-10-31",
+   "family": "F09",
+   "kids": [
+    {
+     "day": "2026-10-31",
+     "hour": 10,
+     "level": 11,
+     "xp": 393,
+     "intimacy": 273,
+     "feedStreak": 1,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "boss",
+      "win": false,
+      "moves": 5
+     },
+     "submitted": null,
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-10-31",
+   "family": "F10",
+   "kids": [
+    {
+     "day": "2026-10-31",
+     "hour": 15,
+     "level": 6,
+     "xp": 124,
+     "intimacy": 210,
+     "feedStreak": 1,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "boss",
+      "win": true,
+      "moves": 6
+     },
+     "submitted": null,
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-11-01",
+   "family": "F01",
+   "kids": [
+    {
+     "day": "2026-11-01",
+     "hour": 12,
+     "level": 9,
+     "xp": 272,
+     "intimacy": 100,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "boss",
+      "win": false,
+      "moves": 6
+     },
+     "submitted": {
+      "eventId": "e179355420000028",
+      "type": "pride"
+     },
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    },
+    {
+     "day": "2026-11-01",
+     "hour": 15,
+     "level": 12,
+     "xp": 475,
+     "intimacy": 100,
+     "feedStreak": 1,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": {
+      "eventId": "e179356500000064",
+      "type": "pride"
+     },
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    },
+    {
+     "day": "2026-11-01",
+     "hour": 9,
+     "level": 14,
+     "xp": 631,
+     "intimacy": 100,
+     "feedStreak": 1,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-11-01",
+   "family": "F02",
+   "kids": [
+    {
+     "day": "2026-11-01",
+     "hour": 10,
+     "level": 5,
+     "xp": 109,
+     "intimacy": 106,
+     "feedStreak": 2,
+     "feedOk": true,
+     "explores": 0,
+     "battle": null,
+     "submitted": {
+      "eventId": "e17935470000006",
+      "type": "exam"
+     },
+     "questsDone": 2,
+     "questsTotal": 3,
+     "questRewarded": true
+    }
+   ]
+  },
+  {
+   "day": "2026-11-01",
+   "family": "F03",
+   "kids": [
+    {
+     "day": "2026-11-01",
+     "hour": 10,
+     "level": 5,
+     "xp": 90,
+     "intimacy": 100,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": {
+      "eventId": "e179354700000026",
+      "type": "exam"
+     },
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    },
+    {
+     "day": "2026-11-01",
+     "hour": 10,
+     "level": 9,
+     "xp": 308,
+     "intimacy": 100,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-11-01",
+   "family": "F04",
+   "kids": [
+    {
+     "day": "2026-11-01",
+     "hour": 9,
+     "level": 9,
+     "xp": 301,
+     "intimacy": 105,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": {
+      "mode": "boss",
+      "win": false,
+      "moves": 4
+     },
+     "submitted": {
+      "eventId": "e179354340000039",
+      "type": "quiz"
+     },
+     "questsDone": 2,
+     "questsTotal": 3,
+     "questRewarded": true
+    }
+   ]
+  },
+  {
+   "day": "2026-11-01",
+   "family": "F05",
+   "kids": [
+    {
+     "day": "2026-11-01",
+     "hour": 8,
+     "level": 14,
+     "xp": 630,
+     "intimacy": 106,
+     "feedStreak": 4,
+     "feedOk": true,
+     "explores": 0,
+     "battle": {
+      "mode": "sibling",
+      "win": true,
+      "moves": 8
+     },
+     "submitted": {
+      "eventId": "e17935398000001",
+      "type": "exam"
+     },
+     "questsDone": 2,
+     "questsTotal": 3,
+     "questRewarded": true
+    },
+    {
+     "day": "2026-11-01",
+     "hour": 16,
+     "level": 9,
+     "xp": 261,
+     "intimacy": 101,
+     "feedStreak": 9,
+     "feedOk": true,
+     "explores": 0,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-11-01",
+   "family": "F06",
+   "kids": [
+    {
+     "day": "2026-11-01",
+     "hour": 17,
+     "level": 9,
+     "xp": 289,
+     "intimacy": 101,
+     "feedStreak": 2,
+     "feedOk": true,
+     "explores": 0,
+     "battle": null,
+     "submitted": {
+      "eventId": "e179357220000077",
+      "type": "exam"
+     },
+     "questsDone": 1,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-11-01",
+   "family": "F07",
+   "kids": [
+    {
+     "day": "2026-11-01",
+     "hour": 16,
+     "level": 7,
+     "xp": 199,
+     "intimacy": 100,
+     "feedStreak": 0,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-11-01",
+   "family": "F08",
+   "kids": [
+    {
+     "day": "2026-11-01",
+     "hour": 12,
+     "level": 5,
+     "xp": 93,
+     "intimacy": 100,
+     "feedStreak": 1,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-11-01",
+   "family": "F09",
+   "kids": [
+    {
+     "day": "2026-11-01",
+     "hour": 15,
+     "level": 12,
+     "xp": 473,
+     "intimacy": 100,
+     "feedStreak": 1,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": {
+      "eventId": "e179356500000025",
+      "type": "quiz"
+     },
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  },
+  {
+   "day": "2026-11-01",
+   "family": "F10",
+   "kids": [
+    {
+     "day": "2026-11-01",
+     "hour": 20,
+     "level": 6,
+     "xp": 144,
+     "intimacy": 100,
+     "feedStreak": 1,
+     "feedOk": false,
+     "explores": 0,
+     "battle": null,
+     "submitted": null,
+     "questsDone": 0,
+     "questsTotal": 3,
+     "questRewarded": false
+    }
+   ]
+  }
+ ],
+ "anomalies": [],
+ "expected": {
+  "gateFeedBeforeExplore": 204,
+  "weeklyCapHit": 1,
+  "prideWeeklyLimit": 6
+ },
+ "langHits": [
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F05",
+   "day": "2026-10-23"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F05",
+   "day": "2026-10-23"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F05",
+   "day": "2026-10-23"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "sync/full(parent)",
+   "family": "F05",
+   "day": "2026-10-23"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "sync/full(child)",
+   "family": "F05",
+   "day": "2026-10-23"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F06",
+   "day": "2026-10-23"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "sync/full(parent)",
+   "family": "F06",
+   "day": "2026-10-23"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "sync/full(child)",
+   "family": "F06",
+   "day": "2026-10-23"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F01",
+   "day": "2026-10-24"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F01",
+   "day": "2026-10-24"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F01",
+   "day": "2026-10-24"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F01",
+   "day": "2026-10-24"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F01",
+   "day": "2026-10-24"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "manual",
+   "family": "F01",
+   "day": "2026-10-24"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F02",
+   "day": "2026-10-24"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F02",
+   "day": "2026-10-24"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F03",
+   "day": "2026-10-24"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F03",
+   "day": "2026-10-24"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F05",
+   "day": "2026-10-24"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F05",
+   "day": "2026-10-24"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F05",
+   "day": "2026-10-24"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F05",
+   "day": "2026-10-24"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "manual",
+   "family": "F05",
+   "day": "2026-10-24"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F06",
+   "day": "2026-10-24"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F06",
+   "day": "2026-10-24"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F08",
+   "day": "2026-10-24"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F10",
+   "day": "2026-10-24"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F01",
+   "day": "2026-10-25"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F01",
+   "day": "2026-10-25"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F01",
+   "day": "2026-10-25"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F01",
+   "day": "2026-10-25"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F01",
+   "day": "2026-10-25"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F01",
+   "day": "2026-10-25"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "config(day3)",
+   "family": "F01",
+   "day": "2026-10-25"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F02",
+   "day": "2026-10-25"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F02",
+   "day": "2026-10-25"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "manual",
+   "family": "F02",
+   "day": "2026-10-25"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "config(day3)",
+   "family": "F02",
+   "day": "2026-10-25"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F03",
+   "day": "2026-10-25"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F03",
+   "day": "2026-10-25"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "complaint",
+   "family": "F03",
+   "day": "2026-10-25"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "config(day3)",
+   "family": "F03",
+   "day": "2026-10-25"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F05",
+   "day": "2026-10-25"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F05",
+   "day": "2026-10-25"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F05",
+   "day": "2026-10-25"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F05",
+   "day": "2026-10-25"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F05",
+   "day": "2026-10-25"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "complaint",
+   "family": "F05",
+   "day": "2026-10-25"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "config(day3)",
+   "family": "F05",
+   "day": "2026-10-25"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F06",
+   "day": "2026-10-25"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F06",
+   "day": "2026-10-25"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "config(day3)",
+   "family": "F06",
+   "day": "2026-10-25"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F08",
+   "day": "2026-10-25"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "config(day3)",
+   "family": "F08",
+   "day": "2026-10-25"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F09",
+   "day": "2026-10-25"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F09",
+   "day": "2026-10-25"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F09",
+   "day": "2026-10-25"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "config(day3)",
+   "family": "F09",
+   "day": "2026-10-25"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F10",
+   "day": "2026-10-25"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F10",
+   "day": "2026-10-25"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "config(day3)",
+   "family": "F10",
+   "day": "2026-10-25"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F01",
+   "day": "2026-10-26"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F01",
+   "day": "2026-10-26"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F01",
+   "day": "2026-10-26"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F01",
+   "day": "2026-10-26"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F01",
+   "day": "2026-10-26"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F01",
+   "day": "2026-10-26"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F02",
+   "day": "2026-10-26"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F02",
+   "day": "2026-10-26"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F03",
+   "day": "2026-10-26"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F03",
+   "day": "2026-10-26"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F03",
+   "day": "2026-10-26"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F05",
+   "day": "2026-10-26"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F05",
+   "day": "2026-10-26"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F05",
+   "day": "2026-10-26"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F05",
+   "day": "2026-10-26"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F05",
+   "day": "2026-10-26"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F05",
+   "day": "2026-10-26"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "manual",
+   "family": "F05",
+   "day": "2026-10-26"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F06",
+   "day": "2026-10-26"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F06",
+   "day": "2026-10-26"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F06",
+   "day": "2026-10-26"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F08",
+   "day": "2026-10-26"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F09",
+   "day": "2026-10-26"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F09",
+   "day": "2026-10-26"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F09",
+   "day": "2026-10-26"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F09",
+   "day": "2026-10-26"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F10",
+   "day": "2026-10-26"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F10",
+   "day": "2026-10-26"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F01",
+   "day": "2026-10-27"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F01",
+   "day": "2026-10-27"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F01",
+   "day": "2026-10-27"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F01",
+   "day": "2026-10-27"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F01",
+   "day": "2026-10-27"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F01",
+   "day": "2026-10-27"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F01",
+   "day": "2026-10-27"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F01",
+   "day": "2026-10-27"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F02",
+   "day": "2026-10-27"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F02",
+   "day": "2026-10-27"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F03",
+   "day": "2026-10-27"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F03",
+   "day": "2026-10-27"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F03",
+   "day": "2026-10-27"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "manual",
+   "family": "F03",
+   "day": "2026-10-27"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "complaint",
+   "family": "F03",
+   "day": "2026-10-27"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F05",
+   "day": "2026-10-27"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F05",
+   "day": "2026-10-27"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F05",
+   "day": "2026-10-27"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F05",
+   "day": "2026-10-27"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F05",
+   "day": "2026-10-27"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F05",
+   "day": "2026-10-27"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "manual",
+   "family": "F05",
+   "day": "2026-10-27"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F06",
+   "day": "2026-10-27"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F06",
+   "day": "2026-10-27"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F06",
+   "day": "2026-10-27"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F08",
+   "day": "2026-10-27"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F09",
+   "day": "2026-10-27"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F09",
+   "day": "2026-10-27"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F09",
+   "day": "2026-10-27"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F09",
+   "day": "2026-10-27"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "complaint",
+   "family": "F09",
+   "day": "2026-10-27"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F10",
+   "day": "2026-10-27"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F10",
+   "day": "2026-10-27"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F10",
+   "day": "2026-10-27"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F01",
+   "day": "2026-10-28"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F01",
+   "day": "2026-10-28"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F01",
+   "day": "2026-10-28"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F01",
+   "day": "2026-10-28"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F01",
+   "day": "2026-10-28"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F01",
+   "day": "2026-10-28"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F01",
+   "day": "2026-10-28"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F01",
+   "day": "2026-10-28"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F01",
+   "day": "2026-10-28"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F02",
+   "day": "2026-10-28"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F02",
+   "day": "2026-10-28"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F03",
+   "day": "2026-10-28"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F03",
+   "day": "2026-10-28"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F03",
+   "day": "2026-10-28"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F03",
+   "day": "2026-10-28"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F03",
+   "day": "2026-10-28"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "complaint",
+   "family": "F03",
+   "day": "2026-10-28"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F05",
+   "day": "2026-10-28"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F05",
+   "day": "2026-10-28"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F05",
+   "day": "2026-10-28"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F05",
+   "day": "2026-10-28"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F05",
+   "day": "2026-10-28"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F05",
+   "day": "2026-10-28"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "manual",
+   "family": "F05",
+   "day": "2026-10-28"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F06",
+   "day": "2026-10-28"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F06",
+   "day": "2026-10-28"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F06",
+   "day": "2026-10-28"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "manual",
+   "family": "F06",
+   "day": "2026-10-28"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F07",
+   "day": "2026-10-28"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F07",
+   "day": "2026-10-28"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F07",
+   "day": "2026-10-28"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F07",
+   "day": "2026-10-28"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "manual",
+   "family": "F07",
+   "day": "2026-10-28"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F08",
+   "day": "2026-10-28"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F08",
+   "day": "2026-10-28"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F09",
+   "day": "2026-10-28"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F09",
+   "day": "2026-10-28"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F09",
+   "day": "2026-10-28"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F09",
+   "day": "2026-10-28"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F10",
+   "day": "2026-10-28"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F10",
+   "day": "2026-10-28"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F10",
+   "day": "2026-10-28"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F01",
+   "day": "2026-10-29"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F01",
+   "day": "2026-10-29"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F01",
+   "day": "2026-10-29"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F01",
+   "day": "2026-10-29"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F01",
+   "day": "2026-10-29"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F01",
+   "day": "2026-10-29"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F01",
+   "day": "2026-10-29"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F01",
+   "day": "2026-10-29"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F01",
+   "day": "2026-10-29"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F02",
+   "day": "2026-10-29"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F02",
+   "day": "2026-10-29"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "manual",
+   "family": "F02",
+   "day": "2026-10-29"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F03",
+   "day": "2026-10-29"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F03",
+   "day": "2026-10-29"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F03",
+   "day": "2026-10-29"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F03",
+   "day": "2026-10-29"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F03",
+   "day": "2026-10-29"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F03",
+   "day": "2026-10-29"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F05",
+   "day": "2026-10-29"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F05",
+   "day": "2026-10-29"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F05",
+   "day": "2026-10-29"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F05",
+   "day": "2026-10-29"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F05",
+   "day": "2026-10-29"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F05",
+   "day": "2026-10-29"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F05",
+   "day": "2026-10-29"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F06",
+   "day": "2026-10-29"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F06",
+   "day": "2026-10-29"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F06",
+   "day": "2026-10-29"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F07",
+   "day": "2026-10-29"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F07",
+   "day": "2026-10-29"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F07",
+   "day": "2026-10-29"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F07",
+   "day": "2026-10-29"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F08",
+   "day": "2026-10-29"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "approve",
+   "family": "F08",
+   "day": "2026-10-29"
+  },
+  {
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "tag": "family",
+   "family": "F09",
+   "day": "2026-10-29"
+  }
+ ],
+ "bossStats": {
+  "total": 55,
+  "win": 19,
+  "byLevel": {
+   "0": {
+    "total": 31,
+    "win": 14
+   },
+   "5": {
+    "total": 20,
+    "win": 3
+   },
+   "10": {
+    "total": 4,
+    "win": 2
+   }
+  }
+ },
+ "staticScan": [
+  {
+   "file": "server.js",
+   "term": "宠物",
+   "should": "灵伴",
+   "count": 19
+  },
+  {
+   "file": "server.js",
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "count": 1
+  },
+  {
+   "file": "public/app.js",
+   "term": "宠物",
+   "should": "灵伴",
+   "count": 26
+  },
+  {
+   "file": "public/app.js",
+   "term": "积分",
+   "should": "心光",
+   "count": 2
+  },
+  {
+   "file": "public/lib/local.js",
+   "term": "宠物",
+   "should": "灵伴",
+   "count": 11
+  },
+  {
+   "file": "public/lib/local.js",
+   "term": "亲密度",
+   "should": "羁绊/心光",
+   "count": 1
+  },
+  {
+   "file": "public/style.css",
+   "term": "宠物",
+   "should": "灵伴",
+   "count": 2
+  }
+ ],
+ "families": [
+  {
+   "key": "F01",
+   "name": "柚子柠檬部落(模拟)",
+   "ledger": 112,
+   "children": [
+    {
+     "name": "模拟柠檬",
+     "level": 9,
+     "xp": 312,
+     "intimacy": 140
+    },
+    {
+     "name": "模拟柚子",
+     "level": 13,
+     "xp": 560,
+     "intimacy": 185
+    },
+    {
+     "name": "模拟三娃",
+     "level": 14,
+     "xp": 701,
+     "intimacy": 170
+    }
+   ]
+  },
+  {
+   "key": "F02",
+   "name": "学龄前单娃",
+   "ledger": 38,
+   "children": [
+    {
+     "name": "小豆",
+     "level": 7,
+     "xp": 169,
+     "intimacy": 166
+    }
+   ]
+  },
+  {
+   "key": "F03",
+   "name": "二娃同行",
+   "ledger": 57,
+   "children": [
+    {
+     "name": "阿姐",
+     "level": 5,
+     "xp": 110,
+     "intimacy": 120
+    },
+    {
+     "name": "二弟",
+     "level": 11,
+     "xp": 388,
+     "intimacy": 180
+    }
+   ]
+  },
+  {
+   "key": "F04",
+   "name": "严格虎爸",
+   "ledger": 24,
+   "children": [
+    {
+     "name": "小严",
+     "level": 10,
+     "xp": 377,
+     "intimacy": 181
+    }
+   ]
+  },
+  {
+   "key": "F05",
+   "name": "宽松放养",
+   "ledger": 113,
+   "children": [
+    {
+     "name": "悠悠",
+     "level": 14,
+     "xp": 695,
+     "intimacy": 171
+    },
+    {
+     "name": "乐乐",
+     "level": 9,
+     "xp": 301,
+     "intimacy": 141
+    }
+   ]
+  },
+  {
+   "key": "F06",
+   "name": "假期模式",
+   "ledger": 43,
+   "children": [
+    {
+     "name": "假宝",
+     "level": 10,
+     "xp": 359,
+     "intimacy": 171
+    }
+   ]
+  },
+  {
+   "key": "F07",
+   "name": "对战狂人",
+   "ledger": 36,
+   "children": [
+    {
+     "name": "战仔",
+     "level": 8,
+     "xp": 219,
+     "intimacy": 118
+    }
+   ]
+  },
+  {
+   "key": "F08",
+   "name": "冷静陪学",
+   "ledger": 18,
+   "children": [
+    {
+     "name": "静静",
+     "level": 5,
+     "xp": 93,
+     "intimacy": 100
+    }
+   ]
+  },
+  {
+   "key": "F09",
+   "name": "祖辈带娃",
+   "ledger": 44,
+   "children": [
+    {
+     "name": "奶宝",
+     "level": 12,
+     "xp": 513,
+     "intimacy": 138
+    }
+   ]
+  },
+  {
+   "key": "F10",
+   "name": "默认配置",
+   "ledger": 27,
+   "children": [
+    {
+     "name": "普通娃",
+     "level": 6,
+     "xp": 154,
+     "intimacy": 108
+    }
+   ]
+  }
+ ]
+}
