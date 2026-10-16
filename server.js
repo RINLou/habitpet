@@ -1117,6 +1117,17 @@ async function adminRoutes(req, res, pathname, url) {
       const out = store.resetPassword(String(p.familyId || ''), String(p.newPassword || ''));
       return json(res, out.error ? 400 : 200, out);
     }
+    if (pathname === '/api/admin/setpin') {   // v12.3: 管理员代设家长 PIN（存储与 pinChange 同构：scrypt 哈希 + pinChanged）
+      const f = store.familyById(String(p.familyId || ''));
+      if (!f) return json(res, 404, { error: '家庭不存在' });
+      const pin = String(p.pin || '');
+      if (!/^\d{4,8}$/.test(pin)) return json(res, 400, { error: 'PIN 需 4-8 位数字' });
+      store.manualBackup();   // 改前强制留底
+      const { salt, hash } = store.hashPassword(pin);
+      f.parent.pinSalt = salt; f.parent.pinHash = hash; f.parent.pinChanged = true;
+      store.save();
+      return json(res, 200, { ok: true, familyId: f.id, username: f.parent.username, pinChanged: true });
+    }
     if (pathname === '/api/admin/rename') {
       const out = store.renameFamily(String(p.familyId || ''), p.username, p.familyName);
       return json(res, out.error ? 400 : 200, out.error ? out : { ok: true });
@@ -1179,7 +1190,7 @@ async function adminRoutes(req, res, pathname, url) {
       }
       if (!target) return json(res, 404, { error: '目标家庭不存在（传 familyId / username，或 create:true+username+password 新建）' });
       store.manualBackup();   // 迁移前强制留底
-      const summary = lingxiSync.applyMigration(store, target, snap);
+      const summary = lingxiSync.applyMigration(store, target, snap, { syncSettings: !!p.syncSettings });   // v12.3: syncSettings 显式采用灵汐侧设置
       store.save();
       return json(res, 200, { ok: true, target: { familyId: target.id, username: target.parent.username, familyName: target.name }, summary });
     }

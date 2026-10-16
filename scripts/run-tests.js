@@ -85,6 +85,16 @@ async function waitReady(url, timeoutMs) {
       if (run2.error) console.error('LAUNCHER-ERR', run2.error.message);
       code = run2.status === 0 ? 0 : 1;
     }
+    // v12.3: 设置类同步单测（syncSettings：显式采用灵汐侧设置）
+    if (code === 0) {
+      const run4 = spawnSync(process.execPath, ['test_settings_sync.js'], {
+        cwd: ROOT, env, encoding: 'utf8', timeout: 120000
+      });
+      if (run4.stdout) process.stdout.write(run4.stdout);
+      if (run4.stderr) process.stderr.write(run4.stderr);
+      if (run4.error) console.error('LAUNCHER-ERR', run4.error.message);
+      code = run4.status === 0 ? 0 : 1;
+    }
     // v10: 管理后台冒烟（独立服务 + ADMIN_KEY）
     if (code === 0) {
       const run3 = spawnSync(process.execPath, ['admin_smoke.js'], {

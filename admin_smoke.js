@@ -38,6 +38,13 @@ setTimeout(async () => {
     ok('setpassword', (await api('/api/admin/setpassword', { key: KEY, familyId: fam.id, newPassword: 'newpass66' })).ok);
     ok('旧密码失效', (await api('/api/login', { username: 'admincase1', password: 'pass123' })).error !== undefined);
     ok('新密码可登录', !!(await api('/api/login', { username: 'admincase1', password: 'newpass66' })).token);
+    // 设置家长 PIN（admin 代设，存储与 pinChange 同构）→ 新 PIN 生效 / 旧默认 PIN 失效
+    ok('setpin:格式不符被拒', (await api('/api/admin/setpin', { key: KEY, familyId: fam.id, pin: '12' })).error !== undefined);
+    ok('setpin:成功', (await api('/api/admin/setpin', { key: KEY, familyId: fam.id, pin: '0620' })).ok === true);
+    const tok2 = (await api('/api/login', { username: 'admincase1', password: 'newpass66' })).token;
+    ok('pin/verify:新 PIN 0620 通过', (await api('/api/pin/verify', { token: tok2, pin: '0620' })).ok === true);
+    ok('pin/verify:旧默认 PIN 1234 被拒', (await api('/api/pin/verify', { token: tok2, pin: '1234' })).error !== undefined);
+    ok('pin/change:可用新 PIN 继续改', (await api('/api/pin/change', { token: tok2, oldPin: '0620', newPin: '1234' })).ok === true);
     // 备份
     const bk = await api('/api/admin/backup', { key: KEY });
     ok('manual备份生成', bk.ok && /habitpet-manual-/.test(bk.file), bk);
