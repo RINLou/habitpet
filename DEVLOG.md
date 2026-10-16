@@ -242,3 +242,10 @@
 - 线上执行（生产站）：pull fresh（11:30Z，276 账本）→ apply syncSettings（settingsChanged: config[initialIntimacy,baseAllowance,feedWindow] / rules / rewards[r1] / childRules[柠檬,柚子]）→ setpin 0620。
 - 终验（全量备份 + 真实接口）：config/r1/规则五项与老口径逐项一致；276 账本、冒险进度（柠檬星海归航第6天/柚子月回声第5天）、兑换、好友、周收益、feedDate 2026-10-15 全部无回退；PIN 0620 验证 ok、错误 PIN 被拒；壮壮家未受影响；semester 保持 v12「2026 秋季学期」未被老数据覆盖。
 - 备份存档：docs/inventory-2026-10-16/host-after-settings.json（204KB）。
+
+## 2026-10-16（深夜）：GitHub 仓库整理（RINLou/habitpet）
+- 背景：老板要求"按今天做的把 GitHub 仓库也整理一下"。当日工作（ef39e16 迁移修复、5ccd641 v12.3、f27ff7d 数据保护）此前只在本地。
+- 数据保护（重中之重）：docs/ 下 5 个云端备份文件（cloud-backup/oldcloud-*/pre-keychange/inventory-*）含**真实家庭数据+密码哈希**，仓库为 **public**。核实从未入历史后，.gitignore 增加 docs/inventory-*/、docs/*backup*.json、docs/oldcloud-*.json、docs/delete-plan.json 规则（commit ee6cb9c）。
+- 网络坑：github.com:443 被间歇性重置（直连/代理均时通时断）；全局 git config 里的死代理 127.0.0.1:7890 是首次推送失败主因，已置空（直连）。api.github.com 全程稳定。
+- 新增工具 scripts/gh-api-push.js（commit 96c66eb）：经 GitHub REST API 推送的备用通道，按本地提交逐字节复刻（tree/parents/author/committer/message 含时区偏移），**SHA 与本地一致**；token 从 GH_PAT 或 git credential manager 读取，绝不硬编码。含 Windows cmd.exe 不支持 VAR=value 前缀的规避（env 选项）。
+- 分支收敛：main 快进至生产 tip（原落后 9 个提交）；删除已完全合并的 codex/story-release-ready；本地删除 codex/p0-habit-experience（提交已含于 p1）。远端终态：main / merge/lingxi-base 同指生产 tip 96c66eb + codex/p1-correction-review（v11.1 dev 线，26 个未合并提交，独有内容仅旧 APK 二进制与 1 个 .class，去留待老板定）。
