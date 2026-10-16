@@ -105,3 +105,13 @@ node scripts/sim-playtest.js   # 确定性 seed，输出 docs/playtest-data-2026
 ```
 
 原始数据（每次调用的明细、异常、语言命中）见 `docs/playtest-data-2026-10-16.json`。
+---
+
+## 附：修正结果（2026-10-16 当日，v12.2）
+
+| 问题 | 修正 | 验证 |
+|---|---|---|
+| 语言逻辑 12+ 处（宠物/亲密度/积分） | 全仓 94 处统一为灵伴/羁绊/心光（含注释），UMD 重生成 | 模拟复跑 langHits=0 |
+| Boss 胜率断崖 | 根因=赛季 Boss 换皮后技能无视解锁等级+恒 STAB（输出+79%）；修复技能对称解锁 + BOSS_TUNE 网格重标定（mulA 0.9 / mulB 1.0 / mulC 1.05 / hpBase 1.15） | 专用标定器 300 场/档×3 Boss：Lv1-7 66-67%、Lv8-10 44-48%、Lv15-20 41-44% |
+
+复现：`node scripts/boss-recalibrate.js`（网格搜索）、`node scripts/boss-tune-verify.js`（候选对比）、明细 `docs/boss-recalibration.json`。
