@@ -224,3 +224,21 @@
 - **数据重置根因破案**：本地 `data/habitpet.json`（49 个 9-06 测试家庭，schema 6）随部署目录上传覆盖云端 DB！.env 不在本地却能存活 = 部署是「合并覆盖不删除」。修复：本地 data/ 已清空（种子存 docs/db-seeds/，已 gitignore），今后部署=纯代码，云端运行时数据持久。**教训：部署前如需换数据，把 DB 种子放回 data/habitpet.json 再部署。**
 - 附带收获：云端 49 个垃圾测试家庭一并清除，现仅 2 个真实家庭（柚子柠檬部落 f56ca89a0b03a 276账本/3娃 + 壮壮的成长故事 1娃）。
 - 坑：①本会话部署工具把所有 deploy 绑定到同一 app/sandbox（domainPrefix 无效，第二个应用部署不了——曾把主应用覆盖成中转服务，立即重部署 habitpet 恢复）；②沙盒 `&` 后台进程会被回收，必须 run_in_background；③/admin/family 参数是 familyId 不是 id。
+
+## 2026-10-16（晚间）：三站架构收敛 + 柚子家记录补全 + 测试站清空
+- 背景：老板反馈"n个终端/n个库/n个后端/n个版本"太乱，要求梳理清掉没用的、保好柚子家记录、家人手机现在能访问、后期可转移新库。
+- 盘点结论（三个独立库）：① habitpet.app.workbuddy.host = 生产站新库（v12.2，柚子+壮壮）；② lingxi-mainland-api = 灵汐云，**家人手机老客户端正在用的活后端**（feedDate 2026-10-15 有投喂记录为证）；③ c95fc7cf…link = 误部署产生的旧代码站（14 家庭：13 测试垃圾 + 1 过期柚子副本）。
+- APK 实测指向：`assets/www/runtime-config.js` 写死 `https://habitpet.app.workbuddy.host`——新 APK 早已指向生产站，家人换装即切换。
+- **发现并修复迁移丢记录 bug**（ef39e16）：原 applyMigration 只做数值 max + 缺项填补，柚子家迁移后丢了冒险进度（柠檬在第三章第6天/19发现）、兑换记录（2+1条）、好友、周收益（69/166）、对战统计、最后投喂日。修复：新增 mergeAdventure 深度合并（数组按内容并集、标量取进度高分侧、时间戳晚者赢）+ 记录类字段补并块；幂等。408 测试全绿。
+- 执行：生产站重部署（Codex 目录）→ lingxi/pull fresh → apply 合并进 f56ca89a0b03a → 复验 276 账本 + 冒险进度/兑换/好友/统计全部在位。
+- 清理：c95fc7cf 删除全部 14 家庭（删除前本地全量备份 docs/inventory-2026-10-16/link-full-backup.json + 服务端每次删前自动快照），并从 WorkBuddy 目录重部署 v12.2 最新代码 → 定位改为**测试演练场**（0 家庭，以后测试都发这，不碰生产）。
+- 遗留标记（产品决策，未动）：灵汐云与新库的 config 差异（投喂时段 10-24 vs 19-21、initialIntimacy 0 vs 100、baseAllowance 0 vs 100、现金奖励文案/分值）、孩子个体 rules（3/30 vs 默认1/10）、柚子家 PIN 未在新库设置（pinChanged:false）。家人切到新客户端前老板需过目这些设置差异。
+- 已知小瑕疵：灵汐云老数据带过来一处 lorePage.chapterTitle 编码乱码（"��三章"），展示字段，标题按章节id查表不受影响。
+
+## 2026-10-16（夜间）：v12.3 设置类同步 + 柚子家五项设置按老口径落库（commit 5ccd641）
+- 老板对晚间盘点时标记的 5 项设置差异拍板（全部按灵汐云老口径）：① 投喂时段 10:00-24:00；② 初始羁绊 0 / 基础零花钱 0；③ r1 奖励「现金（下月零花钱扣除）」120 分；④ 柠檬/柚子投喂 3 分连签 30（孩子3 老系统即默认 1/10，不动）；⑤ 家长 PIN 0620。
+- 实现：applyMigration 增 `opts.syncSettings`（默认关，行为不变）——白名单游戏设置（initialIntimacy/baseAllowance/pointsToYuan/feedWindow/weeklyCap/battleDailyLimit/randomEventChance/holidayMode/absenceMode/battleXpDailyCap，**绝不含 semester**）+ 家庭规则 + 奖励按 id 源覆盖 + 孩子规则按名源覆盖；幂等。/api/admin/lingxi/apply 透传 syncSettings。新增 /api/admin/setpin（scrypt 哈希 + pinChanged=true，与 pinChange 同构）。
+- 测试：新增 test_settings_sync.js 19 用例（默认不碰设置/白名单全覆盖/semester 隔离/逐娃规则/幂等/数值合并不被破坏）；admin 冒烟 +5 用例（setpin 格式校验/成功/新 PIN 验证/旧 PIN 失效/pinChange 衔接）。全套 432 绿（295+73+19+19+26）。
+- 线上执行（生产站）：pull fresh（11:30Z，276 账本）→ apply syncSettings（settingsChanged: config[initialIntimacy,baseAllowance,feedWindow] / rules / rewards[r1] / childRules[柠檬,柚子]）→ setpin 0620。
+- 终验（全量备份 + 真实接口）：config/r1/规则五项与老口径逐项一致；276 账本、冒险进度（柠檬星海归航第6天/柚子月回声第5天）、兑换、好友、周收益、feedDate 2026-10-15 全部无回退；PIN 0620 验证 ok、错误 PIN 被拒；壮壮家未受影响；semester 保持 v12「2026 秋季学期」未被老数据覆盖。
+- 备份存档：docs/inventory-2026-10-16/host-after-settings.json（204KB）。

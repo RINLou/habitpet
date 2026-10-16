@@ -25,3 +25,9 @@ public/apk/
 # 管理后台密钥与本地环境（绝不提交）
 .env
 docs/db-seeds/
+
+# 云端数据备份与盘点产物（含真实家庭数据/密码哈希，绝不提交）
+docs/inventory-*/
+docs/*backup*.json
+docs/oldcloud-*.json
+docs/delete-plan.json
