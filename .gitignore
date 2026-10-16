@@ -24,3 +24,4 @@ public/apk/
 
 # 管理后台密钥与本地环境（绝不提交）
 .env
+docs/db-seeds/

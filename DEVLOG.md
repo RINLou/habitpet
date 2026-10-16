@@ -217,3 +217,10 @@
 - 远端 main 与本分支无祖先关系（归档初始化），合并走 PR：https://github.com/RINLou/habitpet/pull/new/codex/p0-habit-experience
 - P1 前端回归提示的文案可按 WORLDVIEW.md 的语调再润一遍（当前是保守措辞）。
 - 历史遗留："观感修"清单（登录按钮宽扁比、登录卡片收窄、登录页底部空白）在 v10.3 根治屏幕兼容模式后待重新评估。
+
+## 2026-10-16（下午）：壮壮家误恢复回滚 + 数据重置根因修复
+- 事故：老板在老开发云误将柚子快照 apply 进壮壮家（f137a9525f46f/180907），多了柠檬/柚子/孩子3 + 276 条柚子账本。applyMigration 合并永不删除，无法逆向。
+- 回滚路径：老云无 restore、pull 源锁死 LINGXI_URL → 改用「干净备份（10-16 00:57，误操作前状态，壮壮数值与线上一致零损失）→ 拼装 DB 种子（柚子家+壮壮家，families 必须为 dict 按 id 键）→ 随部署上云 → 老云污染家庭 admin/delete」。壮壮家新密码 zhuangzhuang2026 / PIN 1234（原密码 PIN 无人知晓，admin setpassword 端点在）。
+- **数据重置根因破案**：本地 `data/habitpet.json`（49 个 9-06 测试家庭，schema 6）随部署目录上传覆盖云端 DB！.env 不在本地却能存活 = 部署是「合并覆盖不删除」。修复：本地 data/ 已清空（种子存 docs/db-seeds/，已 gitignore），今后部署=纯代码，云端运行时数据持久。**教训：部署前如需换数据，把 DB 种子放回 data/habitpet.json 再部署。**
+- 附带收获：云端 49 个垃圾测试家庭一并清除，现仅 2 个真实家庭（柚子柠檬部落 f56ca89a0b03a 276账本/3娃 + 壮壮的成长故事 1娃）。
+- 坑：①本会话部署工具把所有 deploy 绑定到同一 app/sandbox（domainPrefix 无效，第二个应用部署不了——曾把主应用覆盖成中转服务，立即重部署 habitpet 恢复）；②沙盒 `&` 后台进程会被回收，必须 run_in_background；③/admin/family 参数是 familyId 不是 id。
