@@ -72,7 +72,7 @@ function aiPick(fighter, rage) {
 // mode: 'sibling' | 'boss' | 'coop' | 'friend'
 // sibling/boss/coop：1 真人(下标0) + N 个 AI，turn 恒为 0
 // friend：跨家庭真人 1v1，两个真人轮流出招（各自轮询接口）
-function startBattle(family, mode, childA, childB, familyB) {
+function startBattle(family, mode, childA, childB, familyB, bossDefOverride) {
   if ((mode === 'sibling' || mode === 'coop' || mode === 'friend') && !childB) return { error: '需要指定对手' };
 
   const fa = snapshot(childA, false, family.id);            // 真人
@@ -85,7 +85,7 @@ function startBattle(family, mode, childA, childB, familyB) {
   const lvl = mode === 'coop' ? Math.max(childA.level, childB.level) + 1 : childA.level;
   let bossDef = null;
   if (mode === 'boss' || mode === 'coop') {
-    bossDef = currentBoss();               // v9: 赛季轮换 Boss（确定性，全端一致）
+    bossDef = bossDefOverride || currentBoss();   // v9: 赛季轮换 Boss；v12.2: 可注入指定 Boss（标定脚本/未来活动用）
     boss = makeBoss(lvl, mode === 'coop', bossDef);
     boss.isAI = true; boss.childId = null; boss.side = 'boss';
   }
@@ -130,7 +130,7 @@ function recordEncounters(family, childA, st) {
   return changed;
 }
 
-// v9: 首杀图鉴——首次击败某 Boss：点亮图鉴 + 一次性亲密度奖励（幂等）
+// v9: 首杀图鉴——首次击败某 Boss：点亮图鉴 + 一次性羁绊奖励（幂等）
 const FIRST_KILL_REWARD = 5;
 function bossDefById(bossId) { return BOSS_ROSTER.find(b => b.id === bossId) || null; }
 function recordBossKill(fam, child, bossId, bossName) {
@@ -146,7 +146,7 @@ function recordBossKill(fam, child, bossId, bossName) {
   fam.ledger.unshift({
     id: store.newId('l'), ts: new Date().toISOString(),
     childId: child.id, childName: child.name, delta: FIRST_KILL_REWARD, xp: 0,
-    reason: `🏅 首杀图鉴：首次击败「${bossName || (def && def.name) || bossId}」（图鉴点亮 +${FIRST_KILL_REWARD} 亲密度）`,
+    reason: `🏅 首杀图鉴：首次击败「${bossName || (def && def.name) || bossId}」（图鉴点亮 +${FIRST_KILL_REWARD} 羁绊）`,
     by: 'system', after: child.intimacy
   });
   return { bossId, reward: FIRST_KILL_REWARD };
@@ -245,7 +245,7 @@ function checkEnd(st, family) {
 
 function finishWrap(st) { battles.set(st.id, st); return { ok: true, finished: true, state: publicBattle(st) }; }
 
-// 发放对战经验（v4 动态）：只发真人；绝不碰亲密度。
+// 发放对战经验（v4 动态）：只发真人；绝不碰羁绊。
 // 胜 = 6 + 对方(或Boss)等级；负 = 2 + 对方(或Boss)等级÷2（向下取整）
 // v4.1: 每日对战经验有上限（config.battleXpDailyCap，默认 30），防止对战刷级反超习惯养成主线
 // 好友对战按各 fighter 自己的家庭写账本（snapshot.familyId）

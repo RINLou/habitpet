@@ -66,8 +66,8 @@ function subXP(child, xp) {
   return { from, to: child.level };
 }
 
-// —— 亲密度（月度零花钱货币，只来自真实好习惯）———————
-// 亲密度加成（不叠加取最高）：觉醒形态 +3%；S/SS 隐藏宠物 +5%
+// —— 羁绊（月度零花钱货币，只来自真实好习惯）———————
+// 羁绊加成（不叠加取最高）：觉醒形态 +3%；S/SS 隐藏灵伴 +5%
 function intimacyMult(child) {
   const sp = child.pet ? speciesById(child.pet.speciesId) : null;
   if (sp && (sp.tier === 'S' || sp.tier === 'SS')) return 1.05;
@@ -98,7 +98,7 @@ function daysSince(dateStr, now = new Date()) {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   return Math.floor((today - last) / 86400000);
 }
-// 'mercy'（默认）：只提醒；'strict'：家长显式开启后才启用休眠茧与亲密度扣分
+// 'mercy'（默认）：只提醒；'strict'：家长显式开启后才启用休眠茧与羁绊扣分
 function absenceMode(family) {
   return family && family.config && family.config.absenceMode === 'strict' ? 'strict' : 'mercy';
 }
@@ -107,7 +107,7 @@ function hungerCheck(family, child, now = new Date()) {
   if (!child.feedDate) return null;                 // 新领养从未投喂：不倒扣
   const days = daysSince(child.feedDate, now);
   if (days < 3) return null;
-  // 温和模式（默认）：只给温和提醒，不扣亲密度、不进入休眠茧，章节与收藏零回退
+  // 温和模式（默认）：只给温和提醒，不扣羁绊、不进入休眠茧，章节与收藏零回退
   if (absenceMode(family) !== 'strict') return { type: 'absent', days, mercy: true };
   // 严格模式（家长开启）：5 天 → 休眠茧；唤醒免费，不降级、不清收藏
   if (days >= 5) {
@@ -118,12 +118,12 @@ function hungerCheck(family, child, now = new Date()) {
   if (child.hungerPenaltyDate !== 'applied') {
     child.hungerPenaltyDate = 'applied';            // 一次性，投喂后重置
     addIntimacy(child, -10);
-    family.ledger.unshift({ id: newId('l'), ts: now.toISOString(), childId: child.id, childName: child.name, delta: -10, xp: 0, reason: '灵伴等了你 3 天（严格模式 −10 亲密度）', by: 'system' });
+    family.ledger.unshift({ id: newId('l'), ts: now.toISOString(), childId: child.id, childName: child.name, delta: -10, xp: 0, reason: '灵伴等了你 3 天（严格模式 −10 羁绊）', by: 'system' });
     return { type: 'hungry', days };
   }
   return null;
 }
-// 唤醒：一律免费，不扣亲密度、不降级、不清除永久收藏（章节/发现/签名/相册）。
+// 唤醒：一律免费，不扣羁绊、不降级、不清除永久收藏（章节/发现/签名/相册）。
 // mode 参数仅保留向后兼容（旧调用 'level' / 'intimacy' 不再产生任何代价）。
 function revivePet(family, child, mode, now = new Date()) {
   if (!child.pet || !child.fainted) return { error: '灵伴没有进入休眠茧' };
@@ -132,7 +132,7 @@ function revivePet(family, child, mode, now = new Date()) {
   child.fainted = false; child.faintedAt = null;
   child.hungerPenaltyDate = '';
   child.feedDate = dateKey(now);                    // 唤醒当天算已投喂，避免立刻再次休眠
-  family.ledger.unshift({ id: newId('l'), ts: now.toISOString(), childId: child.id, childName: child.name, delta: 0, xp: 0, reason: '灵伴从休眠茧醒来（免费：不扣亲密度、不降级）', by: 'system' });
+  family.ledger.unshift({ id: newId('l'), ts: now.toISOString(), childId: child.id, childName: child.name, delta: 0, xp: 0, reason: '灵伴从休眠茧醒来（免费：不扣羁绊、不降级）', by: 'system' });
   return { ok: true, free: true, level: child.level, levelBefore, intimacyBefore };
 }
 // S/SS 隐藏宠解锁资格：S=曾任一完整学期觉醒；SS=连续两个完整学期觉醒
@@ -163,8 +163,8 @@ function canEarnWeek(child, weeklyCap, amount) {
 function noteWeekEarn(child, amount) { if (amount > 0) child.weekEarned = (child.weekEarned || 0) + amount; }
 
 // —— 月度懒结算（首次访问新月时触发；暂停计期间冻结）——————
-// v7: 跨月即生成「上月月报」存档（老板需求：1号发零花钱时上月亲密度要能看到）。
-//     无投诉奖亲密度记入上月月报结余，不再混入新月初始亲密度；+心光奖励保留实际发放。
+// v7: 跨月即生成「上月月报」存档（老板需求：1号发零花钱时上月羁绊要能看到）。
+//     无投诉奖羁绊记入上月月报结余，不再混入新月初始羁绊；+心光奖励保留实际发放。
 function monthSummary(family, child, lastMk, curMk) {
   // 上月收支摘要：按账本现有记录统计（账本截断 2000 条前的老记录不计入）
   const from = lastMk + '-01', to = curMk + '-01';
@@ -200,20 +200,20 @@ function ensureMonth(family, child, now = new Date()) {
     monthKey: lastMk, settledAt: now.toISOString(),
     endIntimacy: prevIntimacy,                   // 上月账面结余
     noComplaintBonus: bonus,                     // 无投诉奖（记入上月月报）
-    finalIntimacy: prevIntimacy + bonus,         // 上月最终亲密度 = 结余 + 奖励
+    finalIntimacy: prevIntimacy + bonus,         // 上月最终羁绊 = 结余 + 奖励
     complained, level: child.level, xp: child.xp, feedStreak: child.feedStreak || 0,
     summary: monthSummary(family, child, lastMk, mk)
   };
   if (!Array.isArray(child.monthlyReports)) child.monthlyReports = [];
   child.monthlyReports.unshift(report);
   if (child.monthlyReports.length > 24) child.monthlyReports.length = 24;
-  // 新月亲密度重置为纯初始值（无投诉奖只进月报，不再叠加）
+  // 新月羁绊重置为纯初始值（无投诉奖只进月报，不再叠加）
   child.intimacy = family.config.initialIntimacy;
   if (!complained) {
     addXP(child, rule);                          // 心光奖励照发（成长线不动）
-    family.ledger.unshift({ id: newId('l'), ts: now.toISOString(), childId: child.id, childName: child.name, delta: 0, xp: rule, reason: `上月无投诉奖励：+${rule} 心光（亲密度 +${rule} 已计入上月月报结余）`, by: 'system', after: child.intimacy });
+    family.ledger.unshift({ id: newId('l'), ts: now.toISOString(), childId: child.id, childName: child.name, delta: 0, xp: rule, reason: `上月无投诉奖励：+${rule} 心光（羁绊 +${rule} 已计入上月月报结余）`, by: 'system', after: child.intimacy });
   }
-  family.ledger.unshift({ id: newId('l'), ts: now.toISOString(), childId: child.id, childName: child.name, delta: 0, xp: 0, reason: `月度结算：进入 ${mk}，亲密度重置为 ${family.config.initialIntimacy}${complained ? '（上月有投诉，无奖励，上月结余 ' + prevIntimacy + '）' : '（上月结余 ' + prevIntimacy + ' + 无投诉奖 ' + rule + '，见上月月报）'}`, by: 'system', after: child.intimacy });
+  family.ledger.unshift({ id: newId('l'), ts: now.toISOString(), childId: child.id, childName: child.name, delta: 0, xp: 0, reason: `月度结算：进入 ${mk}，羁绊重置为 ${family.config.initialIntimacy}${complained ? '（上月有投诉，无奖励，上月结余 ' + prevIntimacy + '）' : '（上月结余 ' + prevIntimacy + ' + 无投诉奖 ' + rule + '，见上月月报）'}`, by: 'system', after: child.intimacy });
 }
 
 // —— 学期懒结算（到开学日期自动；或家长手动）————————————
@@ -240,7 +240,7 @@ function settleSemester(family) {
     child.milestone = { unlocked: false, used: false, applications: [] };
   }
   family.config.semester = { name: '新学期', index: sem.index + 1, startDate: null, autoDone: false };
-  family.ledger.unshift({ id: newId('l'), ts: new Date().toISOString(), childId: null, childName: null, delta: 0, xp: 0, reason: `学期结算：${sem.name} 毕业 ${entries.length} 只宠物进图鉴`, by: 'system' });
+  family.ledger.unshift({ id: newId('l'), ts: new Date().toISOString(), childId: null, childName: null, delta: 0, xp: 0, reason: `学期结算：${sem.name} 毕业 ${entries.length} 只灵伴进图鉴`, by: 'system' });
   return entries;
 }
 function ensureSemester(family) {
@@ -259,7 +259,7 @@ function inFeedWindow(family, now = new Date()) {
   return h >= family.config.feedWindow.startHour && h < family.config.feedWindow.endHour;
 }
 
-// —— 随机灵汐事件（v5）：投喂后小概率触发彩蛋，经验/亲密度小额奖励 ————
+// —— 随机灵汐事件（v5）：投喂后小概率触发彩蛋，经验/羁绊小额奖励 ————
 // RNG 可注入：HABITPET_NO_RANDOM=1 时服务端固定为 0.99（测试确定性）；chance>=1 时必定触发
 let rng = Math.random;
 function setRng(f) { rng = typeof f === 'function' ? f : Math.random; }
@@ -280,7 +280,7 @@ function rollFeedEvent(family, child, now = new Date()) {
   family.ledger.unshift({
     id: newId('l'), ts: now.toISOString(), childId: child.id, childName: child.name,
     delta: ev.intimacy, xp: ev.xp,
-    reason: `灵汐奇遇：${ev.name}（投喂时随机降临${ev.xp ? '，+' + ev.xp + ' 经验' : ''}${ev.intimacy ? '，+' + ev.intimacy + ' 亲密度' : ''}）`,
+    reason: `灵汐奇遇：${ev.name}（投喂时随机降临${ev.xp ? '，+' + ev.xp + ' 经验' : ''}${ev.intimacy ? '，+' + ev.intimacy + ' 羁绊' : ''}）`,
     by: 'system', after: child.intimacy
   });
   return ev;
@@ -295,7 +295,7 @@ const QUEST_POOL = [
   { id: 'battle',    label: '打一场对战',         hint: 'Boss / 兄妹 / 好友都算' },
   { id: 'adventure', label: '探索今日星图',       hint: '投喂后即可出发' }
 ];
-const QUEST_REWARD = 5;   // 活跃奖（亲密度），每天一次
+const QUEST_REWARD = 5;   // 活跃奖（羁绊），每天一次
 
 function questSeed(str) {
   let h = 2166136261;
@@ -330,7 +330,7 @@ function markDailyQuest(family, child, type, now = new Date()) {
       id: newId('l'),
       ts: new Date().toISOString(), childId: child.id, childName: child.name,
       delta: QUEST_REWARD, xp: 0,
-      reason: `📋 每日任务板：今日任务完成 ${doneCount} 个（活跃奖 +${QUEST_REWARD} 亲密度）`,
+      reason: `📋 每日任务板：今日任务完成 ${doneCount} 个（活跃奖 +${QUEST_REWARD} 羁绊）`,
       by: 'system', after: child.intimacy
     });
     return { justRewarded: true };

@@ -64,7 +64,7 @@ function ledger(family, child, delta, reason, by, xp) {
     id: store.newId('l'), ts: new Date().toISOString(),
     childId: child ? child.id : null, childName: child ? child.name : null,
     delta, xp: xp || 0, reason, by, reversed: false,
-    after: child ? child.intimacy : null   // v7: 变动后亲密度结余（对账用；调用处均先改分后记账）
+    after: child ? child.intimacy : null   // v7: 变动后羁绊结余（对账用；调用处均先改分后记账）
   });
   if (family.ledger.length > 2000) family.ledger.length = 2000;
 }
@@ -417,7 +417,7 @@ const routes = {
   },
   async feed(sess) {
     const f = store.familyById(sess.familyId); const c = ensureChild(f, sess.childId);
-    if (!c.pet) return { code: 400, body: { error: '先选一只宠物吧！' } };
+    if (!c.pet) return { code: 400, body: { error: '先选一只灵伴吧！' } };
     if (c.fainted) return { code: 400, body: { error: '灵伴在休眠茧里，先唤醒再投喂' } };
     if (c.pausedAt) return { code: 400, body: { error: '暂停计期间休息养病，不扣分不计连击' } };
     if (!engine.inFeedWindow(f)) return { code: 400, body: { error: `投喂时间：${f.config.feedWindow.startHour}:00-${f.config.feedWindow.endHour}:00` } };
@@ -443,7 +443,7 @@ const routes = {
   },
   async submit(sess, p) {
     const f = store.familyById(sess.familyId); const c = ensureChild(f, sess.childId);
-    if (!c.pet) return { code: 400, body: { error: '先选一只宠物吧！' } };
+    if (!c.pet) return { code: 400, body: { error: '先选一只灵伴吧！' } };
     if (c.pausedAt) return { code: 400, body: { error: '暂停计期间好好休息～' } };
     const exMin = (c.rules && c.rules.examMin !== undefined) ? c.rules.examMin : (f.rules.examMin !== undefined ? f.rules.examMin : 80);
     const qzMin = (c.rules && c.rules.quizMin !== undefined) ? c.rules.quizMin : (f.rules.quizMin !== undefined ? f.rules.quizMin : 80);
@@ -502,13 +502,13 @@ const routes = {
   },
   async selectPet(sess, p) {
     const f = store.familyById(sess.familyId); const c = ensureChild(f, sess.childId);
-    if (c.pet) return { code: 400, body: { error: '本学期已选定宠物，学期结束后才能重挑' } };
+    if (c.pet) return { code: 400, body: { error: '本学期已选定灵伴，学期结束后才能重挑' } };
     const sp = speciesById(p.speciesId);
     if (!sp) return { code: 400, body: { error: '物种不存在' } };
-    if (sp.hidden) {   // S/SS 隐藏宠物需学期门槛
+    if (sp.hidden) {   // S/SS 隐藏灵伴需学期门槛
       const el = engine.hiddenPetEligibility(c);
-      if (sp.tier === 'S' && !el.s) return { code: 403, body: { error: 'S 级隐藏宠物需曾任一学期觉醒（Lv20）' } };
-      if (sp.tier === 'SS' && !el.ss) return { code: 403, body: { error: 'SS 级隐藏宠物需连续两个学期觉醒（Lv20）' } };
+      if (sp.tier === 'S' && !el.s) return { code: 403, body: { error: 'S 级隐藏灵伴需曾任一学期觉醒（Lv20）' } };
+      if (sp.tier === 'SS' && !el.ss) return { code: 403, body: { error: 'SS 级隐藏灵伴需连续两个学期觉醒（Lv20）' } };
     }
     c.pet = { speciesId: sp.id, nickname: sp.name, stats: { ...sp.base }, freePoints: 0, skills: sp.skills.slice(), maxHpBonus: 0 };
     const __st8 = childMe(f, c);
@@ -517,7 +517,7 @@ const routes = {
   },
   async nickname(sess, p) {
     const f = store.familyById(sess.familyId); const c = ensureChild(f, sess.childId);
-    if (!c.pet) return { code: 400, body: { error: '还没有宠物' } };
+    if (!c.pet) return { code: 400, body: { error: '还没有灵伴' } };
     c.pet.nickname = String(p.nickname || '').slice(0, 10) || speciesById(c.pet.speciesId).name;
     const __st9 = childMe(f, c);
     store.save();
@@ -525,7 +525,7 @@ const routes = {
   },
   async allocate(sess, p) {
     const f = store.familyById(sess.familyId); const c = ensureChild(f, sess.childId);
-    if (!c.pet) return { code: 400, body: { error: '还没有宠物' } };
+    if (!c.pet) return { code: 400, body: { error: '还没有灵伴' } };
     const stat = p.stat; const pts = Math.floor(Number(p.points) || 0);
     if (!['atk', 'def', 'hp', 'spd', 'wis'].includes(stat)) return { code: 400, body: { error: '无效属性' } };
     if (pts <= 0 || pts > (c.pet.freePoints || 0)) return { code: 400, body: { error: '点数不足' } };
@@ -536,14 +536,14 @@ const routes = {
   },
   async battleStart(sess, p) {
     const f = store.familyById(sess.familyId); const me = ensureChild(f, sess.childId);
-    if (!me.pet) return { code: 400, body: { error: '先选宠物才能对战' } };
+    if (!me.pet) return { code: 400, body: { error: '先选灵伴才能对战' } };
     if (me.fainted) return { code: 400, body: { error: '灵伴在休眠茧里，先唤醒才能对战' } };
     const mode = p.mode;
     let opp = null;
     if (mode === 'sibling' || mode === 'coop') {
       opp = ensureChild(f, p.opponentId);
       if (!opp || opp.id === me.id) return { code: 400, body: { error: '对手不存在' } };
-      if (!opp.pet) return { code: 400, body: { error: '对方还没有宠物' } };
+      if (!opp.pet) return { code: 400, body: { error: '对方还没有灵伴' } };
       // v3：对手以 AI 分身参战，不消耗对方场次（对方未真实参与）
     } else if (mode !== 'boss') return { code: 400, body: { error: '未知模式' } };
     if (!battle.canBattleToday(me, f.config.battleDailyLimit)) return { code: 400, body: { error: `今日对战次数已满（上限${f.config.battleDailyLimit}场）` } };
@@ -554,10 +554,10 @@ const routes = {
     store.save();
     return { code: 200, body: { ok: true, battleId: r.battleId, battle: r.state } };
   },
-  // v9: 技能出战配置（4 选 3）——必须是本宠物的技能，1~3 个；null 恢复默认全带
+  // v9: 技能出战配置（4 选 3）——必须是本灵伴的技能，1~3 个；null 恢复默认全带
   async battleLoadout(sess, p) {
     const f = store.familyById(sess.familyId); const c = ensureChild(f, sess.childId);
-    if (!c.pet) return { code: 400, body: { error: '先选宠物才能配置出战技能' } };
+    if (!c.pet) return { code: 400, body: { error: '先选灵伴才能配置出战技能' } };
     if (p.loadout === null) {
       c.battleLoadout = null;
     } else {
@@ -575,12 +575,12 @@ const routes = {
   // —— v4: 好友对战 ————————————————————————————————
   async battleInvite(sess, p) {
     const f = store.familyById(sess.familyId); const me = ensureChild(f, sess.childId);
-    if (!me.pet) return { code: 400, body: { error: '先选宠物才能对战' } };
+    if (!me.pet) return { code: 400, body: { error: '先选灵伴才能对战' } };
     if (me.fainted) return { code: 400, body: { error: '灵伴在休眠茧里，先唤醒才能对战' } };
     const t = store.findChildByFriendCode(p.code);
     if (!t) return { code: 404, body: { error: '对战码不存在' } };
     if (t.child.id === me.id) return { code: 400, body: { error: '不能邀请自己' } };
-    if (!t.child.pet) return { code: 400, body: { error: '对方还没有宠物' } };
+    if (!t.child.pet) return { code: 400, body: { error: '对方还没有灵伴' } };
     if (t.child.fainted) return { code: 400, body: { error: '对方的灵伴在休眠茧里，等 ta 唤醒吧' } };
     if (t.child.pausedAt) return { code: 400, body: { error: '对方暂停计分中，不能对战' } };
     const sp = speciesById(me.pet.speciesId);
@@ -594,7 +594,7 @@ const routes = {
     const fromFam = store.familyById(inv.from.familyId);
     const fromChild = fromFam && fromFam.children[inv.from.childId];
     if (!fromChild || !fromChild.pet) { store.delInvite(inv.id); return { code: 400, body: { error: '对方状态已变化，邀请失效' } }; }
-    if (!me.pet) return { code: 400, body: { error: '先选宠物才能对战' } };
+    if (!me.pet) return { code: 400, body: { error: '先选灵伴才能对战' } };
     if (me.fainted || fromChild.fainted) return { code: 400, body: { error: '有灵伴在休眠茧里，先唤醒' } };
     if (!battle.canBattleToday(me, f.config.battleDailyLimit)) return { code: 400, body: { error: `今日对战次数已满（上限${f.config.battleDailyLimit}场）` } };
     // v4.1: 发起方也要校验场次（此前只查接收方，可绕过每日上限）
@@ -645,7 +645,7 @@ const routes = {
   // 唤醒：一律免费（不扣羁绊、不降级）；mode 参数仅保留向后兼容
   async petRevive(sess, p) {
     const f = store.familyById(sess.familyId); const c = ensureChild(f, sess.childId);
-    if (!c.pet) return { code: 400, body: { error: '还没有宠物' } };
+    if (!c.pet) return { code: 400, body: { error: '还没有灵伴' } };
     const r = engine.revivePet(f, c, p.mode === 'intimacy' ? 'intimacy' : 'level');
     if (r.error) return { code: 400, body: r };
     const __st11 = childMe(f, c);
@@ -669,7 +669,7 @@ const routes = {
   },
   async milestoneApply(sess, p) {
     const f = store.familyById(sess.familyId); const c = ensureChild(f, sess.childId);
-    if (!c.milestone.unlocked) return { code: 400, body: { error: '宠物觉醒后才能申请学期大奖' } };
+    if (!c.milestone.unlocked) return { code: 400, body: { error: '灵伴觉醒后才能申请学期大奖' } };
     if (c.milestone.used) return { code: 400, body: { error: '本学期申请权已使用' } };
     if (c.milestone.applications.some(a => a.status === 'pending')) return { code: 400, body: { error: '已有待审核的申请' } };
     c.milestone.applications.push({ note: String(p.note || '').slice(0, 200), ts: new Date().toISOString(), status: 'pending' });
@@ -692,7 +692,7 @@ const routes = {
   // 本地对战结束后的云端结算：服务端按同一公式重算心光（每日上限钳制），不可被客户端刷分
   async battleFinish(sess, p) {
     const f = store.familyById(sess.familyId); const c = ensureChild(f, sess.childId);
-    if (!c.pet) return { code: 400, body: { error: '还没有宠物' } };
+    if (!c.pet) return { code: 400, body: { error: '还没有灵伴' } };
     const mode = ['sibling', 'boss', 'coop'].includes(p.mode) ? p.mode : null;
     if (!mode) return { code: 400, body: { error: '未知对战模式' } };
     const oppLevel = Math.max(1, Math.min(80, Math.floor(Number(p.oppLevel) || 1)));
@@ -1030,7 +1030,7 @@ const routes = {
       const complain = (Array.isArray(c.complaints) ? c.complaints : []).filter(x => x.status === 'active' && x.ts && x.ts.startsWith(mk)).length;
       lines.push(`\n${c.name}（${c.grade || '—'}）：`);
       lines.push(`· 当前羁绊 ${c.intimacy}（本月 +${earned} ${spent}）`);
-      lines.push(`· 宠物：${c.pet ? (speciesById(c.pet.speciesId)?.name || '?') + ' Lv' + c.level + '（' + engine.stageOf(c.level).name + '）' : '未选'}`);
+      lines.push(`· 灵伴：${c.pet ? (speciesById(c.pet.speciesId)?.name || '?') + ' Lv' + c.level + '（' + engine.stageOf(c.level).name + '）' : '未选'}`);
       lines.push(`· 连续投喂 ${c.feedStreak} 天${complain ? `，本月投诉 ${complain} 次` : '，本月无投诉'}`);
       lines.push(`· 图鉴收藏 ${c.pokedex.length} 只，下月零花钱预计 ${f.config.baseAllowance + (c.allowanceLocked ? c.allowanceLocked.amount : 0)} 元`);
     }

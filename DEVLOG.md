@@ -4,6 +4,22 @@
 
 ---
 
+## 2026-10-16：v12.2 —— 试玩报告修正（语言逻辑统一 + Boss 数值重标定）
+
+**改了什么**
+1. **语言逻辑 94 处统一灵汐术语**：server.js / lib/* / public/app.js / local.js / admin.html 全量「宠物→灵伴」「亲密度→羁绊」「积分→心光」（仅用户可见文案与注释；字段名 c.pet / intimacy 不动）。UMD 重新生成。复跑模拟 langHits=0。
+2. **Boss 技能解锁对称性修正**（lib/species.js makeBoss）：v9 赛季 Boss 换皮时把 n1/n2/n3（无 STAB，平均 power45）换成物种技能组且**无视解锁等级**，Boss 恒 STAB1.5 + Lv1 即可随机出 power65/80，输出 +79% → 试玩实测胜率 Lv5-9 仅 18-27%。现按 skill.unlockLv ≤ boss.level 过滤，与孩子同规则。
+3. **BOSS_TUNE 网格重标定**（scripts/boss-recalibrate.js 324 组合粗筛 + boss-tune-verify.js 3 候选精比，三 Boss 克制/被克/中性平均、典型孩子 N=300/档）：statPerLevel 0.4 / mulA 0.9 / mulB 1.0 / mulC 1.05 / hpBase 1.15 / hpStep 0.01 / hpCap 1.25。胜率曲线：Lv1-7 66-67%、Lv8-10 44-48%、Lv12-14 53-64%、Lv15-20 41-44%（目标带见脚本头注）。敏感性：mulB±20% → Lv8 胜率 33-67%，是最敏感参数。
+4. **基建**：species.js 新增 `setBossTune()`（标定脚本在线调参）；battle.js `startBattle` 新增第 6 参 `bossDefOverride`（注入指定 Boss，标定/未来活动用，向后兼容）。
+
+**为什么**：试玩报告（docs/playtest-report-2026-10-16.md）两项 P1：语言逻辑不一致、Boss 胜率断崖。
+
+**怎么验证**：npm test 408 项全绿；sim-playtest 10 家庭×10 天 0 异常 0 语言命中；boss-recalibrate/boss-tune-verify 明细在 docs/boss-recalibration.json。
+
+**遗留**：APK 内 UMD 资产同步重打；老云（c95fc7cf.link）壮壮家误恢复的 3 娃待删（需家长凭据走 childDelete）。
+
+---
+
 ## 2026-10-15（晚）：v12.1 收尾 —— 崩溃修复 + 数据迁移 + APK 云地址注入，全链路交付
 
 接上节 v12 合并版，本次完成上线三件事（commit `f02534b`、`8b7e659`，分支 `merge/lingxi-base` 已推 GitHub）：

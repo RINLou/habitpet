@@ -1,5 +1,5 @@
 // local.js — 本地优先运行时（v10）
-// 孩子端单人操作（投喂/宠物管理/兑换/单机对战）在本地引擎即时执行、零延迟；
+// 孩子端单人操作（投喂/灵伴管理/兑换/单机对战）在本地引擎即时执行、零延迟；
 // 操作写入 oplog 异步重放云端，云端保持权威副本；对战结束走 /api/battle/finish 云端结算（服务端重算经验防刷）。
 // 跨用户操作（打卡审批/核销申请/里程碑/好友/跨家庭对战）与家长端全部直连云端。
 (function () {
@@ -227,7 +227,7 @@
       id: window.LocalStore.newId('l'), ts: new Date().toISOString(),
       childId: child ? child.id : null, childName: child ? child.name : null,
       delta: delta, xp: xp || 0, reason: reason, by: by, reversed: false,
-      after: child ? child.intimacy : null   // v7: 变动后亲密度结余（调用处均先改分后记账）
+      after: child ? child.intimacy : null   // v7: 变动后羁绊结余（调用处均先改分后记账）
     });
     if (family.ledger.length > 400) family.ledger.length = 400;
   }
@@ -236,7 +236,7 @@
   // —— 本地 handler（与 server.js 逻辑一致）——
   var localHandlers = {
     '/api/feed': function (f, c) {
-      if (!c.pet) return err('先选一只宠物吧！');
+      if (!c.pet) return err('先选一只灵伴吧！');
       if (c.fainted) return err('灵伴在休眠茧里，先唤醒再投喂');
       if (c.pausedAt) return err('暂停计期间休息养病，不扣分不计连击');
       if (!EN.inFeedWindow(f)) return err('投喂时间：' + f.config.feedWindow.startHour + ':00-' + f.config.feedWindow.endHour + ':00');
@@ -259,24 +259,24 @@
       return { ok: true, intimacy: c.intimacy, streakBonus: bonus, feedEvent: feedEvent, state: childMe(f, c) };
     },
     '/api/pet/select': function (f, c, p) {
-      if (c.pet) return err('本学期已选定宠物，学期结束后才能重挑');
+      if (c.pet) return err('本学期已选定灵伴，学期结束后才能重挑');
       var sp = speciesById(p.speciesId);
       if (!sp) return err('物种不存在');
       if (sp.hidden) {
         var el = EN.hiddenPetEligibility(c);
-        if (sp.tier === 'S' && !el.s) return err('S 级隐藏宠物需曾任一学期觉醒（Lv20）');
-        if (sp.tier === 'SS' && !el.ss) return err('SS 级隐藏宠物需连续两个学期觉醒（Lv20）');
+        if (sp.tier === 'S' && !el.s) return err('S 级隐藏灵伴需曾任一学期觉醒（Lv20）');
+        if (sp.tier === 'SS' && !el.ss) return err('SS 级隐藏灵伴需连续两个学期觉醒（Lv20）');
       }
       c.pet = { speciesId: sp.id, nickname: sp.name, stats: Object.assign({}, sp.base), freePoints: 0, skills: sp.skills.slice(), maxHpBonus: 0 };
       return { ok: true, state: childMe(f, c) };
     },
     '/api/pet/nickname': function (f, c, p) {
-      if (!c.pet) return err('还没有宠物');
+      if (!c.pet) return err('还没有灵伴');
       c.pet.nickname = String(p.nickname || '').slice(0, 10) || speciesById(c.pet.speciesId).name;
       return { ok: true, state: childMe(f, c) };
     },
     '/api/pet/allocate': function (f, c, p) {
-      if (!c.pet) return err('还没有宠物');
+      if (!c.pet) return err('还没有灵伴');
       var stat = p.stat, pts = Math.floor(Number(p.points) || 0);
       if (!['atk', 'def', 'hp', 'spd', 'wis'].includes(stat)) return err('无效属性');
       if (pts <= 0 || pts > (c.pet.freePoints || 0)) return err('点数不足');
@@ -284,7 +284,7 @@
       return { ok: true, state: childMe(f, c) };
     },
     '/api/pet/revive': function (f, c, p) {
-      if (!c.pet) return err('还没有宠物');
+      if (!c.pet) return err('还没有灵伴');
       var r = EN.revivePet(f, c, 'free');   // v12: 唤醒一律免费（温和缺席模式）
       if (r.error) return r;
       return { ok: true, state: childMe(f, c) };
@@ -313,13 +313,13 @@
   // —— 本地对战 ——
   function battleHandler(f, c, path, p) {
     if (path === '/api/battle/start') {
-      if (!c.pet) return err('先选宠物才能对战');
-      if (c.fainted) return err('宠物饿晕了，先复活才能对战');
+      if (!c.pet) return err('先选灵伴才能对战');
+      if (c.fainted) return err('灵伴饿晕了，先复活才能对战');
       var mode = p.mode, opp = null;
       if (mode === 'sibling' || mode === 'coop') {
         opp = f.children[p.opponentId];
         if (!opp || opp.id === c.id) return err('对手不存在');
-        if (!opp.pet) return err('对方还没有宠物');
+        if (!opp.pet) return err('对方还没有灵伴');
       } else if (mode !== 'boss') return err('未知模式');
       if (!BT.canBattleToday(c, f.config.battleDailyLimit)) return err('今日对战次数已满（上限' + f.config.battleDailyLimit + '场）');
       BT.noteBattle(c);

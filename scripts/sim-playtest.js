@@ -253,7 +253,8 @@ async function parentDay(fam, dayIdx, dayD) {
     const delta = Math.random() < 0.7 ? 2 + Math.floor(Math.random() * 5) : -(1 + Math.floor(Math.random() * 3));
     const mn = await api('POST', '/api/manual', { childId: kid.id, delta, reason: '模拟手动' }, fam.ptoken);
     checkResp('manual', mn, fam.def.key, dk);
-    if (mn.status !== 200) anomaly('P2', 'manual 非 200', `${delta} → ${mn.status} ${JSON.stringify(mn.body).slice(0, 120)}`, fam.def.key, dk);
+    if (mn.status !== 200 && /本周加分已达上限/.test(mn.body.error || '')) expected.weeklyCapHit++;
+    else if (mn.status !== 200) anomaly('P2', 'manual 非 200', `${delta} → ${mn.status} ${JSON.stringify(mn.body).slice(0, 120)}`, fam.def.key, dk);
   }
   // 投诉（15%）
   if (Math.random() < 0.15 && fam.kids.length) {

@@ -224,8 +224,8 @@ setInterval(() => {
   document.body.appendChild(s);
   setTimeout(() => s.remove(), 1700);
 }, 22000);
-const FORTUNES = ['今日心光充盈，适合大干一场！', '星象说：认真投喂的立愿者运气不会差', '月神今天心情很好，也许会有奇遇……', '今日宜申报：考试的好消息会被星辰听见', '流星今日频繁，留意屏幕上划过的光芒', '大陆风闻：有立愿者连续打卡七天，月神赏了心光', '今日忌懒散：宠物会偷偷模仿你的样子', '星海潮汐平稳，适合挑战一下 Boss', '愿望球微微发烫，它在期待今晚的投喂', '你的灵伴在星海图鉴里偷偷练习招式'];
-const WHISPERS = ['灵伴说：今天的作业香味它闻到了', '月神在月牙上打盹，可没看见你摸鱼哦', '灵汐大陆今日晴，适合努力', '听说连续投喂 7 天，月神会发额外心光', '毕业的宠物正在星海里为你加油', '浊气最怕的，就是按时完成作业的你', '灵伴其实听得懂你念的书哦', '愿望球今晚发光了，是个好兆头', '有人在对战大厅议论你的对战码', '星星今天眨得很勤，好事将近'];
+const FORTUNES = ['今日心光充盈，适合大干一场！', '星象说：认真投喂的立愿者运气不会差', '月神今天心情很好，也许会有奇遇……', '今日宜申报：考试的好消息会被星辰听见', '流星今日频繁，留意屏幕上划过的光芒', '大陆风闻：有立愿者连续打卡七天，月神赏了心光', '今日忌懒散：灵伴会偷偷模仿你的样子', '星海潮汐平稳，适合挑战一下 Boss', '愿望球微微发烫，它在期待今晚的投喂', '你的灵伴在星海图鉴里偷偷练习招式'];
+const WHISPERS = ['灵伴说：今天的作业香味它闻到了', '月神在月牙上打盹，可没看见你摸鱼哦', '灵汐大陆今日晴，适合努力', '听说连续投喂 7 天，月神会发额外心光', '毕业的灵伴正在星海里为你加油', '浊气最怕的，就是按时完成作业的你', '灵伴其实听得懂你念的书哦', '愿望球今晚发光了，是个好兆头', '有人在对战大厅议论你的对战码', '星星今天眨得很勤，好事将近'];
 function pickDaily(list, seed) {
   const d = new Date();
   const k = d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate() + ':' + (seed || '');
@@ -250,7 +250,7 @@ function setLoading(on) {
   }
 }
 async function api(path, body) {
-  // v10 本地优先：孩子端单人操作（投喂/宠物/兑换/单机对战）由本地引擎即时执行，oplog 异步同步云端
+  // v10 本地优先：孩子端单人操作（投喂/灵伴/兑换/单机对战）由本地引擎即时执行，oplog 异步同步云端
   const local = (window.LocalRT && LocalRT.API_BASE !== undefined) ? LocalRT.dispatch(path, body || {}) : null;
   if (local) return local;
   const BASE = window.LocalRT ? LocalRT.API_BASE : '';
@@ -614,7 +614,7 @@ function celebratePet(oldPet, newPet) {
   }
 }
 
-// 回归提示：本次打开距上次超过 1 天且宠物在线，则让主视觉播放 tired 3 秒再回 idle（不阻塞任何确认）
+// 回归提示：本次打开距上次超过 1 天且灵伴在线，则让主视觉播放 tired 3 秒再回 idle（不阻塞任何确认）
 let _returnChecked = false;
 function checkReturnEvent() {
   if (_returnChecked) return;
@@ -644,9 +644,9 @@ function renderChild() {
       <div class="who">${paused ? '⏸️ 暂停计中' : '❤️ 羁绊 ' + me.intimacy} · 下月零花钱 ¥${me.nextAllowance}<br><span class="mute-btn" style="cursor:pointer" onclick="toggleMute()">${Sfx.muted ? '🔇' : '🔊'}</span> · ${installLink()}<a href="#" onclick="openMonthly();return false">📊 月报</a> · <a href="#" onclick="openGuide();return false">📖 玩法</a> · <a href="#" onclick="refreshMe().then(renderChild);return false">刷新</a> · <a href="#" style="color:#6b7280" onclick="doLogout();return false">退出</a></div>
     </div>
     ${paused ? `<div class="warnbox">暂停计期间：不重置、不计连击、不扣分，好好休息 💤</div>` : ''}
-    ${me.fainted ? `<div class="warnbox">💤 灵伴在休眠茧里休息，去「宠物」页免费唤醒它就能继续对战和领心光</div>` : ''}
+    ${me.fainted ? `<div class="warnbox">💤 灵伴在休眠茧里休息，去「灵伴」页免费唤醒它就能继续对战和领心光</div>` : ''}
     <div class="tabs">
-      ${[['pet', '🐾 宠物'], ['report', '📝 申报'], ['battle', '⚔️ 对战'], ['shop', '🎁 兑换'], ['book', '📖 图鉴']].map(([k, n]) =>
+      ${[['pet', '🐾 灵伴'], ['report', '📝 申报'], ['battle', '⚔️ 对战'], ['shop', '🎁 兑换'], ['book', '📖 图鉴']].map(([k, n]) =>
         `<div class="tab ${curTab === k ? 'on' : ''}" onclick="switchChildTab('${k}')">${n}</div>`).join('')}
     </div>
     <div id="tabbody"></div>
@@ -681,17 +681,17 @@ function openGuide() {
     <div class="okbox">在这里，你的每一个好习惯都会变成心光，帮助灵伴穿越大陆、点亮星图。想重看序章，可以在这里重新打开。</div>
     <button class="btn sm ghost" onclick="openPrologue()">重看灵汐大陆序章</button>
     <div class="lead">你的灵伴靠「心光」长大（升级→进化→觉醒），家里的「羁绊」是零花钱货币（1分=1元）。两个值都只来自真实的好习惯！</div>
-    <div class="item"><div class="t"><div class="n">🐾 宠物页</div><div class="s">每天 ${r.feed !== undefined ? r.feed : 1} 分投喂（作业完成才算喂饭）、看五维属性、自由加点、改名字</div></div></div>
+    <div class="item"><div class="t"><div class="n">🐾 灵伴页</div><div class="s">每天 ${r.feed !== undefined ? r.feed : 1} 分投喂（作业完成才算喂饭）、看五维属性、自由加点、改名字</div></div></div>
     <div class="item"><div class="t"><div class="n">📝 申报页</div><div class="s">考试≥${me.rules.examMin ?? 80} +${r.exam !== undefined ? r.exam : 50} · 默写/出门测≥${me.rules.quizMin ?? 80}% +${r.quiz !== undefined ? r.quiz : 10} · 自豪的事每周1次 +${r.pride !== undefined ? r.pride : 10}（家长审核后到账）</div></div></div>
     <div class="item"><div class="t"><div class="n">⚔️ 对战页</div><div class="s">打 Boss / 兄妹切磋 / 好友对战，赢心光不花羁绊（每天限 ${me ? me.battleDailyLimit : 5} 场）；输了对战也不扣羁绊</div></div></div>
     <div class="item"><div class="t"><div class="n">🎁 兑换页</div><div class="s">用羁绊换奖励；现金直接锁进下月零花钱，其他奖励家长核销后生效</div></div></div>
-    <div class="item"><div class="t"><div class="n">📖 图鉴页</div><div class="s">兄弟姐妹榜 + 历届毕业宠物</div></div></div>
+    <div class="item"><div class="t"><div class="n">📖 图鉴页</div><div class="s">兄弟姐妹榜 + 历届毕业灵伴</div></div></div>
     <div class="warnbox">⚠️ 每月 1 号羁绊重置为初始值（上月浊气未侵扰，守护人会给你清风奖 +${r.noComplaint !== undefined ? r.noComplaint : 100}）；若被浊气侵扰，羁绊会暂时减弱 −${r.complaint !== undefined ? r.complaint : 50}（守护人可撤销退分）。默认温和模式：3 天不投喂只提醒，不扣分也不休眠；守护人开启严格模式后才会有休眠茧，唤醒一律免费、不扣羁绊也不降级。</div>
-    <div class="muted-line">学期结束时宠物毕业进图鉴，下学期重挑新伙伴。连续觉醒还能解锁隐藏神宠 S/SS！</div>
+    <div class="muted-line">学期结束时灵伴毕业进图鉴，下学期重挑新伙伴。连续觉醒还能解锁隐藏神宠 S/SS！</div>
     <button class="btn" onclick="closeModal()">开始冒险！</button>`);
 }
 
-// —— 选宠物（学期初）————————————————————————
+// —— 选灵伴（学期初）————————————————————————
 async function renderSpeciesPicker() {
   const r = await getJSON('/api/species');
   const el = me.eligibility || { s: false, ss: false };
@@ -737,7 +737,7 @@ async function pickSpecies(id) {
   showFx({ img: 'img/wishball.webp', title: '✦ 愿望球开启 ✦', sub: `<b>${esc(me.pet.nickname)}</b> 加入了你的冒险！完成作业投喂它，它会一路进化`, btn: '一起加油！', sound: 'levelup', speak: '愿望球打开了，新伙伴加入！' });
 }
 
-// —— 宠物 Tab ————————————————————————————————
+// —— 灵伴 Tab ————————————————————————————————
 // ============================================================
 // P1：7 天微习惯计划（引导层：不发分、不加心光、不替代投喂）+ 温和回归
 // ============================================================
@@ -985,7 +985,7 @@ function childPetTab() {
   let milestoneHtml = '';
   if (p.stageKey === 'awaken' && !me.milestone.used) {
     const hasPending = me.milestone.applications.some(a => a.status === 'pending');
-    milestoneHtml = `<div class="okbox">🏆 宠物已觉醒！你获得一次「学期大奖申请权」${hasPending ? '（申请审核中…）' : ''}</div>
+    milestoneHtml = `<div class="okbox">🏆 灵伴已觉醒！你获得一次「学期大奖申请权」${hasPending ? '（申请审核中…）' : ''}</div>
       ${hasPending ? '' : `<button class="btn warn" onclick="applyMilestone()">申请学期大奖</button>`}`;
   }
   // 缺席机制：休眠茧（唤醒免费）/ 温和提醒（默认不扣分、不休眠）
@@ -1185,7 +1185,7 @@ function renderChildBattleTab(b) {
       <div class="item"><div class="t"><div class="n">🌲 挑战荒野 Boss</div><div class="s">单人闯关，Boss 等级随你</div></div><button class="btn sm" onclick="startBattle('boss')">出发</button></div>
       ${others.map(o => `
         <div class="item"><div class="t"><div class="n">🤝 与 ${esc(o.name)} 联手打 Boss</div><div class="s">TA 的分身 AI 帮你打，不用等 TA 在线</div></div><button class="btn sm ok" onclick="startBattle('coop','${o.id}')">组队</button></div>
-        <div class="item"><div class="t"><div class="n">⚔️ 与 ${esc(o.name)} 切磋</div><div class="s">打 TA 宠物的 AI 分身（他 ${o.petEmoji} Lv${o.level}），单挑即打即结算</div></div><button class="btn sm bad" onclick="startBattle('sibling','${o.id}')">开打</button></div>`).join('') || '<div class="muted-line">还没有兄弟姐妹可以约战（等家长添加）</div>'}
+        <div class="item"><div class="t"><div class="n">⚔️ 与 ${esc(o.name)} 切磋</div><div class="s">打 TA 灵伴的 AI 分身（他 ${o.petEmoji} Lv${o.level}），单挑即打即结算</div></div><button class="btn sm bad" onclick="startBattle('sibling','${o.id}')">开打</button></div>`).join('') || '<div class="muted-line">还没有兄弟姐妹可以约战（等家长添加）</div>'}
     </div>
     <div class="card">
       <h3>👥 好友对战</h3>
@@ -1466,7 +1466,7 @@ function childBookTab() {
         <div class="item">
           ${petArt(p.emoji, null, 'xs')}
           <div class="t"><div class="n">${esc(p.speciesName)} <span class="badge g">Lv${p.level} 毕业</span></div><div class="s">${esc(p.semester)} · 攻${p.stats.atk} 防${p.stats.def} 体${p.stats.hp} 敏${p.stats.spd} 慧${p.stats.wis}</div></div>
-        </div>`).join('') : '<div class="muted-line">第一只毕业宠物等你养成！学期结束它就会光荣毕业</div>'}
+        </div>`).join('') : '<div class="muted-line">第一只毕业灵伴等你养成！学期结束它就会光荣毕业</div>'}
     </div>`;
 }
 
@@ -1568,7 +1568,7 @@ function parentOverview() {
       <h3>${c.pet ? c.pet.emoji : '🥚'} ${esc(c.name)} <span class="badge">${esc(c.grade || '')}</span> ${c.paused ? '<span class="badge a">暂停计</span>' : ''}</h3>
       <div class="stat-grid">
         <div class="stat"><div class="v">${c.intimacy}</div><div class="k">羁绊（月度）</div></div>
-        <div class="stat"><div class="v">${c.pet ? 'Lv' + c.level : '—'}</div><div class="k">${c.pet ? c.pet.stage + ' · ' + esc(c.pet.nickname) : '未选宠物'}</div></div>
+        <div class="stat"><div class="v">${c.pet ? 'Lv' + c.level : '—'}</div><div class="k">${c.pet ? c.pet.stage + ' · ' + esc(c.pet.nickname) : '未选灵伴'}</div></div>
         <div class="stat"><div class="v">¥${c.nextAllowance}</div><div class="k">下月零花钱（基础${c.allowanceBase}${c.allowanceLocked ? '+锁定' + c.allowanceLocked.amount : ''}）</div></div>
         <div class="stat"><div class="v">${c.feedStreak}</div><div class="k">连续投喂</div></div>
       </div>
@@ -1607,10 +1607,10 @@ async function doEditChild(childId) {
   fam = r.family; closeModal(); toast('已保存'); renderParent();
 }
 async function deleteChild(childId) {
-  if (requireParentPhrase(`delete-child:${childId}`, '🗑️ 永久删除孩子', '将清空宠物、积分、兑换与设备绑定；删除后无法恢复，历史账本仅保留留痕。', '删除', '继续删除', () => deleteChild(childId))) return;
+  if (requireParentPhrase(`delete-child:${childId}`, '🗑️ 永久删除孩子', '将清空灵伴、心光、兑换与设备绑定；删除后无法恢复，历史账本仅保留留痕。', '删除', '继续删除', () => deleteChild(childId))) return;
   const c = fam.children.find(x => x.id === childId);
   if (!c) return;
-  askConfirm(`⚠️ 彻底删除「${c.name}」？宠物/积分/兑换全部清空且不可恢复（历史账本保留留痕）。`, async () => {
+  askConfirm(`⚠️ 彻底删除「${c.name}」？灵伴/心光/兑换全部清空且不可恢复（历史账本保留留痕）。`, async () => {
     const r = await pinApi('/api/child/delete', { childId });
     if (!r) return; if (r.error) return toast(r.error, true);
     fam = r.family; toast('已删除（历史账本保留）'); renderParent();
@@ -1869,7 +1869,7 @@ function parentLedger() {
   const mk = curMonthKey();
   return `<div class="card">
     <h3>📒 账本（每笔留痕，当月可撤销）</h3>
-    <div class="muted-line" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span>撤销会反向调整羁绊/心光并留下对冲记录；心光可回退，但宠物五维成长点不回收。系统结算与跨月账目不可撤销。</span><button class="btn sm ghost" onclick="openMonthly()">📊 历史月报</button></div>
+    <div class="muted-line" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span>撤销会反向调整羁绊/心光并留下对冲记录；心光可回退，但灵伴五维成长点不回收。系统结算与跨月账目不可撤销。</span><button class="btn sm ghost" onclick="openMonthly()">📊 历史月报</button></div>
     ${fam.ledger.slice(0, 100).map(l => {
       const canUndo = !l.reversed && l.by !== 'system' && l.ts && l.ts.startsWith(mk) && l.childName;
       return `
@@ -1885,8 +1885,8 @@ function parentLedger() {
   </div>`;
 }
 async function undoLedger(id) {
-  if (requireParentPhrase(`undo-ledger:${id}`, '↩️ 撤销账目', '将反向调整羁绊和心光，并新增一条对冲记录；宠物成长点不会回收。', '撤销', '继续撤销', () => undoLedger(id))) return;
-  askConfirm('撤销该笔账目？将反向调整羁绊/心光（宠物五维成长点不回收），并留下对冲记录。', async () => {
+  if (requireParentPhrase(`undo-ledger:${id}`, '↩️ 撤销账目', '将反向调整羁绊和心光，并新增一条对冲记录；灵伴成长点不会回收。', '撤销', '继续撤销', () => undoLedger(id))) return;
+  askConfirm('撤销该笔账目？将反向调整羁绊/心光（灵伴五维成长点不回收），并留下对冲记录。', async () => {
     const r = await pinApi('/api/ledger/undo', { ledgerId: id });
     if (!r) return; if (r.error) return toast(r.error, true);
     fam = r.family; toast('已撤销'); renderParent();
@@ -1939,7 +1939,7 @@ function parentSettings() {
       <h3>🔔 结算与月报</h3>
       <div class="muted-line">月度结算每月1号自动执行（无投诉奖发放+羁绊重置），手动仅用于纠错</div>
       <button class="btn ghost" onclick="settleMonth()">手动触发月度结算</button>
-      <button class="btn warn" onclick="settleSemester()">🎓 学期结算（宠物毕业进图鉴）</button>
+      <button class="btn warn" onclick="settleSemester()">🎓 学期结算（灵伴毕业进图鉴）</button>
       <button class="btn ok" onclick="showReport()">📄 生成月报（可复制发微信）</button>
     </div>
     <div class="card">
@@ -2012,11 +2012,11 @@ async function settleMonth() {
   }, '🗓️ 月度结算');
 }
 async function settleSemester() {
-  if (requireParentPhrase('settle-semester', '🎓 学期结算', '所有宠物将毕业进入图鉴，心光清零；新学期需要重新选择宠物。', '毕业', '继续结算', settleSemester)) return;
-  askConfirm('学期结算：所有宠物毕业进图鉴、心光清零、新学期重挑宠物。确认？', async () => {
+  if (requireParentPhrase('settle-semester', '🎓 学期结算', '所有灵伴将毕业进入图鉴，心光清零；新学期需要重新选择灵伴。', '毕业', '继续结算', settleSemester)) return;
+  askConfirm('学期结算：所有灵伴毕业进图鉴、心光清零、新学期重挑灵伴。确认？', async () => {
     const r = await pinApi('/api/settle/semester', {});
     if (!r) return; if (r.error) return toast(r.error, true);
-    fam = r.family; toast(`学期结算完成，${r.entries} 只宠物毕业进图鉴 🎓`); renderParent();
+    fam = r.family; toast(`学期结算完成，${r.entries} 只灵伴毕业进图鉴 🎓`); renderParent();
   }, '🎓 学期结算');
 }
 async function showReport() {

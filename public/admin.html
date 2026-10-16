@@ -88,7 +88,7 @@
         <button class="sm" onclick="lxApply()">迁移</button>
         <span id="lxMsg"></span>
       </div>
-      <div class="muted" style="font-size:12px;margin-top:6px">提示：目标家庭里没有的孩子（按名字匹配：柚子/柠檬）会被新建并完整继承等级/亲密度/积分/图鉴/账本/打卡照片；已有孩子只增不减。</div>
+      <div class="muted" style="font-size:12px;margin-top:6px">提示：目标家庭里没有的孩子（按名字匹配：柚子/柠檬）会被新建并完整继承等级/羁绊/心光/图鉴/账本/打卡照片；已有孩子只增不减。</div>
     </div>
 
     <div class="card" id="detail" style="display:none"></div>
@@ -137,8 +137,8 @@ async function showDetail(id) {
   $('#detail').style.display = '';
   $('#detail').innerHTML = `<div class="bar"><b>家庭详情：${esc(f.username)}（${esc(f.familyName)}）</b>
     <button class="sm ghost" onclick="$('#detail').style.display='none'">收起</button></div>
-    <div class="muted" style="margin-bottom:6px">配置：初始亲密度 ${f.config.initialIntimacy} · 基础零花钱 ${f.config.baseAllowance} · 1分=${f.config.pointsToYuan}元</div>
-    <table><thead><tr><th>孩子</th><th>等级</th><th>亲密度</th><th>积分</th><th>图鉴(毕业/击杀/遭遇)</th></tr></thead><tbody>
+    <div class="muted" style="margin-bottom:6px">配置：初始羁绊 ${f.config.initialIntimacy} · 基础零花钱 ${f.config.baseAllowance} · 1分=${f.config.pointsToYuan}元</div>
+    <table><thead><tr><th>孩子</th><th>等级</th><th>羁绊</th><th>心光</th><th>图鉴(毕业/击杀/遭遇)</th></tr></thead><tbody>
     ${f.children.map(c => `<tr><td>${esc(c.name)}</td><td>Lv${c.level}</td><td>${c.intimacy}</td><td>${c.points}</td><td>${c.pokedex}/${c.pokedexKills}/${c.pokedexSeen}</td></tr>`).join('')}
     </tbody></table>
     <div style="margin-top:8px" class="muted">账本尾部 ${f.ledgerTail.length} 条：</div>
